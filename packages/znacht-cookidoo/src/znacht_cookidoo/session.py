@@ -88,16 +88,21 @@ class CookidooSession:
         self._http = ClientSession(cookie_jar=CookieJar(unsafe=True))
         cfg = CookidooConfig(localization=localization, email=s.email, password=s.password or "")
         client = Cookidoo(self._http, cfg, on_auth_data_update=_write_token(s.token_file))
-        if s.token_file.exists():
-            client.load_token(s.token_file)
-        else:
-            if not s.password:
-                raise PermissionError(
-                    f"no token at {s.token_file} and no password: complete the first login"
-                )
-            await client.login()
-            client.save_token(s.token_file)
-            s.token_file.chmod(0o600)
+        try:
+            if s.token_file.exists():
+                client.load_token(s.token_file)
+            else:
+                if not s.password:
+                    raise PermissionError(
+                        f"no token at {s.token_file} and no password: complete the first login"
+                    )
+                await client.login()
+                client.save_token(s.token_file)
+                s.token_file.chmod(0o600)
+        except BaseException:
+            await self._http.close()
+            self._http = None
+            raise
         self.client = client
         return self
 
