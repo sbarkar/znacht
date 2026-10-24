@@ -19,7 +19,7 @@ button, input { font: inherit; }
 a { color: var(--accent); }
 .boot { padding: 40vh 24px 0; text-align: center; color: var(--muted); }
 
-.shell { min-height: 100dvh; display: flex; flex-direction: column; max-width: 1200px; margin: 0 auto; }
+.shell { min-height: 100dvh; display: flex; flex-direction: column; max-width: 900px; margin: 0 auto; }
 .screen { flex: 1 1 auto; padding: 20px 16px 110px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; }
 .screen.with-bar { padding-bottom: 190px; }
 @media (min-width: 900px) { .screen { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start; padding: 28px 24px 110px; } .screen > .span { grid-column: 1 / -1; } }

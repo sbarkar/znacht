@@ -67,3 +67,26 @@ Mostly fine for a monthly task. The fixes are the two bugs above.
 - **Planning only the remaining days of this week** (roadmap P0-2). "Plan the gaps" on a Saturday
   still plans the whole ISO week, so past days get dinners and groceries; the app hides them.
   The real fix changes the planner and checker (`dinners_per_week`), which is beyond a UX pass.
+
+## Outcome (same night)
+
+Every finding above is addressed on branch `claude/clever-brown-y1foo9` except the P0-2 item.
+An independent code review of the new app found eight more defects. All were fixed:
+
+- editing a member dropped an explicit `mild_food` from the YAML;
+- quick household edits overwrote each other;
+- pantry chips set by Home Assistant could not be removed;
+- grocery lines remounted on every reload, so the tick you pressed lost focus;
+- a failed refetch replaced a loaded plan with an error page;
+- alternatives could show a stale response;
+- swaps were enabled while the engine was busy;
+- the day sheet did not take focus.
+
+Driving the journeys also turned up engine bugs, fixed with tests: a store's delivery slot was
+used for any week, `plan_week` failed in the background on a non-Monday, and ticks were written
+to the wrong run.
+
+Still open:
+- Home Assistant's todo lists follow the latest run rather than `shopping_run_id`.
+- On the same product needed on two days, ticking one line ticks both (ticks are keyed by
+  product).

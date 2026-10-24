@@ -389,7 +389,7 @@ function Groceries({ runId, tick, reload, busy, toast, runs, today }) {
     if (r.status === "applied" ? !same.some((c) => c.status === "applied") : same.length === 0) choices.push(r);
   }
   if (!choices.some((c) => c.id === view.run_id)) choices.push({ id: view.run_id, week: view.week, status: view.status });
-  choices.sort((a, b) => (a.week < b.week ? -1 : a.week > b.week ? 1 : b.id - a.id));
+  choices.sort((a, b) => (a.week < b.week ? -1 : a.week > b.week ? 1 : Number(b.status === "applied") - Number(a.status === "applied") || b.id - a.id));
 
   const move = async (need, to) => {
     try {
