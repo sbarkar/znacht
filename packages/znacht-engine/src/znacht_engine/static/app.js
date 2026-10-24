@@ -41,6 +41,7 @@ function weekName(week, today) {
   if (week === addDays(t, -7)) return "Last week";
   return `Week of ${parse(week).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`;
 }
+const dateRange = (week) => { const f = (iso) => parse(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" }); return `${f(week)} – ${f(addDays(week, 6))}`; };
 const STATUS_WORD = { needs_approval: "proposal", needs_input: "needs input", applied: "sent", reverted: "undone" };
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many || one + "s"}`;
 
@@ -92,6 +93,13 @@ const Badge = ({ g }) => html`<span class=${"badge g-" + g.coverage}>${g.coverag
 function DaySheet({ date, title, runId, locked, children, onClose, onSwapped, onLocked, toast, badge }) {
   const [alts, setAlts] = useState(null);
   const [working, setWorking] = useState(false);
+  const closeBtn = useRef(null);
+  useEffect(() => {
+    // focus moves into the sheet and back to where it came from when it closes
+    const before = document.activeElement;
+    if (closeBtn.current) closeBtn.current.focus();
+    return () => { if (before && before.focus) before.focus(); };
+  }, []);
   useEffect(() => {
     setAlts(null);
     if (!runId) return;
@@ -118,7 +126,7 @@ function DaySheet({ date, title, runId, locked, children, onClose, onSwapped, on
         <div class="handle"></div>
         <div class="sheet-head">
           <div class="sheet-title"><small>${weekday(date)} ${dayNum(date)}</small><b>${title || "Nothing yet"}</b></div>
-          <button type="button" class="btn icon" aria-label="Close" onClick=${onClose}><${Icon} name="close" /></button>
+          <button type="button" class="btn icon" aria-label="Close" ref=${closeBtn} onClick=${onClose}><${Icon} name="close" /></button>
         </div>
         ${badge ? html`<div>${badge}</div>` : null}
         ${children}
@@ -308,12 +316,12 @@ function Review({ runId, tick, reload, busy, toast, runs }) {
     <div class="screen with-bar">
       <div class="span"><${Back} href="#week" label="Week" /></div>
       <div class="top span">
-        <div class="stack"><span class="brand">${weekName(view.week, isoDate(new Date()))}</span><span class="muted small">${view.week_label}${view.slot ? ` · delivery ${view.slot}` : ""}</span></div>
+        <div class="stack"><span class="brand">${weekName(view.week, isoDate(new Date()))}</span><span class="muted small">${dateRange(view.week)}${view.slot ? ` · delivery ${view.slot}` : ""}</span></div>
         <span class=${"pill" + (view.status === "applied" ? " ok" : view.status === "needs_input" ? " warn" : "")}>${STATUS_WORD[view.status] || view.status}</span>
       </div>
       ${newer && proposal ? html`<div class="banner span"><span>There is a newer plan for this week.</span><a class="btn" href=${`#review/${newer.id}`}>Open it</a></div>` : null}
       ${view.chef_note && view.theme !== "rule-based" ? html`<div class="span stack"><b>${view.theme}</b><p class="small">${view.chef_note}</p></div>` : null}
-      ${view.violations.length ? html`<div class="card dashed span"><h2>Needs your input</h2>${view.violations.map((v) => html`<div class="warn-text small">${v}</div>`)}<p class="muted small">Swap a dinner below, change a rule on Household, or plan again.</p></div>` : null}
+      ${view.violations.length ? html`<div class="card dashed span"><h2>Needs your input</h2>${view.violations.map((v) => html`<div class="warn-text small">${v.replace(/^\[[^\]]+\]\s*/, "")}</div>`)}<p class="muted small">Swap a dinner below, change a rule on Household, or plan again.</p></div>` : null}
       ${view.plan_removes.length && proposal ? html`
         <div class="card dashed span">
           <h2>Approving removes from My Week</h2>
@@ -329,11 +337,11 @@ function Review({ runId, tick, reload, busy, toast, runs }) {
             ${x.locked ? html`<span class="lock" title="Locked"><${Icon} name="lock" /></span>` : null}
           </button>`)}
       </div>
-      <${Basket} m=${m} />
+      ${view.status !== "needs_input" ? html`<${Basket} m=${m} />
       <a class="card span link-card" href=${`#groceries/${view.run_id}`}>
         <span><b>Groceries</b><br /><span class="muted small">${view.online.length} online · ${view.in_store.length + view.free_text.length} on the store run (${chf(m.in_store_total)})${Number(m.savings) > 0 ? ` · saves ${chf(m.savings)}` : ""}</span></span>
         <span aria-hidden="true" class="chev">›</span>
-      </a>
+      </a>` : null}
       ${view.swaps.length ? html`<div class="card span"><h2>Product swaps and flags</h2>${view.swaps.map((s) => html`<div class=${"swap " + s.kind}><b>${s.need}</b> → ${s.chosen}${s.delta ? html` <span class=${s.kind === "switch" ? "ok-text" : "warn-text"}>(${Number(s.delta) < 0 ? "−" : "+"}${Math.abs(Number(s.delta)).toFixed(2)})</span>` : null}<div class="meta">${s.reason}</div></div>`)}</div>` : null}
       ${view.pantry_check.length ? html`<div class="card span"><h2>Check the pantry</h2><p class="small">The recipes assume you have these; nothing is bought.</p><div class="chips">${view.pantry_check.map((p) => html`<span class="chip quiet">${p}</span>`)}</div></div>` : null}
       <div class="actionbar">
