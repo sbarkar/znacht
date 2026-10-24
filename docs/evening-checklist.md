@@ -75,6 +75,8 @@ curl -fsSL https://raw.githubusercontent.com/sbarkar/znacht/main/deploy/lxc/crea
 
 That installs the engine as a systemd service (uv-managed Python 3.12, no Docker) and prints the one-liner that pipes `deploy/lxc/bundle.sh` from this workstation through ssh into the LXC: env, household, Cookidoo token, Migros session and the SQLite history move over, nothing stays on disk in between. Then Reconfigure the HA integration to the LXC's URL, stop the workstation engine and close port 8787 in firewalld. Caddy is optional while HA is on plain HTTP.
 
+- **Done 2026-10-24, late evening**: LXC 102 `znacht` at 192.168.4.80 runs the engine with all runs and the household migrated; HA reconfigured to it and the sidebar panel opens; the workstation engine is stopped and its firewall port closed. Two host quirks cost a retry each: a `pct` guard that limits the MCP to a pool (new container had to be added), and `pct exec` shells without `/usr/local/bin` on PATH (install.sh now uses absolute paths and `RESUME=1` picks up after an interrupted run).
+
 ## Known gaps to capture tonight
 
 - **Delivery slot endpoint**: open migros.ch checkout with the browser's network tab open, pick a slot, and copy the request path and response shape into an issue. Until then slots come from `delivery.slot_templates` in the household YAML.
