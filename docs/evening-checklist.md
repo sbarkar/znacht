@@ -88,3 +88,5 @@ Then inside the LXC: edit `/opt/znacht/deploy/.env`, `docker compose up -d --bui
 - Migros answered per item after the write: `AVAILABLE`, `UNAVAILABLE`, `UNAVAILABLE_FOR_WAREHOUSE`. Run 9 (not applied) used that to move baby spinach and parsley to the store run.
 - Still to capture: the delivery-slot endpoint.
 - Not yet tested: the Home Assistant integration (the engine ran on the workstation at 192.168.1.148, HA lives on 192.168.4.x) and the LXC deployment.
+- Run 8 was **reverted** the same evening (the household already had a plan and a Migros order for that week): My Week got its eight entries back, both lists went back to empty. The Brief now lists what an apply would remove, and `POST /api/runs/{id}/revert` undoes an applied run.
+- Step 8 done: the HACS integration connected from HA (192.168.4.81) to the engine on the workstation; `todo.znacht_online_basket` and `todo.znacht_store_run` show run 9's lines. Sensors and the calendar exist but are not exposed to Assist by default.
