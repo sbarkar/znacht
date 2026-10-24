@@ -72,15 +72,18 @@ async def test_apply_sends_products_then_free_text_with_zero_for_removals(
         id=lid, lines=(ShoppingListLine(product_id=ProductId("100200002"), quantity=1),)
     )
     await store.apply_list(lid, await store.diff_list(lid, second))
-    last = mock.puts[-1]
-    assert last["shoppingListId"] == 97185194
-    by_id = {i["id"]: i for i in last["items"]}
+    # products and free text travel in separate requests; removals are quantity 0
+    products = next(
+        p for p in reversed(mock.puts) if all(i["type"] == "PRODUCT" for i in p["items"])
+    )
+    texts = next(
+        p for p in reversed(mock.puts) if any(i["type"] == "FREE_TEXT" for i in p["items"])
+    )
+    assert products["shoppingListId"] == 97185194
+    by_id = {i["id"]: i for i in products["items"]}
     assert by_id["100200002"]["quantity"] == 1 and by_id["100200002"]["type"] == "PRODUCT"
     assert by_id["100200001"]["quantity"] == 0
-    assert (
-        by_id["dishwasher tabs"]["quantity"] == 0
-        and by_id["dishwasher tabs"]["type"] == "FREE_TEXT"
-    )
+    assert texts["items"][0]["id"] == "dishwasher tabs" and texts["items"][0]["quantity"] == 0
     assert (await store.read_list(lid)).as_dict().keys() == {"p:100200002"}
 
 

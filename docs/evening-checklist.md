@@ -79,3 +79,12 @@ Then inside the LXC: edit `/opt/znacht/deploy/.env`, `docker compose up -d --bui
 
 - **Delivery slot endpoint**: open migros.ch checkout with the browser's network tab open, pick a slot, and copy the request path and response shape into an issue. Until then slots come from `delivery.slot_templates` in the household YAML.
 - **Free-text list item type** on Migros (currently `FREE_TEXT`, unverified).
+
+
+## Outcome of the first live evening (2026-10-24)
+
+- Steps 0–7 done. Run 8 ("Cosy Autumn Comforts", Claude planner + matcher) was approved and applied: My Week for 26 Oct–1 Nov holds the seven dinners (the eight entries that were there before are recorded in run 8's `plan_diff.remove` in the engine database and can be re-added), the Migros "Shopping list" (340420) holds 32 product lines, "In-Person Shopping" (97185194) holds 12.
+- **Free text on Migros lists does not work through the items API**: `PUT /shopping-list/public/v3/items` answers `400 items.invalid_id` for type `FREE_TEXT`. Products and free text are now sent separately so the products always land; free-text lines are listed on the Brief for you to add in the app. Capturing the app's free-text request is the next reverse-engineering item.
+- Migros answered per item after the write: `AVAILABLE`, `UNAVAILABLE`, `UNAVAILABLE_FOR_WAREHOUSE`. Run 9 (not applied) used that to move baby spinach and parsley to the store run.
+- Still to capture: the delivery-slot endpoint.
+- Not yet tested: the Home Assistant integration (the engine ran on the workstation at 192.168.1.148, HA lives on 192.168.4.x) and the LXC deployment.
