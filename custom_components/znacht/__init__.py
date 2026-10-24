@@ -10,11 +10,18 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_call_later
 
+try:  # the sidebar panel is optional: HA without the frontend (tests) still works
+    from homeassistant.components.frontend import async_register_built_in_panel, async_remove_panel
+except ImportError:  # pragma: no cover
+    async_register_built_in_panel = None  # type: ignore[assignment]
+    async_remove_panel = None  # type: ignore[assignment]
+
 from .api import ZnachtApi, ZnachtApiError
 from .const import (
     CONF_TOKEN,
     CONF_URL,
     DOMAIN,
+    PANEL_URL_PATH,
     PLATFORMS,
     SERVICE_APPLY,
     SERVICE_OPTIMIZE,
@@ -34,11 +41,36 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZnachtConfigEntry) -> bo
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     _register_services(hass, coordinator)
+    _register_panel(hass, entry)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ZnachtConfigEntry) -> bool:
+    if async_remove_panel is not None and PANEL_URL_PATH in hass.data.get("frontend_panels", {}):
+        async_remove_panel(hass, PANEL_URL_PATH)
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+def _register_panel(hass: HomeAssistant, entry: ZnachtConfigEntry) -> None:
+    """Put the Znacht app in the sidebar: an iframe panel on the engine's /app page.
+
+    The token travels once in the panel URL; the app keeps it in its own storage.
+    """
+    if async_register_built_in_panel is None or PANEL_URL_PATH in hass.data.get(
+        "frontend_panels", {}
+    ):
+        return
+    token = entry.data.get(CONF_TOKEN)
+    url = f"{entry.data[CONF_URL].rstrip('/')}/app" + (f"?token={token}" if token else "")
+    async_register_built_in_panel(
+        hass,
+        component_name="iframe",
+        sidebar_title="Znacht",
+        sidebar_icon="mdi:silverware-fork-knife",
+        frontend_url_path=PANEL_URL_PATH,
+        config={"url": url},
+        require_admin=False,
+    )
 
 
 def _register_services(hass: HomeAssistant, coordinator: ZnachtCoordinator) -> None:

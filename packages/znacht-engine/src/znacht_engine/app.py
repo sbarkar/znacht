@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel
 
@@ -42,6 +43,24 @@ class TodoUpdate(BaseModel):
 
 class TodoAdd(BaseModel):
     summary: str
+
+
+class SwapRequest(BaseModel):
+    date: date
+    recipe_id: str
+
+
+class LockRequest(BaseModel):
+    date: date
+    locked: bool = True
+
+
+class MoveRequest(BaseModel):
+    need: str
+    to: str  # "online" | "store"
+
+
+_STATIC = Path(__file__).parent / "static"
 
 
 def create_app(settings: EngineSettings, service: ZnachtService | None = None) -> FastAPI:
@@ -123,6 +142,81 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
         except (PermissionError, ValueError) as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return {"run_id": rid, "status": str(result.status), "notes": list(result.notes)}
+
+    @app.get("/api/household", dependencies=[Depends(auth)])
+    async def household(s: ZnachtService = Depends(svc)) -> dict[str, Any]:
+        return s.household_view()
+
+    @app.get("/api/view", dependencies=[Depends(auth)])
+    async def view_latest(s: ZnachtService = Depends(svc)) -> dict[str, Any]:
+        try:
+            return s.view(None)
+        except LookupError:
+            return {"run_id": None, "status": "idle", "busy": s.busy}
+
+    @app.get("/api/runs/{run_id}/view", dependencies=[Depends(auth)])
+    async def view_run(run_id: int, s: ZnachtService = Depends(svc)) -> dict[str, Any]:
+        try:
+            return s.view(run_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/api/runs/{run_id}/alternatives", dependencies=[Depends(auth)])
+    async def alternatives(
+        run_id: int, day: date, s: ZnachtService = Depends(svc)
+    ) -> list[dict[str, Any]]:
+        try:
+            return s.alternatives(run_id, day)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    def _busy_guard(s: ZnachtService) -> None:
+        if s.busy:
+            raise HTTPException(status_code=409, detail=f"engine is {s.busy}")
+
+    @app.post("/api/runs/{run_id}/swap", dependencies=[Depends(auth)])
+    async def swap(
+        run_id: int, body: SwapRequest, s: ZnachtService = Depends(svc)
+    ) -> dict[str, Any]:
+        _busy_guard(s)
+        new_id, _ = await s.swap(run_id, body.date, body.recipe_id)
+        return s.view(new_id)
+
+    @app.post("/api/runs/{run_id}/lock", dependencies=[Depends(auth)])
+    async def lock(
+        run_id: int, body: LockRequest, s: ZnachtService = Depends(svc)
+    ) -> dict[str, Any]:
+        rid, _ = await s.set_lock(run_id, body.date, body.locked)
+        return s.view(rid)
+
+    @app.post("/api/runs/{run_id}/move", dependencies=[Depends(auth)])
+    async def move(
+        run_id: int, body: MoveRequest, s: ZnachtService = Depends(svc)
+    ) -> dict[str, Any]:
+        _busy_guard(s)
+        if body.to not in ("online", "store"):
+            raise HTTPException(status_code=422, detail="to must be 'online' or 'store'")
+        new_id, _ = await s.move(run_id, body.need, body.to)
+        return s.view(new_id)
+
+    @app.post("/api/runs/{run_id}/replan", dependencies=[Depends(auth)])
+    async def replan(run_id: int, s: ZnachtService = Depends(svc)) -> dict[str, Any]:
+        _busy_guard(s)
+
+        async def run() -> None:
+            try:
+                await s.replan(run_id)
+            except Exception as exc:
+                s.repo.set("last_error", str(exc))
+
+        asyncio.get_running_loop().create_task(run())
+        return {"accepted": True, "status": "planning"}
+
+    @app.get("/app")
+    async def app_entry(token: str | None = None) -> Response:
+        # the token travels once in the URL (from the HA sidebar link); the app keeps it in
+        # local storage and sends it as a bearer header from then on
+        return FileResponse(_STATIC / "index.html")
 
     @app.post("/api/runs/{run_id}/revert", dependencies=[Depends(auth)])
     async def revert(run_id: int, s: ZnachtService = Depends(svc)) -> dict[str, Any]:
@@ -222,4 +316,5 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
         suffix = f"?token={token}" if token else ""
         return RedirectResponse(url=f"/brief/{new_id}{suffix}", status_code=303)
 
+    app.mount("/app/static", StaticFiles(directory=str(_STATIC)), name="static")
     return app

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from enum import StrEnum
 
 from pydantic import Field
@@ -13,7 +13,7 @@ from znacht.domain.diff import ListDiff, PlanDiff
 from znacht.domain.household import Household, SlotTemplate
 from znacht.domain.money import Money
 from znacht.domain.needs import IngredientNeed
-from znacht.domain.plan import MealPlan, Week
+from znacht.domain.plan import Meal, MealPlan, Week
 from znacht.domain.product import Channel, Product, ProductId, StockStatus
 from znacht.domain.recipe import Recipe
 from znacht.domain.shopping import MinimumOrderReport, ProductChoice, ShoppingPlan
@@ -70,6 +70,11 @@ class WeekResult(Frozen):
     new_preferred: dict[str, str] = Field(default_factory=dict)
     notes: tuple[str, ...] = ()
     rationale: str = ""
+    candidates: tuple[Recipe, ...] = ()
+    locked_dates: tuple[date, ...] = ()
+    channel_overrides: dict[str, str] = Field(
+        default_factory=dict
+    )  # need name -> "online" | "store"
 
 
 # What to search for per weekly rule tag. Sources that know tags use them; the others match words.
@@ -110,13 +115,29 @@ async def _plan(
     max_attempts: int,
     candidate_limit: int,
     recent_meals: tuple[str, ...] = (),
-) -> tuple[MealPlan, dict[str, Recipe], list[Violation], str]:
-    pool: dict[str, Recipe] = {}
+    locked_meals: tuple[Meal, ...] = (),
+    fixed_plan: MealPlan | None = None,
+    known_candidates: tuple[Recipe, ...] = (),
+) -> tuple[MealPlan, dict[str, Recipe], list[Violation], str, tuple[Recipe, ...]]:
+    pool: dict[str, Recipe] = {r.id.key: r for r in known_candidates}
     per_query = max(5, candidate_limit // 6)
-    for query in candidate_queries(household, per_query=per_query):
-        for recipe in await recipes.search(query):
-            pool.setdefault(recipe.id.key, recipe)
+    if not pool:
+        for query in candidate_queries(household, per_query=per_query):
+            for recipe in await recipes.search(query):
+                pool.setdefault(recipe.id.key, recipe)
     candidates = tuple(pool.values())[: max(candidate_limit, len(pool))]
+    known_fixed = {r.id.key: r for r in candidates}
+    if fixed_plan is not None:
+        for rid in fixed_plan.recipe_ids():
+            if rid.key not in known_fixed:
+                known_fixed[rid.key] = await recipes.get(rid)
+        return (
+            fixed_plan,
+            known_fixed,
+            check_plan(fixed_plan, known_fixed, household),
+            "",
+            candidates,
+        )
     known = {r.id.key: r for r in candidates}
     violations: list[Violation] = []
     plan = MealPlan(week=week)
@@ -132,13 +153,20 @@ async def _plan(
         )
         proposal = await planner.propose(context)
         plan, rationale = proposal.plan, proposal.rationale
+        if locked_meals:
+            locked_days = {m.date for m in locked_meals}
+            plan = MealPlan(
+                week=week,
+                meals=tuple(m for m in plan.meals if m.date not in locked_days)
+                + tuple(locked_meals),
+            )
         for rid in plan.recipe_ids():
             if rid.key not in known:
                 known[rid.key] = await recipes.get(rid)
         violations = check_plan(plan, known, household)
         if not violations:
             break
-    return plan, known, violations, rationale
+    return plan, known, violations, rationale, candidates
 
 
 _STOPWORDS = frozenset(
@@ -375,10 +403,19 @@ async def run_week(
     max_attempts: int = 3,
     candidate_limit: int = 50,
     recent_meals: tuple[str, ...] = (),
+    locked_meals: tuple[Meal, ...] = (),
+    fixed_plan: MealPlan | None = None,
+    known_candidates: tuple[Recipe, ...] = (),
+    channel_overrides: dict[str, str] | None = None,
 ) -> WeekResult:
-    """Plan, check, explode, split, optimise, top up, diff. No writes."""
+    """Plan, check, explode, split, optimise, top up, diff. No writes.
+
+    ``fixed_plan`` skips the planner (a swap made by the household); ``locked_meals`` survive
+    a re-plan; ``channel_overrides`` force a need online or in store; ``known_candidates``
+    reuse a stored pool instead of searching again."""
     notes: list[str] = []
-    plan, known, violations, rationale = await _plan(
+    overrides = dict(channel_overrides or {})
+    plan, known, violations, rationale, candidates = await _plan(
         household,
         week,
         recipes,
@@ -386,6 +423,9 @@ async def run_week(
         max_attempts=max_attempts,
         candidate_limit=candidate_limit,
         recent_meals=recent_meals,
+        locked_meals=locked_meals,
+        fixed_plan=fixed_plan,
+        known_candidates=known_candidates,
     )
     minimum = await store.minimum_order()
     empty = ShoppingPlan(slot=slot, minimum_order=minimum)
@@ -399,6 +439,9 @@ async def run_week(
             shopping=empty,
             notes=("plan violates the rules; nothing was split or priced",),
             rationale=rationale,
+            candidates=candidates,
+            locked_dates=tuple(m.date for m in locked_meals),
+            channel_overrides=overrides,
         )
 
     needs = explode_needs(plan, known, household)
@@ -420,6 +463,11 @@ async def run_week(
     needs = [n for n in needs if not (n.staple and n.name not in pantry)]
 
     online_needs, store_needs = timing_split(needs, slot)
+    if overrides:
+        forced_online = [n for n in store_needs if overrides.get(n.name) == "online"]
+        forced_store = [n for n in online_needs if overrides.get(n.name) == "store"]
+        online_needs = [n for n in online_needs if overrides.get(n.name) != "store"] + forced_online
+        store_needs = [n for n in store_needs if overrides.get(n.name) != "online"] + forced_store
     online_needs, store_needs = merge_needs(online_needs), merge_needs(store_needs)
 
     baselines: dict[str, Product] = {}
@@ -578,6 +626,9 @@ async def run_week(
         new_preferred=new_preferred,
         notes=tuple(notes),
         rationale=rationale,
+        candidates=candidates,
+        locked_dates=tuple(m.date for m in locked_meals),
+        channel_overrides=overrides,
     )
 
 

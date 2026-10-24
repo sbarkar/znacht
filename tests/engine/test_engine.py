@@ -121,3 +121,52 @@ async def test_revert_restores_my_week_and_lists(client: httpx.AsyncClient, serv
         await service.adapters.store.read_list("list-online")
     ).as_dict().keys() == online_before.as_dict().keys()
     assert (await client.post(f"/api/runs/{run_id}/revert")).status_code == 409
+
+
+async def test_app_verbs_view_alternatives_swap_lock_move(
+    client: httpx.AsyncClient, service: ZnachtService
+):
+    run_id, _ = await service.plan_week(GOLDEN_WEEK_START)
+    view = (await client.get(f"/api/runs/{run_id}/view")).json()
+    assert (
+        view["run_id"] == run_id
+        and len(view["dinners"]) == 7
+        and view["money"]["meets_minimum"] is True
+    )
+    assert (await client.get("/api/view")).json()["run_id"] == run_id
+    assert (await client.get("/api/household")).json()["members"][0]["name"]
+
+    day = view["dinners"][3]["date"]
+    alts = (await client.get(f"/api/runs/{run_id}/alternatives?day={day}")).json()
+    assert alts, "the pool has alternatives for a midweek dinner"
+    assert all(a["recipe_id"] != view["dinners"][3]["recipe_id"] for a in alts)
+    assert all("dill" not in a["title"].lower() for a in alts)
+
+    swapped = (
+        await client.post(
+            f"/api/runs/{run_id}/swap", json={"date": day, "recipe_id": alts[0]["recipe_id"]}
+        )
+    ).json()
+    assert swapped["run_id"] == run_id + 1
+    assert (
+        next(d for d in swapped["dinners"] if d["date"] == day)["recipe_id"] == alts[0]["recipe_id"]
+    )
+    assert swapped["status"] in ("needs_approval", "needs_input")
+
+    locked = (
+        await client.post(f"/api/runs/{swapped['run_id']}/lock", json={"date": day, "locked": True})
+    ).json()
+    assert next(d for d in locked["dinners"] if d["date"] == day)["locked"] is True
+
+    online_need = swapped["online"][0]["need"]
+    moved = (
+        await client.post(
+            f"/api/runs/{swapped['run_id']}/move", json={"need": online_need, "to": "store"}
+        )
+    ).json()
+    assert all(line["need"] != online_need for line in moved["online"])
+    assert any(line["need"] == online_need for line in moved["in_store"])
+
+    page = await client.get("/app")
+    assert page.status_code == 200 and "app.js" in page.text
+    assert (await client.get("/app/static/app.css")).status_code == 200
