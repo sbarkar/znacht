@@ -87,6 +87,7 @@ class ZnachtService:
                     store=self.adapters.store,
                     sink=self.adapters.sink,
                     planner=self.adapters.planner,
+                    recent_meals=self.recent_meals(before=week),
                 )
                 run_id = self.repo.save_run(result)
                 self.repo.record_prices(price_rows(result))
@@ -299,6 +300,24 @@ class ZnachtService:
     def brief_url(self, run_id: int) -> str:
         token = f"?token={self.settings.api_token}" if self.settings.api_token else ""
         return f"{self.settings.public_url}/brief/{run_id}{token}"
+
+    def recent_meals(self, *, before: Week, weeks: int = 4) -> tuple[str, ...]:
+        """Dinner titles from applied (or latest) runs of the previous weeks, newest first."""
+        titles: list[str] = []
+        seen_weeks: set[str] = set()
+        for row in self.repo.runs(self.household().id, limit=40):
+            if row["week"] >= before.start.isoformat() or row["week"] in seen_weeks:
+                continue
+            if row["status"] not in ("applied", "needs_approval", "reverted"):
+                continue
+            result = self.repo.get_run(int(row["id"]))
+            if result is None:
+                continue
+            seen_weeks.add(row["week"])
+            titles.extend(self._title(m.recipe_id.key) for m in result.plan.meals)
+            if len(seen_weeks) >= weeks:
+                break
+        return tuple(titles)
 
     def _title(self, key: str) -> str:
         recipe = self._recipes.get(key)

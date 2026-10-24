@@ -25,6 +25,7 @@ class PlanningContext(Frozen):
     candidates: tuple[Recipe, ...]
     violations: tuple[Violation, ...] = ()
     previous: MealPlan | None = None
+    recent_meals: tuple[str, ...] = ()  # titles cooked in recent weeks, newest first
 
 
 class PlanProposal(Frozen):

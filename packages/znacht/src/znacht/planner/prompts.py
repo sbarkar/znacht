@@ -26,7 +26,8 @@ Hard rules, which a deterministic checker enforces after you answer:
 
 Soft preferences: family-friendly first; ratings are a guide, not a filter; share
 ingredients across dinners; vary proteins and cuisines; put the longest recipe on the
-weekend. If a previous attempt had violations, fix exactly those.
+weekend. Do not repeat dinners from the recent weeks listed unless nothing else fits; a
+household wants a new week, not last week again. If a previous attempt had violations, fix exactly those.
 
 Answer only in the structured format you are given."""
 
@@ -86,6 +87,8 @@ def planning_payload(context: PlanningContext) -> str:
         },
         "candidates": [_candidate(r) for r in context.candidates],
     }
+    if context.recent_meals:
+        payload["recent_weeks_dinners_avoid_repeating"] = list(context.recent_meals)
     if context.violations:
         payload["previous_attempt_violations"] = [str(v) for v in context.violations]
     if context.previous is not None and context.previous.meals:

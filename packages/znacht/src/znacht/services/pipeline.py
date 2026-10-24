@@ -109,6 +109,7 @@ async def _plan(
     *,
     max_attempts: int,
     candidate_limit: int,
+    recent_meals: tuple[str, ...] = (),
 ) -> tuple[MealPlan, dict[str, Recipe], list[Violation], str]:
     pool: dict[str, Recipe] = {}
     per_query = max(5, candidate_limit // 6)
@@ -127,6 +128,7 @@ async def _plan(
             candidates=candidates,
             violations=tuple(violations),
             previous=plan if plan.meals else None,
+            recent_meals=recent_meals,
         )
         proposal = await planner.propose(context)
         plan, rationale = proposal.plan, proposal.rationale
@@ -372,6 +374,7 @@ async def run_week(
     slot: DeliverySlot | None = None,
     max_attempts: int = 3,
     candidate_limit: int = 50,
+    recent_meals: tuple[str, ...] = (),
 ) -> WeekResult:
     """Plan, check, explode, split, optimise, top up, diff. No writes."""
     notes: list[str] = []
@@ -382,6 +385,7 @@ async def run_week(
         planner,
         max_attempts=max_attempts,
         candidate_limit=candidate_limit,
+        recent_meals=recent_meals,
     )
     minimum = await store.minimum_order()
     empty = ShoppingPlan(slot=slot, minimum_order=minimum)
