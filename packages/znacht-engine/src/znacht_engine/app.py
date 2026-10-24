@@ -162,6 +162,13 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
             apply_patch(settings.household_path, body)
         except (ValueError, KeyError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if isinstance(body.get("pantry"), dict):
+            # an edit in the app is the newest word on these items: drop what /api/pantry
+            # (Home Assistant) overlaid on them, so a removal removes and an add shows
+            overlay = s.repo.get("pantry.overlay", {})
+            for name in body["pantry"]:
+                overlay.pop(str(name).strip().lower(), None)
+            s.repo.set("pantry.overlay", overlay)
         return s.household_view()
 
     @app.post("/api/pantry/photo", dependencies=[Depends(auth)])

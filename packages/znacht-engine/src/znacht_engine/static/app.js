@@ -90,7 +90,8 @@ const Badge = ({ g }) => html`<span class=${"badge g-" + g.coverage}>${g.coverag
 // ---------- the day sheet: one dinner, its alternatives, lock ------------------------------
 // Used by the Week timeline and the Review. `runId` is the run the swap acts on; a swap
 // always makes a new run (a proposal) and hands its id to onSwapped.
-function DaySheet({ date, title, runId, locked, children, onClose, onSwapped, onLocked, toast, badge }) {
+function DaySheet({ date, title, runId, locked, children, onClose, onSwapped, onLocked, toast, badge, busy }) {
+  // a swap re-plans; the engine refuses it while busy, so the buttons say so first
   const [alts, setAlts] = useState(null);
   const [working, setWorking] = useState(false);
   const closeBtn = useRef(null);
@@ -103,7 +104,9 @@ function DaySheet({ date, title, runId, locked, children, onClose, onSwapped, on
   useEffect(() => {
     setAlts(null);
     if (!runId) return;
-    api("GET", `/api/runs/${runId}/alternatives?day=${date}`).then(setAlts).catch((e) => { setAlts([]); toast(e.message); });
+    let live = true;
+    api("GET", `/api/runs/${runId}/alternatives?day=${date}`).then((a) => live && setAlts(a)).catch((e) => { if (live) { setAlts([]); toast(e.message); } });
+    return () => { live = false; };
   }, [runId, date]);
   useEffect(() => {
     const esc = (e) => { if (e.key === "Escape") onClose(); };
@@ -131,9 +134,9 @@ function DaySheet({ date, title, runId, locked, children, onClose, onSwapped, on
         ${badge ? html`<div>${badge}</div>` : null}
         ${children}
         ${runId ? (alts == null ? html`<p class="muted">Finding alternatives…</p>` : alts.length === 0 ? html`<p class="muted">Nothing else in this plan's pool fits here.</p>` : html`
-          <div class="row between"><h2>Swap for</h2><button type="button" class="link" onClick=${() => swap(alts[Math.floor(Math.random() * alts.length)].recipe_id)} disabled=${working}>Surprise me</button></div>
+          <div class="row between"><h2>Swap for</h2><button type="button" class="link" onClick=${() => swap(alts[Math.floor(Math.random() * alts.length)].recipe_id)} disabled=${working || !!busy}>Surprise me</button></div>
           ${alts.map((a, j) => html`
-            <button type="button" class=${"alt" + (j === 0 ? " best" : "")} onClick=${() => swap(a.recipe_id)} disabled=${working}>
+            <button type="button" class=${"alt" + (j === 0 ? " best" : "")} onClick=${() => swap(a.recipe_id)} disabled=${working || !!busy}>
               <span>${a.title}</span>
               <span class="meta">${a.minutes ? `${a.minutes} min · ` : ""}${a.tags.map((t) => t.replace("_", " ")).join(", ")}${a.keeps_rules ? "" : html` · <span class="warn-text">bends a weekly rule</span>`}</span>
             </button>`)}
@@ -243,7 +246,7 @@ function Week({ tl, status, reload, busy, toast }) {
       })}
       <p class="span muted small">Dinners come from Cookidoo My Week. Znacht only proposes; nothing changes there until you approve, and every approval shows what it removes first.</p>
       ${day ? html`
-        <${DaySheet} date=${day.date} title=${card && card.title} runId=${day.run_id} locked=${day.locked} toast=${toast}
+        <${DaySheet} date=${day.date} title=${card && card.title} runId=${day.run_id} locked=${day.locked} toast=${toast} busy=${busy}
           badge=${day.dinner && day.state !== "past" ? html`<${Badge} g=${day.groceries} />` : null}
           onClose=${() => setOpen(null)}
           onSwapped=${async () => { setOpen(null); toast("Swapped. It is a proposal until you approve it."); await reload(); }}
@@ -265,6 +268,7 @@ function useRunView(runId, tick) {
   useEffect(() => {
     if (!runId) { setView(null); return; }
     let live = true;
+    setErr(null);
     api("GET", `/api/runs/${runId}/view`).then((v) => { if (live) { setView(v); setErr(null); } }).catch((e) => live && setErr(e.message));
     return () => { live = false; };
   }, [runId, tick]);
@@ -286,7 +290,7 @@ function Review({ runId, tick, reload, busy, toast, runs }) {
   const [view, err] = useRunView(runId, tick);
   const [open, setOpen] = useState(null);
   const [working, setWorking] = useState(false);
-  if (err) return html`<div class="screen"><${Back} href="#week" label="Week" /><div class="empty span"><b>Can't open this plan</b><span>${err}</span></div></div>`;
+  if (err && !view) return html`<div class="screen"><${Back} href="#week" label="Week" /><div class="empty span"><b>Can't open this plan</b><span>${err}</span></div></div>`;
   if (!view) return html`<div class="screen"><${Back} href="#week" label="Week" /><div class="empty span">Loading the plan…</div></div>`;
 
   const newer = (runs || []).find((r) => r.week === view.week && r.id > view.run_id);
@@ -342,7 +346,7 @@ function Review({ runId, tick, reload, busy, toast, runs }) {
         <span><b>Groceries</b><br /><span class="muted small">${view.online.length} online · ${view.in_store.length + view.free_text.length} on the store run (${chf(m.in_store_total)})${Number(m.savings) > 0 ? ` · saves ${chf(m.savings)}` : ""}</span></span>
         <span aria-hidden="true" class="chev">›</span>
       </a>` : null}
-      ${view.swaps.length ? html`<div class="card span"><h2>Product swaps and flags</h2>${view.swaps.map((s) => html`<div class=${"swap " + s.kind}><b>${s.need}</b> → ${s.chosen}${s.delta ? html` <span class=${s.kind === "switch" ? "ok-text" : "warn-text"}>(${Number(s.delta) < 0 ? "−" : "+"}${Math.abs(Number(s.delta)).toFixed(2)})</span>` : null}<div class="meta">${s.reason}</div></div>`)}</div>` : null}
+      ${view.swaps.length ? html`<div class="card span"><h2>Product swaps and flags</h2>${view.swaps.map((s) => html`<div class=${"swap " + s.kind}><b>${s.need}</b> → ${s.chosen}${Number(s.delta) ? html` <span class=${s.kind === "switch" ? "ok-text" : "warn-text"}>(${Number(s.delta) < 0 ? "−" : "+"}${Math.abs(Number(s.delta)).toFixed(2)})</span>` : null}<div class="meta">${s.reason}</div></div>`)}</div>` : null}
       ${view.pantry_check.length ? html`<div class="card span"><h2>Check the pantry</h2><p class="small">The recipes assume you have these; nothing is bought.</p><div class="chips">${view.pantry_check.map((p) => html`<span class="chip quiet">${p}</span>`)}</div></div>` : null}
       <div class="actionbar">
         ${view.status === "needs_approval" ? html`<button type="button" class="btn primary" onClick=${approve} disabled=${working || !!busy}>${working ? "Sending…" : "Approve and send"}</button>` : null}
@@ -353,7 +357,7 @@ function Review({ runId, tick, reload, busy, toast, runs }) {
         ${view.status === "reverted" ? html`<span class="muted small">This plan was undone. Plan the gaps on Week to start again.</span>` : null}
       </div>
       ${d ? html`
-        <${DaySheet} date=${d.date} title=${d.title} runId=${view.run_id} locked=${d.locked} toast=${toast}
+        <${DaySheet} date=${d.date} title=${d.title} runId=${view.run_id} locked=${d.locked} toast=${toast} busy=${busy}
           onClose=${() => setOpen(null)}
           onSwapped=${(id) => { setOpen(null); toast("Swapped. Review the new plan."); location.replace(`#review/${id}`); reload(); }}
           onLocked=${reload}>
@@ -369,7 +373,7 @@ function Groceries({ runId, tick, reload, busy, toast, runs, today }) {
   const [text, setText] = useState("");
   const [view, err] = useRunView(runId, tick);
   if (!runId) return html`<div class="screen"><div class="empty span"><span class="brand">Groceries</span><span>No plan yet. Plan the gaps on the Week screen and the lists appear here.</span><a class="btn" href="#week">Go to Week</a></div></div>`;
-  if (err) return html`<div class="screen"><div class="empty span"><b>Can't open these groceries</b><span>${err}</span><a class="btn" href="#groceries">Back</a></div></div>`;
+  if (err && !view) return html`<div class="screen"><div class="empty span"><b>Can't open these groceries</b><span>${err}</span><a class="btn" href="#groceries">Back</a></div></div>`;
   if (!view) return html`<div class="screen"><div class="empty span">Loading the lists…</div></div>`;
 
   const applied = view.status === "applied";
@@ -402,10 +406,12 @@ function Groceries({ runId, tick, reload, busy, toast, runs, today }) {
     try { await api("POST", `/api/lists/in_store/items?run_id=${view.run_id}`, { summary: text.trim() }); setText(""); toast("Added to the store run."); setTab("store"); reload(); } catch (e) { toast(e.message); }
   };
 
-  const Line = ({ it, kind }) => {
+  // a render function, not a component: a component defined here would remount every line on
+  // each reload and drop keyboard focus from the tick you just pressed
+  const line = (it, kind) => {
     const uid = `${kind}:${it.product_id}`; const isDone = done.has(uid);
     return html`
-      <div class=${"line" + (isDone ? " done" : "")}>
+      <div key=${kind + it.product_id + it.needed_on} class=${"line" + (isDone ? " done" : "")}>
         ${applied ? html`<button type="button" class=${"check" + (isDone ? " on" : "")} aria-pressed=${isDone} aria-label=${`${it.name}: ${isDone ? "bought" : "not bought"}`} onClick=${() => tick_(kind, uid, isDone)}><${Icon} name="check" /></button>` : null}
         <div class="body">
           <span class="name">${it.packs > 1 ? html`<span class="muted">${it.packs}× </span>` : null}${it.name}</span>
@@ -438,8 +444,8 @@ function Groceries({ runId, tick, reload, busy, toast, runs, today }) {
         <button type="button" role="tab" aria-selected=${tab === "store"} class=${"tab" + (tab === "store" ? " on" : "")} onClick=${() => setTab("store")}>Store run · ${applied ? storeLeft : view.in_store.length + extras.length}</button>
       </div>
       <div class="list span">
-        ${tab === "online" ? [...view.online].sort(sinkDone("online")).map((it) => html`<${Line} key=${it.product_id + it.needed_on} it=${it} kind="online" />`) : html`
-          ${aisles.map((a) => html`<h2 class="aisle">${a.name}</h2>${[...a.lines].sort(sinkDone("in_store")).map((it) => html`<${Line} key=${it.product_id + it.needed_on} it=${it} kind="in_store" />`)}`)}
+        ${tab === "online" ? [...view.online].sort(sinkDone("online")).map((it) => line(it, "online")) : html`
+          ${aisles.map((a) => html`<h2 class="aisle">${a.name}</h2>${[...a.lines].sort(sinkDone("in_store")).map((it) => line(it, "in_store"))}`)}
           ${extras.length ? html`<h2 class="aisle">Also</h2>${extras.map((i) => html`
             <div class=${"line" + (i.done ? " done" : "")}>
               <button type="button" class=${"check" + (i.done ? " on" : "")} aria-pressed=${i.done} aria-label=${`${i.summary}: ${i.done ? "bought" : "not bought"}`} onClick=${() => tick_("in_store", i.uid, i.done)}><${Icon} name="check" /></button>
@@ -475,10 +481,19 @@ function Household({ household, patch, toast, planner }) {
   if (!household) return html`<div class="screen"><div class="empty span">Loading the household…</div></div>`;
   const colors = ["var(--accent)", "var(--ok)", "var(--lilac)", "#ffd166"];
   const tags = ["fish", "legumes", "red_meat", "poultry", "vegetarian"];
-  const setRule = (tag, n) => patch({ rules: { min_per_week: { [tag]: Math.max(0, n) } } });
-  const setMax = (tag, n) => patch({ rules: { max_per_week: { [tag]: n } } });
+  // every edit is built from the latest household when its turn comes (App queues them), so
+  // quick taps and a blur-then-click don't overwrite each other
+  const setRule = (tag, delta) => patch((h) => ({ rules: { min_per_week: { [tag]: Math.max(0, (h.rules.min_tags[tag] || 0) + delta) } } }));
+  const toggleMax = (tag) => patch((h) => ({ rules: { max_per_week: { [tag]: h.rules.max_tags[tag] != null ? 0 : Math.max(h.rules.min_tags[tag] || 0, 1) } } }));
   const members = household.members;
-  const updateMember = (i, changes) => patch({ members: members.map((m, j) => (j === i ? { ...m, ...changes } : m)) });
+  const updateMember = (i, change) => patch((h) => ({ members: h.members.map((m, j) => (j === i ? { ...m, ...change(m) } : m)) }));
+  const listEdit = (get, wrap) => ({
+    add: (x) => patch((h) => (get(h).includes(x) ? null : wrap([...get(h), x]))),
+    remove: (x) => patch((h) => wrap(get(h).filter((d) => d !== x))),
+  });
+  const banned = listEdit((h) => h.rules.banned_ingredients, (v) => ({ rules: { banned_ingredients: v } }));
+  const health = listEdit((h) => h.health.rules, (v) => ({ health: { rules: v } }));
+  const minutes = (delta) => patch((h) => ({ rules: { max_total_minutes_weekday: Math.max(15, (h.rules.max_total_minutes_weekday || 60) + delta) } }));
   const photo = async (file) => {
     if (!file) return;
     setBusyPhoto(true);
@@ -501,27 +516,27 @@ function Household({ household, patch, toast, planner }) {
       <p class="span muted small">Changes save as you make them, into your household file, and shape the next plan.</p>
       <div class="row span" style="align-items:stretch">
         ${members.map((m, i) => html`<div class="member"><div class="avatar" style=${`background:${colors[i % colors.length]}`}>${m.name.slice(0, 1).toUpperCase()}</div><b style="font-size:13px">${m.name}</b>
-          <select class="select" value=${m.age_group} onChange=${(e) => updateMember(i, { age_group: e.target.value })} aria-label=${m.name + " age group"}><option value="adult">adult</option><option value="child">child</option><option value="toddler">toddler</option></select>
+          <select class="select" value=${m.age_group} onChange=${(e) => { const v = e.target.value; updateMember(i, () => ({ age_group: v })); }} aria-label=${m.name + " age group"}><option value="adult">adult</option><option value="child">child</option><option value="toddler">toddler</option></select>
           <span class="muted" style="font-size:11px">${m.needs_mild_food ? "mild food" : "any spice"}</span></div>`)}
       </div>
       <div class="card">
         <h2>Dislikes and allergies</h2>
         ${members.map((m, i) => html`<div style="display:flex;flex-direction:column;gap:6px"><b style="font-size:13px">${m.name}</b>
-          <${Chips} items=${m.dislikes} placeholder="dislikes…" onAdd=${(x) => updateMember(i, { dislikes: [...m.dislikes, x] })} onRemove=${(x) => updateMember(i, { dislikes: m.dislikes.filter((d) => d !== x) })} />
-          <${Chips} items=${m.allergies} placeholder="allergies…" onAdd=${(x) => updateMember(i, { allergies: [...m.allergies, x] })} onRemove=${(x) => updateMember(i, { allergies: m.allergies.filter((d) => d !== x) })} /></div>`)}
+          <${Chips} items=${m.dislikes} placeholder="dislikes…" onAdd=${(x) => updateMember(i, (cur) => ({ dislikes: cur.dislikes.includes(x) ? cur.dislikes : [...cur.dislikes, x] }))} onRemove=${(x) => updateMember(i, (cur) => ({ dislikes: cur.dislikes.filter((d) => d !== x) }))} />
+          <${Chips} items=${m.allergies} placeholder="allergies…" onAdd=${(x) => updateMember(i, (cur) => ({ allergies: cur.allergies.includes(x) ? cur.allergies : [...cur.allergies, x] }))} onRemove=${(x) => updateMember(i, (cur) => ({ allergies: cur.allergies.filter((d) => d !== x) }))} /></div>`)}
       </div>
       <div class="card">
         <h2>Every week, at least</h2>
         ${tags.map((t) => { const n = household.rules.min_tags[t] || 0; const mx = household.rules.max_tags[t]; return html`<div class="stepper"><span style="flex:1 1 auto;font-weight:500">${t.replace("_", " ")}</span>
-          <button type="button" class="check" aria-label=${"Fewer " + t} onClick=${() => setRule(t, n - 1)} disabled=${n <= 0}>−</button><span class="n">${n}×</span><button type="button" class="check" aria-label=${"More " + t} onClick=${() => setRule(t, n + 1)}>+</button>
-          <button type="button" class=${"btn ghost maxbtn" + (mx != null ? " on" : "")} aria-pressed=${mx != null} onClick=${() => setMax(t, mx != null ? 0 : Math.max(n, 1))}>${mx != null ? `max ${mx}` : "no max"}</button></div>`; })}
+          <button type="button" class="check" aria-label=${"Fewer " + t} onClick=${() => setRule(t, -1)} disabled=${n <= 0}>−</button><span class="n">${n}×</span><button type="button" class="check" aria-label=${"More " + t} onClick=${() => setRule(t, 1)}>+</button>
+          <button type="button" class=${"btn ghost maxbtn" + (mx != null ? " on" : "")} aria-pressed=${mx != null} onClick=${() => toggleMax(t)}>${mx != null ? `max ${mx}` : "no max"}</button></div>`; })}
         <div style="display:flex;flex-direction:column;gap:6px"><span class="muted" style="font-size:12px">Never in a recipe</span>
-          <${Chips} items=${household.rules.banned_ingredients} placeholder="banned…" onAdd=${(x) => patch({ rules: { banned_ingredients: [...household.rules.banned_ingredients, x] } })} onRemove=${(x) => patch({ rules: { banned_ingredients: household.rules.banned_ingredients.filter((d) => d !== x) } })} /></div>
-        <div class="stepper"><span style="flex:1 1 auto;font-weight:500">Weekday cooking time</span><button type="button" class="check" aria-label="Shorter weekday limit" onClick=${() => patch({ rules: { max_total_minutes_weekday: Math.max(15, (household.rules.max_total_minutes_weekday || 60) - 15) } })}>−</button><span class="n" style="width:auto">${household.rules.max_total_minutes_weekday || "—"} min</span><button type="button" class="check" aria-label="Longer weekday limit" onClick=${() => patch({ rules: { max_total_minutes_weekday: (household.rules.max_total_minutes_weekday || 45) + 15 } })}>+</button></div>
+          <${Chips} items=${household.rules.banned_ingredients} placeholder="banned…" onAdd=${banned.add} onRemove=${banned.remove} /></div>
+        <div class="stepper"><span style="flex:1 1 auto;font-weight:500">Weekday cooking time</span><button type="button" class="check" aria-label="Shorter weekday limit" onClick=${() => minutes(-15)}>−</button><span class="n" style="width:auto">${household.rules.max_total_minutes_weekday || "—"} min</span><button type="button" class="check" aria-label="Longer weekday limit" onClick=${() => minutes(15)}>+</button></div>
       </div>
       <div class="card">
         <h2>Health</h2>
-        ${household.health.rules.length ? html`<${Chips} items=${household.health.rules} placeholder="add a rule in words…" onAdd=${(x) => patch({ health: { rules: [...household.health.rules, x] } })} onRemove=${(x) => patch({ health: { rules: household.health.rules.filter((r) => r !== x) } })} />` : html`<p class="muted" style="font-size:13px">No health rules yet. Type one in your own words, or read a lab report with <code>znacht extract lab</code> and confirm the draft.</p><${Chips} items=${[]} placeholder="e.g. limit added sugar" onAdd=${(x) => patch({ health: { rules: [x] } })} onRemove=${() => {}} />`}
+        ${household.health.rules.length ? html`<${Chips} items=${household.health.rules} placeholder="add a rule in words…" onAdd=${health.add} onRemove=${health.remove} />` : html`<p class="muted" style="font-size:13px">No health rules yet. Type one in your own words, or read a lab report with <code>znacht extract lab</code> and confirm the draft.</p><${Chips} items=${[]} placeholder="e.g. limit added sugar" onAdd=${health.add} onRemove=${health.remove} />`}
       </div>
       <div class="card">
         <div class="top"><h2>Pantry</h2>
@@ -603,7 +618,18 @@ function App() {
     document.addEventListener("visibilitychange", f); return () => document.removeEventListener("visibilitychange", f);
   }, [reload]);
 
-  const patchHousehold = useCallback(async (p) => { try { setHousehold(await api("PATCH", "/api/household", p)); } catch (e) { toast(e.message); } }, []);
+  // household edits run one at a time; each is a patch or a function of the latest household
+  const latest = useRef(null);
+  const queue = useRef(Promise.resolve());
+  useEffect(() => { latest.current = household; }, [household]);
+  const patchHousehold = useCallback((make) => {
+    queue.current = queue.current.then(async () => {
+      const p = typeof make === "function" ? make(latest.current) : make;
+      if (!p) return;
+      try { const h = await api("PATCH", "/api/household", p); latest.current = h; setHousehold(h); } catch (e) { toast(e.message); }
+    });
+    return queue.current;
+  }, []);
 
   let body;
   if (error && !tl) body = html`<div class="screen"><div class="empty span"><b>Can't reach the engine</b><span>${error}</span><button type="button" class="btn" onClick=${reload}>Try again</button></div></div>`;

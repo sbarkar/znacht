@@ -206,6 +206,7 @@ class ZnachtService:
                     "dislikes": sorted(m.dislikes),
                     "allergies": sorted(m.allergies),
                     "needs_mild_food": m.needs_mild_food,
+                    "mild_food": m.mild_food,  # as written; edits carry it back unchanged
                 }
                 for m in h.members
             ],

@@ -605,3 +605,29 @@ async def test_plan_week_takes_any_day_of_the_week(
     _, result = service.repo.latest_run(service.household().id) or (None, None)
     assert result is not None and result.week.start == GOLDEN_WEEK_START
     assert service.repo.get("last_error") is None
+
+
+async def test_app_edits_keep_spice_settings_and_remove_overlaid_pantry_items(
+    client: httpx.AsyncClient, settings, tmp_path
+):
+    """The app sends members back as it got them; a written mild_food must survive that, and
+    removing a pantry chip must remove it even when Home Assistant put it there."""
+    import shutil
+
+    target = tmp_path / "household.yaml"
+    shutil.copy(settings.household_path, target)
+    object.__setattr__(settings, "household_path", target)
+    members = (await client.get("/api/household")).json()["members"]
+    members[0]["mild_food"] = True
+    r = await client.patch("/api/household", json={"members": members})
+    members = r.json()["members"]
+    assert members[0]["mild_food"] is True
+    members[1]["dislikes"] = ["capers"]  # an unrelated edit, round-tripping the list
+    r = await client.patch("/api/household", json={"members": members})
+    assert r.json()["members"][0]["mild_food"] is True
+
+    await client.post("/api/pantry", json={"items": {"tahini": "250 g"}})
+    names = [p["name"] for p in (await client.get("/api/household")).json()["pantry"]]
+    assert "tahini" in names
+    r = await client.patch("/api/household", json={"pantry": {"tahini": "0"}})
+    assert "tahini" not in [p["name"] for p in r.json()["pantry"]]
