@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel
 
@@ -74,7 +74,9 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
         if not settings.api_token:
             return
         header = request.headers.get("authorization", "")
-        presented = header.removeprefix("Bearer ").strip() or token
+        presented = (
+            header.removeprefix("Bearer ").strip() or token or request.cookies.get("znacht_token")
+        )
         if presented != settings.api_token:
             raise HTTPException(status_code=401, detail="bad or missing token")
 
@@ -159,21 +161,36 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
     async def runs(s: ZnachtService = Depends(svc)) -> list[dict[str, Any]]:
         return s.repo.runs(s.household().id)
 
-    @app.get("/brief/{run_id}", response_class=HTMLResponse, dependencies=[Depends(auth)])
-    async def brief(run_id: int, token: str | None = None, s: ZnachtService = Depends(svc)) -> str:
+    @app.get("/brief/{run_id}", dependencies=[Depends(auth)])
+    async def brief(
+        run_id: int, token: str | None = None, s: ZnachtService = Depends(svc)
+    ) -> Response:
+        if token:
+            # move the token out of the URL (and out of access logs) into a cookie
+            redirect = RedirectResponse(url=f"/brief/{run_id}", status_code=303)
+            redirect.set_cookie(
+                "znacht_token", token, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 30
+            )
+            return redirect
         try:
             b = s.brief(run_id)
         except LookupError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
-        return _TEMPLATES.get_template("brief.html").render(b=b, token=token)
+        return HTMLResponse(_TEMPLATES.get_template("brief.html").render(b=b, token=None))
 
-    @app.get("/brief", response_class=HTMLResponse, dependencies=[Depends(auth)])
-    async def latest_brief(token: str | None = None, s: ZnachtService = Depends(svc)) -> str:
+    @app.get("/brief", dependencies=[Depends(auth)])
+    async def latest_brief(token: str | None = None, s: ZnachtService = Depends(svc)) -> Response:
+        if token:
+            redirect = RedirectResponse(url="/brief", status_code=303)
+            redirect.set_cookie(
+                "znacht_token", token, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 30
+            )
+            return redirect
         try:
             b = s.brief(None)
         except LookupError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
-        return _TEMPLATES.get_template("brief.html").render(b=b, token=token)
+        return HTMLResponse(_TEMPLATES.get_template("brief.html").render(b=b, token=None))
 
     @app.post("/brief/{run_id}/apply", dependencies=[Depends(auth)])
     async def brief_apply(

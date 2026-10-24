@@ -89,6 +89,7 @@ class Brief:
     violations: list[str]
     lifetime_savings: Money
     checkout_url: str | None
+    plan_removes: list[str]
 
 
 def _split_rationale(rationale: str) -> tuple[str, str]:
@@ -194,6 +195,10 @@ def build_brief(
         violations=[str(v) for v in result.violations],
         lifetime_savings=lifetime_savings,
         checkout_url=checkout_url,
+        plan_removes=[
+            f"{m.date:%a %d.%m}: {recipes[m.recipe_id.key].title if m.recipe_id.key in recipes else m.recipe_id.external_id}"
+            for m in (result.plan_diff.remove if result.plan_diff else ())
+        ],
     )
 
 

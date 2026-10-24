@@ -56,7 +56,9 @@ async def test_deliverability_uses_product_flag_then_learned_feedback(
     assert store.learned_availability() == {"100400001": "INSUFFICIENT_STOCK"}
 
 
-async def test_apply_is_one_batched_put_with_zero_for_removals(store: MigrosGroceryStore, mock):
+async def test_apply_sends_products_then_free_text_with_zero_for_removals(
+    store: MigrosGroceryStore, mock
+):
     lid = "97185194"
     first = ShoppingList(
         id=lid,

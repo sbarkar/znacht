@@ -215,16 +215,18 @@ class MigrosGroceryStore:
         return diff_lists(await self.read_list(list_id), target)
 
     async def apply_list(self, list_id: str, diff: ListDiff) -> ApplyResult:
-        """One batched PUT of target quantities; quantity 0 removes. The only write."""
-        items: list[dict[str, Any]] = []
+        """Products in one batched PUT of target quantities (0 removes); free-text lines in a
+        second PUT so an unsupported free-text type never blocks the products. The only write."""
+        products: list[dict[str, Any]] = []
+        texts: list[dict[str, Any]] = []
         for change in diff.lines:
             quantity = 0 if change.op == "remove" else change.line.quantity
             if change.line.product_id is not None:
-                items.append(
+                products.append(
                     {"id": str(change.line.product_id), "quantity": quantity, "type": "PRODUCT"}
                 )
-            else:
-                items.append(
+            elif change.line.text:
+                texts.append(
                     {
                         "id": change.line.text,
                         "name": change.line.text,
@@ -232,19 +234,39 @@ class MigrosGroceryStore:
                         "type": FREE_TEXT_TYPE,
                     }
                 )
-        if not items:
+        if not products and not texts:
             return ApplyResult(ok=True, message="nothing to change", applied=0)
-        r = await self._s.api(
-            "PUT",
-            "/shopping-list/public/v3/items",
-            json={"shoppingListId": int(list_id), "items": items},
-        )
-        if r.status_code != 200:
-            return ApplyResult(
-                ok=False, message=f"Migros rejected the list update: {r.status_code} {r.text[:120]}"
+        applied = 0
+        notes: list[str] = []
+        if products:
+            r = await self._s.api(
+                "PUT",
+                "/shopping-list/public/v3/items",
+                json={"shoppingListId": int(list_id), "items": products},
             )
-        self._learn(r.json())
-        return ApplyResult(ok=True, message=f"{len(items)} changes", applied=len(items))
+            if r.status_code != 200:
+                return ApplyResult(
+                    ok=False,
+                    message=f"Migros rejected the product update: {r.status_code} {r.text[:160]}",
+                )
+            self._learn(r.json())
+            applied += len(products)
+            notes.append(f"{len(products)} product changes")
+        if texts:
+            r = await self._s.api(
+                "PUT",
+                "/shopping-list/public/v3/items",
+                json={"shoppingListId": int(list_id), "items": texts},
+            )
+            if r.status_code == 200:
+                self._learn(r.json())
+                applied += len(texts)
+                notes.append(f"{len(texts)} free-text changes")
+            else:
+                notes.append(
+                    f"{len(texts)} free-text lines not written (Migros: {r.status_code} {r.text[:100]}); add them in the app"
+                )
+        return ApplyResult(ok=True, message="; ".join(notes), applied=applied)
 
     def learned_availability(self) -> dict[str, str]:
         return dict(self._learned)

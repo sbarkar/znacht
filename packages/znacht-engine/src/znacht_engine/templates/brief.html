@@ -68,6 +68,11 @@
   {% endfor %}
   </div>
 
+  {% if b.plan_removes and b.status == 'needs_approval' %}
+  <h2>Already in My Week, will be removed</h2>
+  <ul class="clean">{% for r in b.plan_removes %}<li class="warn">{{ r }}</li>{% endfor %}</ul>
+  {% endif %}
+
   <h2>Money</h2>
   <div class="totals">
     <div class="tot"><span class="muted">Online basket</span><b>{{ b.online_total }}</b><span class="muted">{{ b.online_subtotal }} + {{ b.deposit }} deposit</span></div>
