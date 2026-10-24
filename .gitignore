@@ -1,0 +1,27 @@
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# secrets and local state
+.env
+*.env
+secrets.yaml
+session.json
+*.token
+households/*.local.yaml
+
+# editors
+.idea/
+.vscode/
+*.swp
+.DS_Store
