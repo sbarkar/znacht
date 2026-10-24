@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel
@@ -253,11 +253,15 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
         asyncio.get_running_loop().create_task(run())
         return {"accepted": True, "status": "planning"}
 
+    stamp = str(int(max(p.stat().st_mtime for p in _STATIC.rglob("*") if p.is_file())))
+
     @app.get("/app")
     async def app_entry(token: str | None = None) -> Response:
         # the token travels once in the URL (from the HA sidebar link); the app keeps it in
-        # local storage and sends it as a bearer header from then on
-        return FileResponse(_STATIC / "index.html")
+        # local storage and sends it as a bearer header from then on. The version stamp in the
+        # asset links busts browser caches whenever a static file changes.
+        html = (_STATIC / "index.html").read_text(encoding="utf-8").replace("__V__", stamp)
+        return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
     @app.post("/api/runs/{run_id}/revert", dependencies=[Depends(auth)])
     async def revert(run_id: int, s: ZnachtService = Depends(svc)) -> dict[str, Any]:

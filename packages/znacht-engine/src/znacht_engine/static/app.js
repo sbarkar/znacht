@@ -1,5 +1,5 @@
 // Znacht app: one page, four screens, no build step. Preact + htm, vendored.
-import { html, render, useState, useEffect, useCallback } from "/app/static/vendor/htm-preact-standalone.module.js";
+import { html, render, useState, useEffect, useCallback } from "/app/static/vendor/htm-preact-standalone.module.js?v=1";
 
 // ---------- token and API --------------------------------------------------------------
 const params = new URLSearchParams(location.search);
