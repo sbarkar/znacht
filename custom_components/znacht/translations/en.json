@@ -31,6 +31,9 @@
       "plan_status": {
         "name": "Plan status"
       },
+      "unplanned_days": {
+        "name": "Unplanned days"
+      },
       "basket_total": {
         "name": "Online basket total"
       },

@@ -33,14 +33,30 @@ class ZnachtCalendar(CoordinatorEntity[ZnachtCoordinator], CalendarEntity):
 
     def _events(self) -> list[CalendarEvent]:
         out: list[CalendarEvent] = []
+        # the engine's calendar is My Week (hand-made dinners included, with their source) plus
+        # proposals on days that have nothing yet; proposals are marked so nobody cooks them
         for m in self.coordinator.data.get("calendar", []):
             day = date.fromisoformat(m["date"])
+            proposed = bool(m.get("proposed"))
+            source = m.get("source")
+            origin = (
+                "proposed by Znacht run " + str(source)
+                if proposed
+                else "yours in My Week"
+                if source == "manual"
+                else f"Znacht run {source}"
+                if source is not None
+                else None
+            )
+            description = " · ".join(
+                part for part in (m.get("note"), origin, m.get("recipe_id")) if part
+            )
             out.append(
                 CalendarEvent(
                     start=day,
                     end=day + timedelta(days=1),
-                    summary=m["summary"],
-                    description=m.get("note") or m.get("recipe_id"),
+                    summary=("Proposed: " if proposed else "") + m["summary"],
+                    description=description or None,
                     location=m.get("url"),
                     uid=f"{m['date']}-{m['recipe_id']}",
                 )

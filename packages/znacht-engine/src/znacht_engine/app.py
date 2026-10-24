@@ -20,6 +20,7 @@ from znacht_engine.config import EngineSettings
 from znacht_engine.ha import HaNotifier
 from znacht_engine.repo import Repo
 from znacht_engine.service import ZnachtService
+from znacht_engine.timeline import DEFAULT_DAYS, MAX_DAYS
 from znacht_engine.wiring import build_adapters
 
 _TEMPLATES = Environment(
@@ -30,6 +31,7 @@ _TEMPLATES = Environment(
 
 class PlanRequest(BaseModel):
     week: date | None = None
+    locked_dates: list[date] | None = None  # "Plan the gaps": keep these My Week dinners
 
 
 class PantryRequest(BaseModel):
@@ -114,10 +116,11 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
         if s.busy:
             raise HTTPException(status_code=409, detail=f"engine is {s.busy}")
         week = body.week if body else None
+        locked = tuple(body.locked_dates) if body and body.locked_dates is not None else None
 
         async def run() -> None:
             try:
-                await s.plan_week(week)
+                await s.plan_week(week, locked_dates=locked)
             except Exception as exc:
                 s.repo.set("last_error", str(exc))
 
@@ -304,7 +307,16 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
 
     @app.get("/api/calendar", dependencies=[Depends(auth)])
     async def calendar(s: ZnachtService = Depends(svc)) -> list[dict[str, Any]]:
-        return s.calendar()
+        return await s.calendar()
+
+    @app.get("/api/timeline", dependencies=[Depends(auth)])
+    async def timeline(
+        from_: date | None = Query(default=None, alias="from"),
+        days: int = Query(default=DEFAULT_DAYS, ge=1, le=MAX_DAYS),
+        s: ZnachtService = Depends(svc),
+    ) -> dict[str, Any]:
+        """One record per day: My Week is the truth, runs are proposals (ADR-0011)."""
+        return await s.timeline(from_, days)
 
     @app.get("/api/runs", dependencies=[Depends(auth)])
     async def runs(s: ZnachtService = Depends(svc)) -> list[dict[str, Any]]:

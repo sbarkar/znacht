@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import logging
+import time
 from datetime import date, timedelta
 from typing import Any
 
@@ -25,7 +27,20 @@ from znacht.services.pipeline import (
 from znacht_engine.brief import Brief, build_brief, lifetime, price_rows
 from znacht_engine.config import EngineSettings
 from znacht_engine.repo import Repo
+from znacht_engine.timeline import (
+    DEFAULT_DAYS,
+    MAX_DAYS,
+    WEEKDAYS,
+    coverage,
+    dinner_on,
+    summary,
+    week_label,
+)
 from znacht_engine.wiring import Adapters
+
+log = logging.getLogger(__name__)
+
+LIVE_READ_SECONDS = 180  # My Week and the store lists are re-read at most this often
 
 
 def next_monday(today: date | None = None) -> date:
@@ -48,6 +63,8 @@ class ZnachtService:
         self._lock = asyncio.Lock()
         self._busy: str | None = None
         self._recipes: dict[str, Recipe] = {}
+        self._my_week_cache: dict[date, tuple[float, MealPlan]] = {}
+        self._lists_cache: tuple[float, dict[str, frozenset[str]]] | None = None
 
     # -- household with the engine's overlays ------------------------------------------------
     def household(self) -> Household:
@@ -103,9 +120,7 @@ class ZnachtService:
                     if locked_dates is not None
                     else (base.locked_dates if base else ())
                 )
-                locked_meals = tuple(
-                    m for m in (base.plan.meals if base else ()) if m.date in locks
-                )
+                locked_meals = await self._locked_meals(week, locks, base)
                 result = await run_week(
                     household,
                     week,
@@ -136,6 +151,7 @@ class ZnachtService:
                     result, store=self.adapters.store, sink=self.adapters.sink, approved=True
                 )
                 self.repo.update_run(rid, applied)
+                self.forget_live_reads()
                 if applied.new_preferred:
                     overlay = self.repo.get("preferred.overlay", {})
                     overlay.update(applied.new_preferred)
@@ -395,6 +411,7 @@ class ZnachtService:
                     result, store=self.adapters.store, sink=self.adapters.sink, approved=True
                 )
                 self.repo.update_run(rid, reverted)
+                self.forget_live_reads()
                 return rid, reverted
             finally:
                 self._busy = None
@@ -519,27 +536,264 @@ class ZnachtService:
             extra.append(text)
         self.repo.set(f"todo.extra.{rid}", extra)
 
-    def calendar(self, run_id: int | None = None) -> list[dict[str, Any]]:
+    async def calendar(self) -> list[dict[str, Any]]:
+        """Dinners for the HA calendar: what is in My Week (source run or manual) over the
+        timeline horizon, plus proposals on days that have nothing yet, flagged as such. The
+        latest run's week is always included so a proposal for a far week shows up."""
+        today = date.today()
+        start, end = today, today + timedelta(days=DEFAULT_DAYS - 1)
+        latest = self.repo.latest_run(self.household().id)
+        if latest is not None:
+            start = min(start, latest[1].week.start)
+            end = max(end, latest[1].week.end)
+        tl = await self.timeline(start, (end - start).days + 1)
+        out: list[dict[str, Any]] = []
+        for day in tl["days"]:
+            card = day["dinner"] or day["proposal"]
+            if card is None:
+                continue
+            out.append(
+                {
+                    "date": day["date"],
+                    "slot": "dinner",
+                    "summary": card["title"],
+                    "recipe_id": card["recipe_id"],
+                    "servings": card["servings"],
+                    "url": card["url"],
+                    "note": card["note"],
+                    "source": card["source"],
+                    "proposed": day["dinner"] is None,
+                }
+            )
+        return out
+
+    # -- the timeline (ADR-0011) --
+    def forget_live_reads(self) -> None:
+        """Drop cached My Week and list reads; called after every write."""
+        self._my_week_cache.clear()
+        self._lists_cache = None
+
+    async def my_week(self, week: Week) -> MealPlan:
+        """What is really in the sink for ``week``, re-read at most every few minutes."""
+        hit = self._my_week_cache.get(week.start)
+        if hit is not None and time.monotonic() - hit[0] < LIVE_READ_SECONDS:
+            return hit[1]
+        plan = await self.adapters.sink.read_week(week)
+        self._my_week_cache[week.start] = (time.monotonic(), plan)
+        return plan
+
+    async def _locked_meals(
+        self, week: Week, locks: tuple[date, ...], base: WeekResult | None
+    ) -> tuple[Meal, ...]:
+        """Meals to keep on the locked dates: My Week's dinner wins, the base run's fills in."""
+        if not locks:
+            return ()
+        in_sink: dict[date, Meal] = {}
         try:
-            _, result = self._run(run_id)
-        except LookupError:
-            return []
-        return [
-            {
-                "date": m.date.isoformat(),
-                "slot": str(m.slot),
-                "summary": self._recipes[m.recipe_id.key].title
-                if m.recipe_id.key in self._recipes
-                else m.recipe_id.external_id,
-                "recipe_id": m.recipe_id.key,
-                "servings": m.servings,
-                "url": self._recipes[m.recipe_id.key].url
-                if m.recipe_id.key in self._recipes
-                else None,
-                "note": m.note,
-            }
-            for m in result.plan.meals
+            current = await self.my_week(week)
+        except Exception as exc:  # the sink is live; a read failure must not block planning
+            log.warning("could not read My Week for %s: %s", week, exc)
+        else:
+            for m in current.dinners():
+                in_sink.setdefault(m.date, m)
+        from_base = {m.date: m for m in (base.plan.dinners() if base else [])}
+        return tuple(
+            in_sink.get(d) or from_base[d] for d in sorted(locks) if d in in_sink or d in from_base
+        )
+
+    async def _list_members(self) -> dict[str, frozenset[str]]:
+        """Product IDs currently on the household's two store lists (cached)."""
+        if self._lists_cache and time.monotonic() - self._lists_cache[0] < LIVE_READ_SECONDS:
+            return self._lists_cache[1]
+        out: dict[str, frozenset[str]] = {}
+        household = self.household()
+        if household.store_lists:
+            for kind, list_id in (
+                ("online", household.store_lists.online),
+                ("in_store", household.store_lists.in_store),
+            ):
+                try:
+                    lst = await self.adapters.store.read_list(list_id)
+                except Exception as exc:
+                    log.warning("could not read list %s: %s", list_id, exc)
+                    continue
+                out[kind] = frozenset(
+                    str(line.product_id) for line in lst.lines if line.product_id is not None
+                )
+        self._lists_cache = (time.monotonic(), out)
+        return out
+
+    def _runs_for_week(
+        self, week: Week
+    ) -> tuple[tuple[int, WeekResult] | None, tuple[int, WeekResult] | None]:
+        """(latest applied run, run awaiting approval) for ``week``. The awaiting run is the
+        newest run of the week when it still needs approval or input; an applied or reverted
+        newest run means nothing is pending."""
+        rows = [
+            r
+            for r in self.repo.runs(self.household().id, limit=200)
+            if r["week"] == week.start.isoformat()
         ]
+        applied = next((r for r in rows if r["status"] == str(PlanStatus.APPLIED)), None)
+        awaiting = (
+            rows[0]
+            if rows and rows[0]["status"] in (PlanStatus.NEEDS_APPROVAL, PlanStatus.NEEDS_INPUT)
+            else None
+        )
+
+        def load(row: dict[str, Any] | None) -> tuple[int, WeekResult] | None:
+            if row is None:
+                return None
+            result = self.repo.get_run(int(row["id"]))
+            return (int(row["id"]), result) if result is not None else None
+
+        return load(applied), load(awaiting)
+
+    async def _recipe(self, rid: RecipeId) -> Recipe | None:
+        if rid.key in self._recipes:
+            return self._recipes[rid.key]
+        try:
+            recipe = await self.adapters.recipes.get(rid)
+        except Exception:
+            return None
+        self._recipes[rid.key] = recipe
+        return recipe
+
+    async def _card(self, meal: Meal, source: int | str) -> dict[str, Any]:
+        recipe = await self._recipe(meal.recipe_id)
+        return {
+            "title": recipe.title if recipe else meal.recipe_id.external_id,
+            "recipe_id": meal.recipe_id.key,
+            "source": source,
+            "servings": meal.servings,
+            "minutes": recipe.total_minutes if recipe else None,
+            "tags": sorted(recipe.tags) if recipe else [],
+            "url": recipe.url if recipe else None,
+            "note": meal.note,
+        }
+
+    async def timeline(self, from_: date | None = None, days: int = DEFAULT_DAYS) -> dict[str, Any]:
+        """One record per day from ``from_`` (today) for ``days``: what My Week says, what a
+        run proposes, and whether the food is arriving, listed or missing (ADR-0011)."""
+        today = date.today()
+        start = from_ or today
+        days = max(1, min(days, MAX_DAYS))
+        dates = [start + timedelta(days=i) for i in range(days)]
+        members = await self._list_members()
+        weeks: dict[date, dict[str, Any]] = {}
+        for ws in sorted({Week.containing(d).start for d in dates}):
+            week = Week(start=ws)
+            applied, awaiting = self._runs_for_week(week)
+            ok = True
+            try:
+                mine = await self.my_week(week)
+            except Exception as exc:
+                log.warning("could not read My Week for %s: %s", week, exc)
+                ok = False
+                mine = applied[1].plan if applied else MealPlan(week=week)
+            weeks[ws] = {
+                "week": week,
+                "applied": applied,
+                "awaiting": awaiting,
+                "mine": mine,
+                "ok": ok,
+            }
+
+        known_before = len(self._recipes)
+        records: list[dict[str, Any]] = []
+        for d in dates:
+            w = weeks[Week.containing(d).start]
+            applied, awaiting, mine = w["applied"], w["awaiting"], w["mine"]
+            in_sink = dinner_on(mine.meals, d)
+            in_applied = dinner_on(applied[1].plan.meals, d) if applied else None
+            in_awaiting = dinner_on(awaiting[1].plan.meals, d) if awaiting else None
+            dinner = proposal = None
+            # the applied run's lists cover a dinner its plan contains; the dinner is *from*
+            # the run only when the run added it to My Week (a locked or pre-existing dinner
+            # stays yours)
+            from_applied = (
+                applied is not None
+                and in_sink is not None
+                and in_applied is not None
+                and in_applied.recipe_id == in_sink.recipe_id
+            )
+            if in_sink is not None:
+                added = applied is not None and (
+                    applied[1].plan_diff is None or in_sink in applied[1].plan_diff.add
+                )
+                dinner = await self._card(
+                    in_sink, applied[0] if from_applied and added and applied else "manual"
+                )
+            if (
+                in_awaiting is not None
+                and awaiting is not None
+                and (in_sink is None or in_awaiting.recipe_id != in_sink.recipe_id)
+            ):
+                proposal = await self._card(in_awaiting, awaiting[0])
+            if d < today:
+                state = "past"
+            elif dinner is not None:
+                state = "planned"
+            elif proposal is not None:
+                state = "proposed"
+            else:
+                state = "empty"
+            # the run the swap sheet acts on: the applied run that put the dinner there, else
+            # the run awaiting approval (a swap on it is another proposal), else nothing
+            act = applied if from_applied and applied else awaiting if proposal else None
+            records.append(
+                {
+                    "date": d.isoformat(),
+                    "weekday": WEEKDAYS[d.weekday()],
+                    "week": w["week"].start.isoformat(),
+                    "state": state,
+                    "dinner": dinner,
+                    "proposal": proposal,
+                    "groceries": coverage(
+                        d,
+                        applied=applied[1] if applied else None,
+                        from_applied=from_applied,
+                        proposal=awaiting[1] if awaiting and proposal else None,
+                        list_members=members,
+                    ),
+                    "run_id": act[0] if act else None,
+                    "locked": bool(act and d in act[1].locked_dates),
+                    "my_week_ok": w["ok"],
+                }
+            )
+        if len(self._recipes) != known_before:
+            self.repo.set(
+                "recipes.cache", {k: v.model_dump(mode="json") for k, v in self._recipes.items()}
+            )
+
+        week_records: list[dict[str, Any]] = []
+        for ws, w in weeks.items():
+            mine_days = [r for r in records if r["week"] == ws.isoformat()]
+            awaiting_id = w["awaiting"][0] if w["awaiting"] else None
+            week_records.append(
+                {
+                    "week": ws.isoformat(),
+                    "label": week_label(w["week"], today),
+                    "applied_run_id": w["applied"][0] if w["applied"] else None,
+                    "awaiting_run_id": awaiting_id,
+                    "awaiting_status": str(w["awaiting"][1].status) if w["awaiting"] else None,
+                    "my_week_ok": w["ok"],
+                    # what "Plan the gaps" locks: every date of the week with a dinner in My Week
+                    "locked_dates": sorted({m.date.isoformat() for m in w["mine"].dinners()}),
+                    "summary": summary(mine_days, awaiting_run_id=awaiting_id),
+                }
+            )
+        return {
+            "from": start.isoformat(),
+            "horizon": days,
+            "today": today.isoformat(),
+            "weeks": week_records,
+            "days": records,
+            "unplanned_dates": [r["date"] for r in records if r["state"] in ("empty", "proposed")],
+            "empty_dates": [r["date"] for r in records if r["state"] == "empty"],
+            "proposed_dates": [r["date"] for r in records if r["state"] == "proposed"],
+            "busy": self._busy,
+        }
 
     def brief(self, run_id: int | None = None) -> Brief:
         rid, result = self._run(run_id)

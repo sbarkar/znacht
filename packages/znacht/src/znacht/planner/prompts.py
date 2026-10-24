@@ -23,6 +23,8 @@ Hard rules, which a deterministic checker enforces after you answer:
 - Weekday dinners must fit the weekday time limit when one is given.
 - Do not repeat a recipe within the week.
 - Every dinner gets the household's servings.
+- Dinners listed as locked are already decided: keep them exactly as given on their dates,
+  count them towards the weekly rules, and plan only the other days.
 
 Soft preferences: family-friendly first; ratings are a guide, not a filter; share
 ingredients across dinners; vary proteins and cuisines; put the longest recipe on the
@@ -90,6 +92,11 @@ def planning_payload(context: PlanningContext) -> str:
     }
     if context.recent_meals:
         payload["recent_weeks_dinners_avoid_repeating"] = list(context.recent_meals)
+    if context.locked_meals:
+        payload["locked_dinners_keep_as_is"] = [
+            {"date": m.date.isoformat(), "recipe_id": m.recipe_id.key, "servings": m.servings}
+            for m in context.locked_meals
+        ]
     if context.violations:
         payload["previous_attempt_violations"] = [str(v) for v in context.violations]
     if context.previous is not None and context.previous.meals:

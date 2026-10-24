@@ -43,6 +43,9 @@ class ZnachtApi:
     async def calendar(self) -> list[dict[str, Any]]:
         return await self._call("GET", "/api/calendar")
 
+    async def timeline(self, days: int = 14) -> dict[str, Any]:
+        return await self._call("GET", "/api/timeline", params={"days": days})
+
     async def plan_week(self, week: str | None = None) -> Any:
         return await self._call("POST", "/api/plan_week", json={"week": week} if week else None)
 

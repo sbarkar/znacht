@@ -139,6 +139,14 @@ async def _plan(
             candidates,
         )
     known = {r.id.key: r for r in candidates}
+    for meal in locked_meals:  # the planner needs the locked recipes to count their tags
+        if meal.recipe_id.key not in known:
+            known[meal.recipe_id.key] = await recipes.get(meal.recipe_id)
+    visible = candidates + tuple(
+        known[m.recipe_id.key]
+        for m in locked_meals
+        if m.recipe_id.key not in {r.id.key for r in candidates}
+    )
     violations: list[Violation] = []
     plan = MealPlan(week=week)
     rationale = ""
@@ -146,10 +154,11 @@ async def _plan(
         context = PlanningContext(
             household=household,
             week=week,
-            candidates=candidates,
+            candidates=visible,
             violations=tuple(violations),
             previous=plan if plan.meals else None,
             recent_meals=recent_meals,
+            locked_meals=locked_meals,
         )
         proposal = await planner.propose(context)
         plan, rationale = proposal.plan, proposal.rationale

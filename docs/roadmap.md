@@ -18,7 +18,7 @@ what follows is what makes Znacht something the household actually lives with.
 ## How to work an item
 
 1. Say which item you take and write a one-line note under it ("in progress, session X, date").
-2. Non-obvious decisions get an ADR in `docs/decisions/` (next number: 0011).
+2. Non-obvious decisions get an ADR in `docs/decisions/` (next number: 0012).
 3. Before any commit: `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest -q`
    and `make test-ha` when `custom_components/` changed.
 4. Deploy is Sergej's command (needs his ssh to the Proxmox host):
@@ -39,7 +39,11 @@ what follows is what makes Znacht something the household actually lives with.
 
 ## P0 · A week you can trust
 
-### 1. The Week screen becomes a timeline  ← start here
+### 1. The Week screen becomes a timeline  ✅ done 2026-10-24 (ADR-0011)
+
+**Done 2026-10-24.** `GET /api/timeline`, the Timeline screen, `sensor.znacht_unplanned_days`, manual
+dinners in the calendar, `locked_dates` on `plan_week` with the planner told about locks. Coverage is
+the first heuristic from ADR-0011; item 3 upgrades "arriving" to a fact.
 
 **Problem.** The Week screen shows the *latest run's* week. It cannot answer the three questions that
 matter at the fridge: what is actually planned for the coming days, which days have nothing yet, and do
@@ -84,7 +88,7 @@ days, which days are blank, and whether the food for each day is ordered, listed
 
 **Size** L: engine half a day, app one day, HA sensor an hour. **Depends on** nothing; item 3 upgrades it.
 
-### 2. Plan the gaps, not the week
+### 2. Plan the gaps, not the week  ← start here
 
 Make partial planning a first-class verb: any date range, existing My Week dinners locked by default,
 recent weeks fed to the planner as today. Mostly exists (`locked_dates`, `fixed_plan`); needs a clean API
@@ -177,3 +181,4 @@ rejected); seasonal search terms for Migros; toddler-portion logic in needs expl
 
 - 2026-10-24: phases 1–7; live end-to-end; the app; LXC deployment and cut-over; HA reconfigure step;
   UniFi reservation. Details in `docs/evening-checklist.md` and the ADRs.
+- 2026-10-24, late: P0-1, the Week screen as a timeline (ADR-0011).

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from znacht.domain._base import Frozen
 from znacht.domain.household import Household
-from znacht.domain.plan import MealPlan, Week
+from znacht.domain.plan import Meal, MealPlan, Week
 from znacht.domain.recipe import Recipe
 from znacht.domain.violations import Violation
 
@@ -26,6 +26,9 @@ class PlanningContext(Frozen):
     violations: tuple[Violation, ...] = ()
     previous: MealPlan | None = None
     recent_meals: tuple[str, ...] = ()  # titles cooked in recent weeks, newest first
+    # dinners already decided (in My Week, or locked by the household): the planner plans
+    # the other days around them and must count them towards the weekly rules
+    locked_meals: tuple[Meal, ...] = ()
 
 
 class PlanProposal(Frozen):

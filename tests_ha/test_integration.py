@@ -47,6 +47,44 @@ async def test_entities_reflect_the_engine(hass, engine):
     assert hass.states.get("todo.znacht_store_run").state == "1"  # dishwasher tabs is done
     calendar = hass.states.get("calendar.znacht_meal_plan")
     assert calendar is not None
+    unplanned = hass.states.get("sensor.znacht_unplanned_days")
+    assert unplanned.state == "4"
+    assert unplanned.attributes["empty_dates"] == ["2026-10-30", "2026-10-31", "2026-11-01"]
+    assert unplanned.attributes["proposed_dates"] == ["2026-10-29"]
+    assert unplanned.attributes["weeks"][0]["awaiting_run_id"] == 8
+    assert unplanned.attributes["weeks"][0]["summary"].startswith("3 of 7 planned")
+
+
+async def test_calendar_carries_manual_dinners_and_marks_proposals(hass, engine):
+    from datetime import UTC, datetime
+
+    await setup(hass, engine)
+    entity = hass.data["entity_components"]["calendar"].get_entity("calendar.znacht_meal_plan")
+    events = await entity.async_get_events(
+        hass,
+        datetime(2026, 10, 26, tzinfo=UTC),
+        datetime(2026, 11, 2, tzinfo=UTC),
+    )
+    by_date = {e.start.isoformat(): e for e in events}
+    assert by_date["2026-10-28"].summary == "Omelette with salad"
+    assert "yours in My Week" in by_date["2026-10-28"].description
+    assert by_date["2026-10-28"].location.startswith("https://cookidoo.ch/")
+    assert by_date["2026-10-29"].summary == "Proposed: Lentil dal"
+    assert "proposed by Znacht run 8" in by_date["2026-10-29"].description
+    assert "Znacht run 7" in by_date["2026-10-26"].description
+
+
+async def test_unplanned_days_is_unknown_on_an_older_engine(hass, aioclient_mock):
+    from tests_ha.conftest import CALENDAR, LISTS, STATUS
+
+    base = "http://engine.test:8787"
+    aioclient_mock.get(f"{base}/api/status", json=STATUS)
+    aioclient_mock.get(f"{base}/api/lists", json=LISTS)
+    aioclient_mock.get(f"{base}/api/calendar", json=CALENDAR)
+    aioclient_mock.get(f"{base}/api/timeline?days=14", status=404, text="not found")
+    await setup(hass, aioclient_mock)
+    assert hass.states.get("sensor.znacht_plan_status").state == "needs_approval"
+    assert hass.states.get("sensor.znacht_unplanned_days").state == "unknown"
 
 
 async def test_services_forward_to_the_engine(hass, engine):

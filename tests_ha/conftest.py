@@ -64,6 +64,8 @@ CALENDAR = [
         "servings": 3,
         "url": None,
         "note": None,
+        "source": 7,
+        "proposed": False,
     },
     {
         "date": "2026-10-27",
@@ -73,8 +75,54 @@ CALENDAR = [
         "servings": 3,
         "url": None,
         "note": "fish night",
+        "source": 7,
+        "proposed": False,
+    },
+    {
+        "date": "2026-10-28",
+        "slot": "dinner",
+        "summary": "Omelette with salad",
+        "recipe_id": "cookidoo:r123",
+        "servings": 3,
+        "url": "https://cookidoo.ch/recipes/recipe/de-CH/r123",
+        "note": None,
+        "source": "manual",
+        "proposed": False,
+    },
+    {
+        "date": "2026-10-29",
+        "slot": "dinner",
+        "summary": "Lentil dal",
+        "recipe_id": "memory:lentil-dal",
+        "servings": 3,
+        "url": None,
+        "note": None,
+        "source": 8,
+        "proposed": True,
     },
 ]
+TIMELINE = {
+    "from": "2026-10-26",
+    "horizon": 14,
+    "today": "2026-10-26",
+    "weeks": [
+        {
+            "week": "2026-10-26",
+            "label": "This week",
+            "applied_run_id": 7,
+            "awaiting_run_id": 8,
+            "awaiting_status": "needs_approval",
+            "my_week_ok": True,
+            "locked_dates": ["2026-10-26", "2026-10-27", "2026-10-28"],
+            "summary": "3 of 7 planned · 1 proposed (run 8 awaits approval)",
+        }
+    ],
+    "days": [],
+    "unplanned_dates": ["2026-10-29", "2026-10-30", "2026-10-31", "2026-11-01"],
+    "empty_dates": ["2026-10-30", "2026-10-31", "2026-11-01"],
+    "proposed_dates": ["2026-10-29"],
+    "busy": None,
+}
 
 
 @pytest.fixture(autouse=True)
@@ -89,6 +137,7 @@ def engine(aioclient_mock):
     aioclient_mock.get(f"{base}/api/status", json=STATUS)
     aioclient_mock.get(f"{base}/api/lists", json=LISTS)
     aioclient_mock.get(f"{base}/api/calendar", json=CALENDAR)
+    aioclient_mock.get(f"{base}/api/timeline?days=14", json=TIMELINE)
     aioclient_mock.post(f"{base}/api/plan_week", json={"accepted": True})
     aioclient_mock.post(f"{base}/api/apply", json={"run_id": 7, "status": "applied"})
     aioclient_mock.post(f"{base}/api/refresh", json={})

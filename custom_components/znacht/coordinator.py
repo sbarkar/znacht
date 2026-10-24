@@ -27,4 +27,9 @@ class ZnachtCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             calendar = await self.api.calendar()
         except ZnachtApiError as exc:
             raise UpdateFailed(str(exc)) from exc
-        return {"status": status, "lists": lists, "calendar": calendar}
+        try:
+            timeline = await self.api.timeline()
+        except ZnachtApiError as exc:  # an engine from before the timeline still works
+            _LOGGER.warning("Znacht engine has no timeline yet: %s", exc)
+            timeline = {}
+        return {"status": status, "lists": lists, "calendar": calendar, "timeline": timeline}

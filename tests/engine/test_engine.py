@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import date
+from datetime import date, timedelta
 
 import httpx
 
@@ -200,3 +200,245 @@ async def test_household_patch_keeps_yaml_comments(client: httpx.AsyncClient, se
     assert h["rules"]["min_tags"]["fish"] == 3 and "olives" in h["members"][0]["dislikes"]
     bad = await client.patch("/api/household", json={"rules": {"dinners_per_week": "seven"}})
     assert bad.status_code == 422
+
+
+# -- the timeline: My Week is the truth, runs are proposals (ADR-0011) ----------------------
+
+
+def _meal(day: date, recipe: str, servings: int = 3):
+    from znacht.domain.plan import Meal, MealSlot
+    from znacht.domain.recipe import RecipeId
+
+    return Meal(
+        date=day,
+        slot=MealSlot.DINNER,
+        recipe_id=RecipeId(source="memory", external_id=recipe),
+        servings=servings,
+    )
+
+
+async def _put_in_my_week(service: ZnachtService, *meals):
+    from znacht.domain.plan import MealPlan, Week
+
+    by_week: dict[date, list] = {}
+    for m in meals:
+        by_week.setdefault(Week.containing(m.date).start, []).append(m)
+    for start, ms in by_week.items():
+        week = Week(start=start)
+        current = await service.adapters.sink.read_week(week)
+        plan = MealPlan(week=week, meals=(*current.meals, *ms))
+        await service.adapters.sink.apply(await service.adapters.sink.diff(plan))
+    service.forget_live_reads()
+
+
+def test_timeline_helpers_span_and_summary():
+    from znacht_engine.timeline import span, summary
+
+    mon = date(2026, 10, 26)
+    assert span([mon, mon + timedelta(1), mon + timedelta(2), mon + timedelta(5)]) == "Mon–Wed, Sat"
+    assert span([]) == ""
+    days = [
+        {
+            "date": "2026-10-26",
+            "state": "planned",
+            "dinner": {},
+            "groceries": {"coverage": "store_run", "label": "store run"},
+        },
+        {
+            "date": "2026-10-27",
+            "state": "planned",
+            "dinner": {},
+            "groceries": {"coverage": "arriving", "label": "arriving Mon 19:00"},
+        },
+        {
+            "date": "2026-10-28",
+            "state": "planned",
+            "dinner": {},
+            "groceries": {"coverage": "arriving", "label": "arriving Mon 19:00"},
+        },
+        {
+            "date": "2026-10-29",
+            "state": "proposed",
+            "dinner": None,
+            "groceries": {"coverage": "none", "label": "none"},
+        },
+        {
+            "date": "2026-10-30",
+            "state": "planned",
+            "dinner": {},
+            "groceries": {"coverage": "none", "label": "none"},
+        },
+        {
+            "date": "2026-10-31",
+            "state": "empty",
+            "dinner": None,
+            "groceries": {"coverage": "none", "label": "none"},
+        },
+        {
+            "date": "2026-11-01",
+            "state": "empty",
+            "dinner": None,
+            "groceries": {"coverage": "none", "label": "none"},
+        },
+    ]
+    assert summary(days, awaiting_run_id=13) == (
+        "4 of 7 planned · 1 proposed (run 13 awaits approval) · online order Mon 19:00 covers "
+        "Tue–Wed · store run Mon · Thu–Fri no groceries · Sat–Sun nothing yet"
+    )
+
+
+async def test_timeline_states_sources_and_coverage(
+    client: httpx.AsyncClient, service: ZnachtService
+):
+    mon = GOLDEN_WEEK_START
+    # a dinner the household put into My Week by hand, before Znacht ran
+    await _put_in_my_week(service, _meal(mon + timedelta(days=2), "omelette"))
+
+    # nothing planned by Znacht yet: one manual day, the rest empty, past days collapsed
+    r = await client.get(f"/api/timeline?from={mon - timedelta(days=2)}&days=9")
+    assert r.status_code == 200
+    tl = r.json()
+    assert tl["from"] == (mon - timedelta(days=2)).isoformat() and tl["horizon"] == 9
+    by_date = {d["date"]: d for d in tl["days"]}
+    assert len(by_date) == 9 and len(tl["weeks"]) == 2
+    wed = by_date[(mon + timedelta(days=2)).isoformat()]
+    assert wed["state"] == "planned" and wed["dinner"]["source"] == "manual"
+    assert wed["dinner"]["title"].startswith("Omelette")
+    assert wed["groceries"]["coverage"] == "none"
+    assert wed["run_id"] is None  # nothing to swap within: it is yours
+    assert by_date[mon.isoformat()]["state"] == "empty"
+    this_week = next(w for w in tl["weeks"] if w["week"] == mon.isoformat())
+    assert this_week["locked_dates"] == [(mon + timedelta(days=2)).isoformat()]
+    assert this_week["awaiting_run_id"] is None and this_week["applied_run_id"] is None
+    assert this_week["summary"].startswith("1 of 7 planned")
+    assert "Thu–Sun nothing yet" in this_week["summary"]
+
+    # a proposal: run awaits approval, My Week untouched
+    run_id, result = await service.plan_week(mon)
+    assert result.status == "needs_approval"
+    tl = (await client.get(f"/api/timeline?from={mon}&days=7")).json()
+    by_date = {d["date"]: d for d in tl["days"]}
+    assert by_date[mon.isoformat()]["state"] == "proposed"
+    assert by_date[mon.isoformat()]["proposal"]["source"] == run_id
+    assert by_date[mon.isoformat()]["run_id"] == run_id  # the swap sheet acts on the proposal
+    wed = by_date[(mon + timedelta(days=2)).isoformat()]
+    assert wed["state"] == "planned" and wed["dinner"]["source"] == "manual"
+    assert wed["proposal"] is not None and wed["proposal"]["source"] == run_id
+    week = tl["weeks"][0]
+    assert week["awaiting_run_id"] == run_id and week["awaiting_status"] == "needs_approval"
+    assert f"6 proposed (run {run_id} awaits approval)" in week["summary"]
+    assert set(tl["proposed_dates"]) == {d for d in by_date if d != wed["date"]}
+    assert tl["unplanned_dates"] == tl["proposed_dates"] and tl["empty_dates"] == []
+    # proposed dinners are not covered: nothing is on the store's lists yet
+    assert all(by_date[d]["groceries"]["coverage"] == "none" for d in by_date)
+
+    # approved: My Week now carries the run's dinners, groceries are covered by its lists
+    assert (await client.post(f"/api/apply?run_id={run_id}")).json()["status"] == "applied"
+    tl = (await client.get(f"/api/timeline?from={mon}&days=7")).json()
+    by_date = {d["date"]: d for d in tl["days"]}
+    assert all(d["state"] == "planned" for d in by_date.values())
+    assert all(d["dinner"]["source"] == run_id for d in by_date.values())
+    assert all(d["run_id"] == run_id and d["proposal"] is None for d in by_date.values())
+    # the golden week delivers Monday 19:00–21:00: Monday is a store run, Tue–Sun arrive
+    assert by_date[mon.isoformat()]["groceries"]["coverage"] == "store_run"
+    tue = by_date[(mon + timedelta(days=1)).isoformat()]["groceries"]
+    assert tue["coverage"] == "arriving" and tue["label"] == "arriving Mon 19:00"
+    assert tue["slot"].startswith(mon.isoformat())
+    week = tl["weeks"][0]
+    assert week["applied_run_id"] == run_id and week["awaiting_run_id"] is None
+    assert week["summary"] == (
+        "7 of 7 planned · online order Mon 19:00 covers Tue–Sun · store run Mon"
+    )
+    assert tl["unplanned_dates"] == []
+
+    # the household changes Wednesday by hand in My Week: it becomes theirs, groceries unknown
+    from znacht.domain.plan import MealPlan, Week
+
+    wk = Week(start=mon)
+    current = await service.adapters.sink.read_week(wk)
+    changed = MealPlan(
+        week=wk,
+        meals=(
+            *(m for m in current.meals if m.date != mon + timedelta(days=2)),
+            _meal(mon + timedelta(days=2), "veg-pasta"),
+        ),
+    )
+    await service.adapters.sink.apply(await service.adapters.sink.diff(changed))
+    service.forget_live_reads()
+    tl = (await client.get(f"/api/timeline?from={mon}&days=7")).json()
+    wed = next(d for d in tl["days"] if d["date"] == (mon + timedelta(days=2)).isoformat())
+    assert wed["dinner"]["source"] == "manual" and wed["dinner"]["title"].startswith("Pasta")
+    assert wed["groceries"]["coverage"] == "none"
+    assert "Wed no groceries" in tl["weeks"][0]["summary"]
+
+    # the calendar carries the manual dinner too, with its source
+    cal = (await client.get("/api/calendar")).json()
+    by_cal = {c["date"]: c for c in cal}
+    assert by_cal[wed["date"]]["source"] == "manual" and by_cal[wed["date"]]["proposed"] is False
+    assert by_cal[mon.isoformat()]["source"] == run_id
+
+
+async def test_timeline_my_week_cache_and_bounds(client: httpx.AsyncClient, service: ZnachtService):
+    calls = 0
+    real = service.adapters.sink.read_week
+
+    async def counting(week):
+        nonlocal calls
+        calls += 1
+        return await real(week)
+
+    service.adapters.sink.read_week = counting  # type: ignore[method-assign]
+    await client.get(f"/api/timeline?from={GOLDEN_WEEK_START}&days=14")
+    await client.get(f"/api/timeline?from={GOLDEN_WEEK_START}&days=14")
+    assert calls == 2  # two ISO weeks, read once each; the second call is served from cache
+    assert (await client.get("/api/timeline?days=0")).status_code == 422
+    assert (await client.get("/api/timeline?days=99")).status_code == 422
+    assert (await client.get("/api/timeline?from=not-a-date")).status_code == 422
+    default = (await client.get("/api/timeline")).json()
+    assert default["horizon"] == 14 and default["from"] == default["today"]
+
+
+async def test_plan_the_gaps_locks_my_week_dinners(
+    client: httpx.AsyncClient, service: ZnachtService
+):
+    mon = GOLDEN_WEEK_START
+    mine = (_meal(mon + timedelta(days=1), "omelette"), _meal(mon + timedelta(days=4), "veg-pasta"))
+    await _put_in_my_week(service, *mine)
+    tl = (await client.get(f"/api/timeline?from={mon}&days=7")).json()
+    locked = tl["weeks"][0]["locked_dates"]
+    assert locked == [m.date.isoformat() for m in mine]
+
+    # what the app's "Plan the gaps" button sends
+    r = await client.post("/api/plan_week", json={"week": mon.isoformat(), "locked_dates": locked})
+    assert r.status_code == 200 and r.json()["accepted"]
+    for _ in range(100):
+        await asyncio.sleep(0.05)
+        if service.repo.latest_run("example"):
+            break
+    _, result = service.repo.latest_run("example")
+    assert [d.isoformat() for d in result.locked_dates] == locked
+    assert len(result.plan.meals) == 7
+    for m in mine:
+        assert m in result.plan.meals  # kept, servings and all
+    # approving would add the gaps only: nothing of yours is removed from My Week
+    assert result.plan_diff is not None and result.plan_diff.remove == ()
+    assert {m.date for m in result.plan_diff.add} == {
+        mon + timedelta(days=i) for i in (0, 2, 3, 5, 6)
+    }
+    tl = (await client.get(f"/api/timeline?from={mon}&days=7")).json()
+    by_date = {d["date"]: d for d in tl["days"]}
+    assert by_date[mine[0].date.isoformat()]["state"] == "planned"
+    assert by_date[mine[0].date.isoformat()]["proposal"] is None
+    assert by_date[mon.isoformat()]["state"] == "proposed"
+    assert tl["weeks"][0]["summary"].startswith("2 of 7 planned · 5 proposed")
+
+    # approved: the kept dinners stay yours but the run's lists cover them too
+    run_id = service.repo.latest_run("example")[0]
+    assert (await client.post(f"/api/apply?run_id={run_id}")).json()["status"] == "applied"
+    tl = (await client.get(f"/api/timeline?from={mon}&days=7")).json()
+    by_date = {d["date"]: d for d in tl["days"]}
+    tue, fri = by_date[mine[0].date.isoformat()], by_date[mine[1].date.isoformat()]
+    assert tue["dinner"]["source"] == "manual" and fri["dinner"]["source"] == "manual"
+    assert tue["groceries"]["coverage"] == "arriving" and fri["groceries"]["coverage"] == "arriving"
+    assert by_date[mon.isoformat()]["dinner"]["source"] == run_id
+    assert tue["run_id"] == run_id  # the swap sheet still acts on the run that covers it

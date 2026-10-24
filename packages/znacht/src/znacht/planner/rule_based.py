@@ -48,6 +48,15 @@ class RuleBasedPlanner:
         )
         chosen: list[Recipe] = []
         counts: Counter[str] = Counter()
+        by_key = {r.id.key: r for r in context.candidates}
+        locked = [m for m in context.locked_meals if m.date in context.week]
+        locked_days = {m.date for m in locked}
+        for m in locked:  # already decided: they count towards the rules, not the free days
+            recipe = by_key.get(m.recipe_id.key)
+            if recipe is not None:
+                chosen.append(recipe)
+                counts.update(recipe.tags)
+        fixed = len(chosen)
 
         def fits(recipe: Recipe) -> bool:
             if recipe in chosen:
@@ -74,18 +83,20 @@ class RuleBasedPlanner:
             if fits(recipe):
                 take(recipe)
 
-        days = context.week.days()[: rules.dinners_per_week]
+        days = [d for d in context.week.days() if d not in locked_days]
+        days = days[: max(0, rules.dinners_per_week - fixed)]
         weekend = [d for d in days if d.weekday() >= 5]
         weekdays = [d for d in days if d.weekday() < 5]
-        by_length = sorted(chosen, key=lambda r: -(r.total_minutes or 0))
+        by_length = sorted(chosen[fixed:], key=lambda r: -(r.total_minutes or 0))
         order = weekend + weekdays
         meals = tuple(
             Meal(date=day, slot=MealSlot.DINNER, recipe_id=recipe.id, servings=household.servings)
             for day, recipe in zip(order, by_length, strict=False)
-        )
+        ) + tuple(locked)
         rationale = (
-            f"rule-based: {len(meals)} dinners from {len(pool)} acceptable candidates; "
-            f"tags {dict(counts)}"
+            f"rule-based: {len(meals)} dinners from {len(pool)} acceptable candidates"
+            + (f", {fixed} kept as locked" if fixed else "")
+            + f"; tags {dict(counts)}"
         )
         return PlanProposal(plan=MealPlan(week=context.week, meals=meals), rationale=rationale)
 

@@ -16,12 +16,48 @@ from .coordinator import ZnachtCoordinator
 
 @dataclass(frozen=True, kw_only=True)
 class ZnachtSensorDescription(SensorEntityDescription):
-    value: Callable[[dict[str, Any]], Any]
+    value: Callable[[dict[str, Any]], Any]  # gets the engine's /api/status document
+    attributes: Callable[[dict[str, Any]], dict[str, Any]] | None = None  # gets all data
+
+
+def _unplanned(data: dict[str, Any]) -> int | None:
+    """Days in the timeline horizon with nothing in My Week: empty or only proposed."""
+    tl = data.get("timeline") or {}
+    if "unplanned_dates" not in tl:
+        return None
+    return len(tl["unplanned_dates"])
+
+
+def _unplanned_attributes(data: dict[str, Any]) -> dict[str, Any]:
+    tl = data.get("timeline") or {}
+    return {
+        "dates": list(tl.get("unplanned_dates", [])),
+        "empty_dates": list(tl.get("empty_dates", [])),
+        "proposed_dates": list(tl.get("proposed_dates", [])),
+        "horizon_days": tl.get("horizon"),
+        "from": tl.get("from"),
+        "weeks": [
+            {
+                "week": w.get("week"),
+                "label": w.get("label"),
+                "summary": w.get("summary"),
+                "awaiting_run_id": w.get("awaiting_run_id"),
+            }
+            for w in tl.get("weeks", [])
+        ],
+    }
 
 
 SENSORS: tuple[ZnachtSensorDescription, ...] = (
     ZnachtSensorDescription(
         key="plan_status", translation_key="plan_status", value=lambda s: s.get("plan_status")
+    ),
+    ZnachtSensorDescription(
+        key="unplanned_days",
+        translation_key="unplanned_days",
+        native_unit_of_measurement="days",
+        value=lambda s: None,
+        attributes=_unplanned_attributes,
     ),
     ZnachtSensorDescription(
         key="basket_total",
@@ -83,10 +119,14 @@ class ZnachtSensor(CoordinatorEntity[ZnachtCoordinator], SensorEntity):
 
     @property
     def native_value(self) -> Any:
+        if self.entity_description.key == "unplanned_days":
+            return _unplanned(self.coordinator.data)
         return self.entity_description.value(self.coordinator.data.get("status", {}))
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
+        if self.entity_description.attributes is not None:
+            return self.entity_description.attributes(self.coordinator.data)
         status = self.coordinator.data.get("status", {})
         if self.entity_description.key == "plan_status":
             return {
