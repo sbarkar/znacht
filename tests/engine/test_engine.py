@@ -20,7 +20,8 @@ async def test_requires_the_token(client: httpx.AsyncClient):
     anonymous = httpx.AsyncClient(transport=client._transport, base_url="http://engine.test")
     assert (await anonymous.get("/api/status")).status_code == 401
     assert (await anonymous.get("/healthz")).status_code == 200
-    assert (await anonymous.get("/brief?token=secret")).status_code in (200, 404)
+    r = await anonymous.get("/brief?token=secret")
+    assert r.status_code == 303 and "znacht_token" in r.headers.get("set-cookie", "")
 
 
 async def test_plan_brief_lists_apply_roundtrip(

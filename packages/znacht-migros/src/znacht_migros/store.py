@@ -264,7 +264,8 @@ class MigrosGroceryStore:
                 notes.append(f"{len(texts)} free-text changes")
             else:
                 notes.append(
-                    f"{len(texts)} free-text lines not written (Migros: {r.status_code} {r.text[:100]}); add them in the app"
+                    f"{len(texts)} free-text lines not written "
+                    f"(Migros: {r.status_code} {r.text[:100]}); add them in the app"
                 )
         return ApplyResult(ok=True, message="; ".join(notes), applied=applied)
 

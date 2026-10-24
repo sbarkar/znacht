@@ -92,6 +92,10 @@ class Brief:
     plan_removes: list[str]
 
 
+def _title(recipes: dict[str, Recipe], key: str) -> str:
+    return recipes[key].title if key in recipes else key.split(":", 1)[-1]
+
+
 def _split_rationale(rationale: str) -> tuple[str, str]:
     if ":" in rationale and len(rationale.split(":", 1)[0]) <= 40:
         theme, note = rationale.split(":", 1)
@@ -196,7 +200,7 @@ def build_brief(
         lifetime_savings=lifetime_savings,
         checkout_url=checkout_url,
         plan_removes=[
-            f"{m.date:%a %d.%m}: {recipes[m.recipe_id.key].title if m.recipe_id.key in recipes else m.recipe_id.external_id}"
+            f"{m.date:%a %d.%m}: {_title(recipes, m.recipe_id.key)}"
             for m in (result.plan_diff.remove if result.plan_diff else ())
         ],
     )
