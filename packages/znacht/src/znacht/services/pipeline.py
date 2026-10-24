@@ -29,6 +29,8 @@ from znacht.services.needs import explode_needs, merge_needs
 from znacht.services.optimiser import choose_product
 from znacht.services.split import timing_split
 
+SLOT_LEAD_DAYS = 3  # a delivery this many days before the week still feeds it
+
 
 def slots_from_templates(templates: tuple[SlotTemplate, ...], week: Week) -> list[DeliverySlot]:
     out: list[DeliverySlot] = []
@@ -456,7 +458,13 @@ async def run_week(
     needs = explode_needs(plan, known, household)
 
     if slot is None:
-        slots = list(await store.delivery_slots(household.delivery.postcode))
+        # only a slot that can feed this week: from a few days before it up to its last day
+        # (a store's next slot does not deliver dinners planned for a later week)
+        slots = [
+            s
+            for s in await store.delivery_slots(household.delivery.postcode)
+            if week.start - timedelta(days=SLOT_LEAD_DAYS) <= s.delivery_day <= week.end
+        ]
         if not slots and household.delivery.slot_templates:
             slots = slots_from_templates(household.delivery.slot_templates, week)
             notes.append("store listed no delivery slots; using the household's slot templates")

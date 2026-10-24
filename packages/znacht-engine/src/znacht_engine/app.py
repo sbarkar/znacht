@@ -16,6 +16,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel
 
 from znacht import __version__
+from znacht.domain.plan import Week
 from znacht_engine.config import EngineSettings
 from znacht_engine.ha import HaNotifier
 from znacht_engine.repo import Repo
@@ -115,7 +116,8 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
     ) -> dict[str, Any]:
         if s.busy:
             raise HTTPException(status_code=409, detail=f"engine is {s.busy}")
-        week = body.week if body else None
+        # any date names its week; a Wednesday must not fail later in the background
+        week = Week.containing(body.week).start if body and body.week else None
         locked = tuple(body.locked_dates) if body and body.locked_dates is not None else None
 
         async def run() -> None:
@@ -293,16 +295,25 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
 
     @app.post("/api/lists/{kind}/done", dependencies=[Depends(auth)])
     async def todo_done(
-        kind: str, body: TodoUpdate, s: ZnachtService = Depends(svc)
+        kind: str, body: TodoUpdate, run_id: int | None = None, s: ZnachtService = Depends(svc)
     ) -> dict[str, bool]:
-        s.set_done(body.uid, body.done)
+        # the app names the run on screen; Home Assistant's lists follow the latest run
+        try:
+            s.set_done(body.uid, body.done, run_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         return {"ok": True}
 
     @app.post("/api/lists/{kind}/items", dependencies=[Depends(auth)])
     async def todo_add(
-        kind: str, body: TodoAdd, s: ZnachtService = Depends(svc)
+        kind: str, body: TodoAdd, run_id: int | None = None, s: ZnachtService = Depends(svc)
     ) -> dict[str, bool]:
-        s.add_free_text(body.summary)
+        if not body.summary.strip():
+            raise HTTPException(status_code=422, detail="nothing to add")
+        try:
+            s.add_free_text(body.summary.strip(), run_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         return {"ok": True}
 
     @app.get("/api/calendar", dependencies=[Depends(auth)])

@@ -24,7 +24,7 @@ from znacht.services.pipeline import (
     revert_week,
     run_week,
 )
-from znacht_engine.brief import Brief, build_brief, lifetime, price_rows
+from znacht_engine.brief import WALK_ORDER, Brief, build_brief, lifetime, price_rows
 from znacht_engine.config import EngineSettings
 from znacht_engine.repo import Repo
 from znacht_engine.timeline import (
@@ -137,6 +137,9 @@ class ZnachtService:
                     channel_overrides=overrides,
                 )
                 run_id = self.repo.save_run(result)
+                self.repo.set("last_error", None)
+                if base_run is not None:
+                    self._carry_shopping_state(base_run, run_id)
                 self.repo.record_prices(price_rows(result))
                 await self._remember_recipes(result)
                 await self._notify_plan(run_id, result)
@@ -401,6 +404,9 @@ class ZnachtService:
             "flagged": c.flagged,
             "switched": c.switched,
             "url": c.product.url,
+            "aisle": next(
+                (name for name, cats in WALK_ORDER if c.product.category in cats), "Other"
+            ),
         }
 
     async def revert(self, run_id: int) -> tuple[int, WeekResult]:
@@ -456,11 +462,14 @@ class ZnachtService:
     def status(self) -> dict[str, Any]:
         latest = self.repo.latest_run(self.household().id)
         today = date.today()
+        last_error = self.repo.get("last_error")
         if latest is None:
             return {
                 "plan_status": "idle",
                 "busy": self._busy,
+                "last_error": last_error,
                 "run_id": None,
+                "shopping_run_id": None,
                 "adapters": self.adapter_names(),
                 "lifetime_savings": "0.00",
             }
@@ -471,6 +480,8 @@ class ZnachtService:
             "run_id": rid,
             "plan_status": str(result.status) if not self._busy else self._busy,
             "busy": self._busy,
+            "last_error": last_error,
+            "shopping_run_id": self.shopping_run_id(),
             "week": result.week.start.isoformat(),
             "theme": result.rationale.split(":", 1)[0] if ":" in result.rationale else None,
             "basket_total": str(s.online_total.amount),
@@ -492,6 +503,20 @@ class ZnachtService:
             "summary": {k: str(v) for k, v in basket_summary(s).items()},
             "adapters": self.adapter_names(),
         }
+
+    def shopping_run_id(self, today: date | None = None) -> int | None:
+        """The run whose groceries the household is shopping for: the applied run of this
+        week, else the nearest applied week ahead, else the latest run. Planning next week
+        must not hide the list you are standing in the shop with."""
+        this = Week.containing(today or date.today()).start.isoformat()
+        rows = self.repo.runs(self.household().id, limit=200)
+        applied = sorted(
+            (r for r in rows if r["status"] == str(PlanStatus.APPLIED) and r["week"] >= this),
+            key=lambda r: (r["week"], -int(r["id"])),
+        )
+        if applied:
+            return int(applied[0]["id"])
+        return int(rows[0]["id"]) if rows else None
 
     def lists(self, run_id: int | None = None) -> dict[str, list[dict[str, Any]]]:
         rid, result = self._run(run_id)
@@ -524,6 +549,14 @@ class ZnachtService:
             "online": items(result.shopping.online, "online"),
             "in_store": items(result.shopping.in_store, "in_store"),
         }
+
+    def _carry_shopping_state(self, base_run: int, run_id: int) -> None:
+        """A swap or a move derives a new run; what was ticked off and what was added by hand
+        on the base run stays with the shopping, not with the run id."""
+        for key in ("todo.done", "todo.extra"):
+            value = self.repo.get(f"{key}.{base_run}")
+            if value:
+                self.repo.set(f"{key}.{run_id}", value)
 
     def set_done(self, uid: str, done: bool, run_id: int | None = None) -> None:
         rid, _ = self._run(run_id)

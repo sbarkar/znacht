@@ -168,6 +168,8 @@ def summary(days: Sequence[dict[str, Any]], *, awaiting_run_id: int | None) -> s
         if r["dinner"] is None and r["state"] != "proposed":
             continue
         g = r["groceries"]
+        if r["state"] == "proposed" and g["coverage"] == "none":
+            continue  # a proposal brings its groceries when approved; not a gap to flag
         if g["coverage"] == "arriving":
             arriving.setdefault(g["label"].removeprefix("arriving "), []).append(d)
         elif g["coverage"] == "store_run":
