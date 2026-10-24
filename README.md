@@ -51,7 +51,7 @@ Phase 6: `deploy/lxc/` installs the engine in a Proxmox LXC as a systemd service
 ```bash
 ZNACHT_HOUSEHOLD=examples/household.example.yaml ZNACHT_DATA_DIR=/tmp/znacht uv run znacht-engine
 curl -X POST localhost:8787/api/plan_week && open http://localhost:8787/brief
-``` See [docs/architecture.md](docs/architecture.md) and the [decision log](docs/decisions/).
+``` See [docs/architecture.md](docs/architecture.md), the [roadmap](docs/roadmap.md) (what is next, by priority, written for hand-off) and the [decision log](docs/decisions/).
 
 ## Development
 

@@ -189,4 +189,4 @@ class Notifier(Protocol):
 | 7 | the Znacht app: Week, Groceries, Household, Connections, served by the engine, in the HA sidebar | **done 2026-10-24** (ADR-0010); swaps, locks, moves, household editing, pantry photo draft |
 | 6 | Dockerfile, LXC runbook, Caddy snippet, HA add-on | **artifacts done 2026-10-24**: `deploy/` (Dockerfile, compose, `.env.example`, Caddy snippet, `lxc/create.sh`), `addon/` for HAOS; LXC scripts rewritten 2026-10-24 to a plain systemd service with a secrets bundle piped over ssh (Docker-in-LXC was untestable from the workstation) |
 
-Each phase ends with all tests, a summary, and a stop for your go.
+Each phase ends with all tests, a summary, and a stop for your go. What comes after the phases lives in [roadmap.md](roadmap.md), by priority, written so any session can pick an item up.
