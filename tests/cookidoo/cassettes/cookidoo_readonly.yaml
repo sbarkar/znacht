@@ -1,0 +1,547 @@
+interactions:
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+      User-Agent:
+      - Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
+        Gecko) Chrome/125.0.0.0 Safari/537.36
+    method: GET
+    uri: https://cookidoo.ch/community/profile/.well-known/home
+  response:
+    body:
+      string: '{"_links":{"curies":[{"name":"community-profile","href":"https://cookidoo.ch/api/?spec-url=/community/profile/.well-known/documentation/#{rel}","templated":true},{"name":"fint","href":"https://cookidoo.ch/api/?spec-url=/community/profile/.well-known/documentation/#{rel}","templated":true}],"self":{"href":"https://cookidoo.ch/community/profile/.well-known/home"},"community-profile:health-check":{"href":"https://cookidoo.ch/community/profile/.well-known/health-check"},"community-profile:api-2-get-search-prefences":{"href":"https://cookidoo.ch/community/profile/api/2/search-prefences"},"fint:api-2-get-search-prefences":{"href":"/community/profile/api/2/search-prefences","templated":true,"profile":"frontend-integration"},"community-profile:picture-signature":{"href":"https://cookidoo.ch/community/profile/{lang}/picture/signature","templated":true},"community-profile:user-private-profile":{"href":"https://cookidoo.ch/community/profile/{lang}","templated":true},"fint:user-private-profile":{"href":"/community/profile/{lang}","templated":true,"profile":"frontend-integration"},"community-profile:saved-searches":{"href":"https://cookidoo.ch/community/profile/{lang}/saved-searches","templated":true},"fint:saved-searches":{"href":"/community/profile/{lang}/saved-searches","templated":true,"profile":"frontend-integration"},"community-profile:user-basic-info":{"href":"https://cookidoo.ch/community/profile/{lang}/me","templated":true},"fint:user-basic-info":{"href":"/community/profile/{lang}/me","templated":true,"profile":"frontend-integration"},"community-profile:user-preferences-partial":{"href":"https://cookidoo.ch/community/profile/{lang}/partials/user-preferences","templated":true},"fint:user-preferences-partial":{"href":"/community/profile/{lang}/partials/user-preferences","templated":true,"profile":"frontend-integration"},"community-profile:avatars-list":{"href":"https://cookidoo.ch/community/profile/{lang}/avatars","templated":true},"fint:avatars-list":{"href":"/community/profile/{lang}/partials/avatars","templated":true,"profile":"frontend-integration"}}}'
+    headers:
+      Cache-Control:
+      - max-age=600
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Cross-Origin-Opener-Policy:
+      - same-origin
+      Cross-Origin-Resource-Policy:
+      - same-origin
+      Origin-Agent-Cluster:
+      - ?1
+      Referrer-Policy:
+      - no-referrer
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Content-Type-Options:
+      - nosniff
+      X-Dns-Prefetch-Control:
+      - 'off'
+      X-Download-Options:
+      - noopen
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Permitted-Cross-Domain-Policies:
+      - none
+      X-XSS-Protection:
+      - '0'
+      content-length:
+      - '2085'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+      User-Agent:
+      - Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
+        Gecko) Chrome/125.0.0.0 Safari/537.36
+    method: GET
+    uri: https://cookidoo.ch/customer-devices/.well-known/home
+  response:
+    body:
+      string: '{"_links":{"curies":[{"href":"https://cookidoo.ch/api/?spec-url=/api/specs/customerDevice_0.0.2.json#{rel}","templated":true,"name":"customer-devices"},{"href":"https://cookidoo.ch/api/?spec-url={rel}","templated":true,"name":"fint"}],"customer-devices:api-accessory-link":{"href":"https://cookidoo.ch/customer-devices/api/accessory/link"},"customer-devices:api-deactivate":{"href":"https://cookidoo.ch/customer-devices/api/connected-device/links"},"customer-devices:api-backoffice-connected-devices":{"href":"https://cookidoo.ch/customer-devices/internal/api/backoffice/customers/{dcid}/connected-devices","templated":true},"customer-devices:thermomix-versions":{"href":"https://cookidoo.ch/customer-devices/api/my-devices/versions"},"customer-devices:api-my-accessories-add":{"href":"https://cookidoo.ch/customer-devices/api/accessory/link"},"fint:cook-key-link":{"href":"/customer-devices/{lang}/cook-key/link","templated":true},"customer-devices:feed-user-device-id-bootstrap":{"href":"https://cookidoo.ch/customer-devices/api/user-device-id/feed/bootstrap{?after}","templated":true},"customer-devices:api-activation-status":{"href":"https://cookidoo.ch/customer-devices/api/connected-device/links"},"specs":{"href":"https://cookidoo.ch/customer-devices/.well-known/specs"},"fint:my-devices-page-cd2":{"href":"/customer-devices/{lang}/my-devices","templated":true},"customer-devices:api-my-accessories-ids":{"href":"https://cookidoo.ch/customer-devices/api/accessory/ids"},"customer-devices:api-accessory-ids":{"href":"https://cookidoo.ch/customer-devices/api/accessory/ids"},"customer-devices:feed-user-cook-key-id-bootstrap":{"href":"https://cookidoo.ch/customer-devices/api/cook-key/feed/bootstrap{?after}","templated":true},"customer-devices:api-my-accessories":{"href":"https://cookidoo.ch/customer-devices/api/accessory"},"customer-devices:api-backoffice-connected-device-link":{"href":"https://cookidoo.ch/customer-devices/internal/api/backoffice/customers/{dcid}/connected-devices/{deviceIdentifier}","templated":true},"customer-devices:api-customer-activations":{"href":"https://cookidoo.ch/customer-devices/internal/api/connected-device/links"},"info":{"href":"https://cookidoo.ch/customer-devices/.well-known/info"},"fint:onboarding-select-thermomix":{"href":"/customer-devices/{lang}/onboarding/my-devices","templated":true},"customer-devices:api-accessory-catalog-item":{"href":"https://cookidoo.ch/customer-devices/api/accessory/catalog/{accessoryId}{?locales,localized}","templated":true},"fint:my-accessories-page-cd2":{"href":"/customer-devices/{lang}/my-devices?tab=accessories{&add}","templated":true},"customer-devices:api-accessory-catalog":{"href":"https://cookidoo.ch/customer-devices/api/accessory/catalog{?deviceType,locales,localized}","templated":true},"customer-devices:api-accessory":{"href":"https://cookidoo.ch/customer-devices/api/accessory/catalog/{accessoryId}{?locales,localized}","templated":true},"customer-devices:feed-user-device-id-event":{"href":"https://cookidoo.ch/customer-devices/api/user-device-id/feed/event{?after}","templated":true},"customer-devices:api-usage-box-consent":{"href":"https://cookidoo.ch/customer-devices/internal/api/user-device-id/{deviceId}","templated":true},"fint:api-accessory-catalog":{"href":"/customer-devices/api/accessory/catalog{?deviceType,locales,localized}","templated":true},"customer-devices:api-backoffice-cook-key-link":{"href":"https://cookidoo.ch/customer-devices/internal/api/backoffice/cook-key/links/{cookKeyId}","templated":true},"customer-devices:api-accessory-deactivate":{"href":"https://cookidoo.ch/customer-devices/api/accessory/{accessoryId}","templated":true},"fint:devices-overview-page":{"href":"/customer-devices/{lang}/my-devices/include","templated":true},"customer-devices:feed-user-cook-key-id-event":{"href":"https://cookidoo.ch/customer-devices/api/cook-key/feed/event{?after}","templated":true},"fint:thermomix-versions":{"href":"/customer-devices/api/my-devices/versions"},"customer-devices:api-activate":{"href":"https://cookidoo.ch/customer-devices/api/connected-device/links"},"customer-devices:api-accessories":{"href":"https://cookidoo.ch/customer-devices/api/accessory/catalog{?deviceType,locales,localized}","templated":true},"self":{"href":"https://cookidoo.ch/customer-devices/.well-known/home"},"customer-devices:api-backoffice-cook-keys":{"href":"https://cookidoo.ch/customer-devices/internal/api/backoffice/customers/{dcid}/cook-keys","templated":true},"customer-devices:api-my-accessories-remove":{"href":"https://cookidoo.ch/customer-devices/api/accessory/{uid}","templated":true},"fint:api-my-accessories-ids":{"href":"/customer-devices/api/accessory/ids"}}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/hal+json
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - accept-encoding
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      X-XSS-Protection:
+      - '0'
+      content-length:
+      - '4684'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+      User-Agent:
+      - Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
+        Gecko) Chrome/125.0.0.0 Safari/537.36
+    method: GET
+    uri: https://cookidoo.ch/organize/.well-known/home
+  response:
+    body:
+      string: '{"_links":{"curies":[{"href":"https://cookidoo.ch/api/?spec-url=/api/specs/organize_0.19.9.json#Organize-1#{rel}","templated":true,"name":"organize"},{"href":"https://cookidoo.ch/api/?spec-url=/api/specs/organize_0.19.9.json#Organize-1#1{rel}","templated":true,"name":"fint"}],"fint:api-retrieve-shared-list":{"href":"/organize/{lang}/api/shared-list/{sharedListId}","templated":true},"organize:api-share-custom-list":{"href":"https://cookidoo.ch/organize/{lang}/api/shared-list","templated":true},"organize:api-custom-list":{"href":"https://cookidoo.ch/organize/{lang}/api/custom-list","templated":true},"fint:transclude-move-to-list-modal":{"href":"/organize/{lang}/transclude/move-to-list-modal","templated":true},"specs":{"href":"https://cookidoo.ch/organize/.well-known/specs"},"fint:transclude-manage-custom-list":{"href":"/organize/{lang}/transclude/manage-custom-list/{recipeId}","templated":true},"fint:transclude-create-custom-list-modal":{"href":"/organize/{lang}/transclude/create-custom-list-modal/{recipeId}","templated":true},"fint:web-my-recipes":{"href":"/organize/{lang}/my-recipes","templated":true},"organize:api-bookmark":{"href":"https://cookidoo.ch/organize/{lang}/api/bookmark","templated":true},"organize:api-associated-recipe-list":{"href":"https://cookidoo.ch/organize/{lang}/api/associated-recipes","templated":true},"fint:transclude-save-collection":{"href":"/organize/{lang}/transclude/save-collection/{collectionId}","templated":true},"fint:api-revoke-custom-list":{"href":"/organize/{lang}/api/shared-list/{sharedListId}","templated":true},"organize:api-cooking-history-multiple":{"href":"https://cookidoo.ch/organize/{lang}/api/cooking-history/multiple","templated":true},"info":{"href":"https://cookidoo.ch/organize/.well-known/info"},"fint:transclude-manage-bookmark-icon":{"href":"/organize/{lang}/transclude/manage-bookmark-icon/{recipeId}","templated":true},"organize:api-list-sync-all":{"href":"https://cookidoo.ch/organize/api/list-sync/{type}","templated":true},"fint:transclude-manage-bookmark":{"href":"/organize/{lang}/transclude/manage-bookmark/{recipeId}","templated":true},"organize:api-managed-list-single":{"href":"https://cookidoo.ch/organize/{lang}/api/managed-list/{id}","templated":true},"organize:api-cooking-history":{"href":"https://cookidoo.ch/organize/{lang}/api/cooking-history","templated":true},"organize:move-recipe":{"href":"https://cookidoo.ch/organize/{lang}/api/move-recipe","templated":true},"organize:api-list-sync":{"href":"https://cookidoo.ch/organize/api/list-sync/{type}/{id}","templated":true},"organize:api-managed-list":{"href":"https://cookidoo.ch/organize/{lang}/api/managed-list","templated":true},"organize:api-custom-list-modify":{"href":"https://cookidoo.ch/organize/{lang}/api/custom-list/{id}","templated":true},"organize:web-my-recipes":{"href":"https://cookidoo.ch/organize/{lang}/my-recipes","templated":true},"organize:api-custom-list-recipe":{"href":"https://cookidoo.ch/organize/{lang}/api/custom-list/{id}/recipes/{recipeId}","templated":true},"fint:api-copy-shared-list":{"href":"/organize/{lang}/api/custom-list-copy","templated":true},"self":{"href":"https://cookidoo.ch/organize/.well-known/home"},"fint:transclude-manage-custom-list-modal":{"href":"/organize/{lang}/transclude/manage-custom-list-modal/{recipeId}","templated":true}}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/hal+json
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+      User-Agent:
+      - Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
+        Gecko) Chrome/125.0.0.0 Safari/537.36
+    method: GET
+    uri: https://cookidoo.ch/planning/.well-known/home
+  response:
+    body:
+      string: '{"_links":{"fint:web-my-week":{"href":"/planning/{lang}/my-week{?backButtonLoadsPreviousWidget}","templated":true},"curies":[{"href":"https://cookidoo.ch/api/?spec-url=/api/specs/organize_0.19.9.json#Organize-1#{rel}","templated":true,"name":"planning"},{"href":"https://cookidoo.ch/api/?spec-url=/api/specs/organize_0.19.9.json#Organize-1#1{rel}","templated":true,"name":"fint"}],"planning:api-my-day-enhanced":{"href":"https://cookidoo.ch/planning/{lang}/api/my-day-enhanced","templated":true},"planning:api-remove-recipe":{"href":"https://cookidoo.ch/planning/{lang}/api/my-day/{dayKey}/recipes/{recipeId}?recipeSource={recipeSource}","templated":true},"planning:api-my-day-enhanced-recipes":{"href":"https://cookidoo.ch/planning/{lang}/api/my-day-enhanced/{dayKey}/recipes/{recipeId}?mealTime={mealTime}","templated":true},"planning:api-my-day":{"href":"https://cookidoo.ch/planning/{lang}/api/my-day","templated":true},"fint:api-my-day":{"href":"/planning/{lang}/api/my-day","templated":true},"planning:api-my-day-recipes":{"href":"https://cookidoo.ch/planning/{lang}/api/my-day/{dayKey}/recipes/{recipeId}","templated":true},"specs":{"href":"https://cookidoo.ch/planning/.well-known/specs"},"planning:api-my-week-enhanced-from-date":{"href":"https://cookidoo.ch/planning/{lang}/api/my-week-enhanced/{dayKey}","templated":true},"planning:api-my-day-enhanced-at-date":{"href":"https://cookidoo.ch/planning/{lang}/api/my-day-enhanced/{dayKey}","templated":true},"planning:api-my-day-enhanced-remove":{"href":"https://cookidoo.ch/planning/{lang}/api/my-day-enhanced/{dayKey}","templated":true},"fint:transclude-planned-recipes":{"href":"/planning/{lang}/transclude/planned-recipes/{dayKey}","templated":true},"planning:api-my-day-move-recipe":{"href":"https://cookidoo.ch/planning/{lang}/api/my-day/move-recipe","templated":true},"fint:transclude-manage-add-to-my-week":{"href":"/planning/{lang}/transclude/manage-add-to-myweek/{recipeId}{?recipeSource}","templated":true},"info":{"href":"https://cookidoo.ch/planning/.well-known/info"},"planning:api-my-week":{"href":"https://cookidoo.ch/planning/{lang}/api/my-week","templated":true},"fint:transclude-manage-cook-today":{"href":"/planning/{lang}/transclude/manage-cook-today/{recipeId}{?recipeSource}","templated":true},"planning:api-list-sync":{"href":"https://cookidoo.ch/planning/{lang}/api/list-sync/{type}/{id}","templated":true},"planning:api-my-week-enhanced":{"href":"https://cookidoo.ch/planning/{lang}/api/my-week-enhanced","templated":true},"planning:api-my-day-enhanced-move-recipe":{"href":"https://cookidoo.ch/planning/{lang}/api/my-day-enhanced/move-recipe","templated":true},"planning:api-my-week-from-date":{"href":"https://cookidoo.ch/planning/{lang}/api/my-week/{dayKey}","templated":true},"planning:api-list-sync-all":{"href":"https://cookidoo.ch/planning/{lang}/api/list-sync/{type}","templated":true},"self":{"href":"https://cookidoo.ch/planning/.well-known/home"},"planning:web-my-week":{"href":"https://cookidoo.ch/planning/{lang}/my-week","templated":true},"planning:api-my-day-at-date":{"href":"https://cookidoo.ch/planning/{lang}/api/my-day/{dayKey}","templated":true},"planning:api-associated-recipe-list":{"href":"https://cookidoo.ch/planning/{lang}/api/associated-recipes","templated":true}}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/hal+json
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+      User-Agent:
+      - Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
+        Gecko) Chrome/125.0.0.0 Safari/537.36
+    method: GET
+    uri: https://cookidoo.ch/shopping/.well-known/home
+  response:
+    body:
+      string: '{"_links":{"self":{"href":"https://cookidoo.ch/shopping/.well-known/home"},"pantry:healthcheck":{"href":"https://cookidoo.ch/shopping/.well-known/health-check"},"pantry:bucket":{"href":"https://cookidoo.ch/shopping/{lang}/partial/bucket{?limit,type}","templated":true},"fint:bucket":{"href":"/shopping/{lang}/partial/bucket{?limit,type}","templated":true,"profile":"frontend-integration"},"pantry:add-to-shopping-list":{"href":"https://cookidoo.ch/shopping/{lang}/partial/add-to-shopping-list/{recipeID}{?source}","templated":true},"fint:add-to-shopping-list":{"href":"/shopping/{lang}/partial/add-to-shopping-list/{recipeID}{?source}","templated":true,"profile":"frontend-integration"},"pantry:home":{"href":"https://cookidoo.ch/shopping/{lang}{?excludeComponent}","templated":true},"fint:home":{"href":"/shopping/{lang}{?excludeComponent}","templated":true,"profile":"frontend-integration"},"pantry:add-recipes":{"href":"https://cookidoo.ch/shopping/{lang}/add-recipes","templated":true},"fint:add-recipes":{"href":"/shopping/{lang}/add-recipes","templated":true,"profile":"frontend-integration"},"pantry:recipe-ingredients":{"href":"https://cookidoo.ch/shopping/{lang}/recipes/add","templated":true},"fint:recipe-ingredients":{"href":"/shopping/{lang}/recipes/add","templated":true,"profile":"frontend-integration"},"pantry:remove-recipe":{"href":"https://cookidoo.ch/shopping/{lang}/recipes/remove","templated":true},"fint:remove-recipe":{"href":"/shopping/{lang}/recipes/remove","templated":true,"profile":"frontend-integration"},"pantry:add-additional-items":{"href":"https://cookidoo.ch/shopping/{lang}/additional-item","templated":true},"fint:add-additional-items":{"href":"/shopping/{lang}/additional-item","templated":true,"profile":"frontend-integration"},"pantry:add-additional-items-v2":{"href":"https://cookidoo.ch/shopping/{lang}/additional-items/add","templated":true},"fint:add-additional-items-v2":{"href":"/shopping/{lang}/additional-items/add","templated":true,"profile":"frontend-integration"},"pantry:remove-additional-items":{"href":"https://cookidoo.ch/shopping/{lang}/additional-items/remove","templated":true},"fint:remove-additional-items":{"href":"/shopping/{lang}/additional-items/remove","templated":true},"pantry:edit-additional-items":{"href":"https://cookidoo.ch/shopping/{lang}/additional-items/edit","templated":true},"fint:edit-additional-items":{"href":"/shopping/{lang}/additional-items/edit","templated":true},"pantry:edit-additional-items-ownership":{"href":"https://cookidoo.ch/shopping/{lang}/additional-items/ownership/edit","templated":true},"fint:edit-additional-items-ownership":{"href":"/shopping/{lang}/additional-items/ownership/edit","templated":true},"pantry:edit-ingredients-ownership":{"href":"https://cookidoo.ch/shopping/{lang}/owned-ingredients/ownership/edit","templated":true},"fint:edit-ingredients-ownership":{"href":"/shopping/{lang}/owned-ingredients/ownership/edit","templated":true}}}'
+    headers:
+      Cache-Control:
+      - max-age=600
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - origin,accept-encoding
+      content-length:
+      - '2948'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+      User-Agent:
+      - Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
+        Gecko) Chrome/125.0.0.0 Safari/537.36
+    method: GET
+    uri: https://cookidoo.ch/recipes/recipe/.well-known/home
+  response:
+    body:
+      string: '{"_links":{"self":{"href":"https://cookidoo.ch/recipes/recipe/.well-known/home"},"info":{"href":"https://cookidoo.ch/recipes/recipe/.well-known/info"},"recipe:details":{"href":"https://cookidoo.ch/recipes/recipe{/lang}/{id}","templated":true},"fint:details":{"href":"/recipes/recipe{/lang}/{id}","templated":true},"recipe:details-devices-and-accessories-section":{"href":"https://cookidoo.ch/recipes/recipe/{lang}/{id}#devices-and-accessories-section","templated":true},"fint:details-devices-and-accessories-section":{"href":"/recipes/recipe/{lang}/{id}#devices-and-accessories-section","templated":true},"recipe:recipe-collections":{"href":"https://cookidoo.ch/recipes/recipe/{lang}/{id}/collections","templated":true},"fint:recipe-collections":{"href":"/recipes/recipe/{lang}/{id}/collections","templated":true},"recipe:recipe-report-submit":{"href":"https://cookidoo.ch/recipes/recipe/{lang}/{id}/report","templated":true},"fint:recipe-report-submit":{"href":"/recipes/recipe/{lang}/{id}/report","templated":true},"recipe:recipe-report-questionnaire":{"href":"https://cookidoo.ch/recipes/recipe/{lang}/{id}/report/questionnaire","templated":true},"fint:recipe-report-questionnaire":{"href":"/recipes/recipe/{lang}/{id}/report/questionnaire","templated":true},"recipe-variants":{"href":"https://cookidoo.ch/recipes/cluster/{clusterId}","templated":true},"fint:recipe-variants":{"href":"/recipes/cluster/{clusterId}","templated":true},"recipe-variants-v2":{"href":"https://cookidoo.ch/recipes/cluster/2/{clusterId}","templated":true},"fint:recipe-variants-v2":{"href":"/recipes/cluster/2/{clusterId}","templated":true},"recipe-variants-v3":{"href":"https://cookidoo.ch/recipes/cluster/3/{clusterId}","templated":true},"fint:recipe-variants-v3":{"href":"/recipes/cluster/3/{clusterId}","templated":true}}}'
+    headers:
+      Cache-Control:
+      - s-maxage=3600, max-age=1800, public
+      Cache-Fetch-Status:
+      - HIT
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/hal+json
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      - origin,accept-encoding
+      content-length:
+      - '1805'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+      User-Agent:
+      - Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
+        Gecko) Chrome/125.0.0.0 Safari/537.36
+    method: GET
+    uri: https://cookidoo.ch/ownership/.well-known/home
+  response:
+    body:
+      string: '{"_links":{"self":{"href":"https://cookidoo.ch/ownership/.well-known/home"},"ownership:subscriptions":{"href":"https://cookidoo.ch/ownership/subscriptions"},"ownership:subscriptionsV2":{"href":"https://cookidoo.ch/ownership/v2/subscriptions"},"ownership:recipes":{"href":"https://cookidoo.ch/ownership/recipes"},"recipe-sync:device-offline-recipes":{"href":"https://cookidoo.ch/ownership/device/{country}/offline-recipes","templated":true},"recipe-sync:device-account-recipes":{"href":"https://cookidoo.ch/ownership/account-user/recipes"}}}'
+    headers:
+      Cache-Control:
+      - max-age=600, no-transform, public, s-maxage=300
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+      User-Agent:
+      - Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
+        Gecko) Chrome/125.0.0.0 Safari/537.36
+    method: GET
+    uri: https://cookidoo.ch/created-recipes/.well-known/home
+  response:
+    body:
+      string: '{"_links":{"curies":[{"name":"customer-recipes","templated":true,"href":"https://cookidoo.ch/api/?spec-url=/created-recipes/.well-known/documentation#{rel}"},{"name":"fint","templated":true,"href":"https://cookidoo.ch/api/?spec-url=/created-recipes/.well-known/documentation#{rel}"}],"self":{"href":"https://cookidoo.ch/created-recipes/.well-known/home"},"healthcheck":{"href":"https://cookidoo.ch/created-recipes/.well-known/health-check"},"info":{"href":"https://cookidoo.ch/created-recipes/.well-known/info"},"specs":{"href":"https://cookidoo.ch/created-recipes/.well-known/specs"},"customer-recipes:recipe-create":{"href":"https://cookidoo.ch/created-recipes/{lang}","templated":false},"customer-recipes:recipes-download":{"href":"https://cookidoo.ch/created-recipes/{lang}/download","templated":false},"customer-recipes:recipes-download-section":{"href":"https://cookidoo.ch/created-recipes/{lang}/partials/recipes-download-section","templated":false},"customer-recipes:recipes-list":{"href":"https://cookidoo.ch/created-recipes/{lang}{?ids,recipeUrl,partnerId,addToCookidoo}","templated":true},"customer-recipes:edit-page":{"href":"https://cookidoo.ch/created-recipes/{lang}/{id}/edit","templated":true},"customer-recipes:edit-ingredients-and-preparation-steps-page":{"href":"https://cookidoo.ch/created-recipes/{lang}/{id}/edit/ingredients-and-preparation-steps{?active}","templated":true},"customer-recipes:recipe-details":{"href":"https://cookidoo.ch/created-recipes/{lang}/{id}","templated":true},"customer-recipes:recipe-details-public":{"href":"https://cookidoo.ch/created-recipes/public/recipes/{lang}/{id}","templated":true},"customer-recipes:image-signature":{"href":"https://cookidoo.ch/created-recipes/{lang}/image/signature","templated":true},"customer-recipes:add-to-cookidoo":{"href":"https://cookidoo.ch/created-recipes/{lang}/add-to-cookidoo{?recipeUrl,partnerId}","templated":true},"customer-recipes:add-to-cookidoo-import":{"href":"https://cookidoo.ch/created-recipes/{lang}/add-to-cookidoo","templated":false},"customer-recipes:config":{"href":"https://cookidoo.ch/created-recipes/{lang}/config","templated":false},"customer-recipes:add-to-customer-recipes":{"href":"https://cookidoo.ch/created-recipes/{lang}/partials/add-to-customer-recipes{?recipeUrl}","templated":true},"customer-recipes:edit-created-recipe":{"href":"https://cookidoo.ch/created-recipes/{lang}/partials/edit-created-recipe{?recipeId}","templated":true},"customer-recipes:import-options":{"href":"https://cookidoo.ch/created-recipes/{lang}/import/options{?cookidooRecipeId}","templated":true},"customer-recipes:scale-in-created-recipes":{"href":"https://cookidoo.ch/created-recipes/{lang}/partials/scale-in-created-recipes{?cookidooRecipeId,servingSize}","templated":true},"customer-recipes:scale-explanation-modal":{"href":"https://cookidoo.ch/created-recipes/{lang}/partials/scale-explanation-modal{?cookidooRecipeId,servingSize}","templated":true},"customer-recipes:scale-recipe-page":{"href":"https://cookidoo.ch/created-recipes/{lang}/import/preview{?cookidooRecipeId,variantId,servingSize}","templated":true},"customer-recipes:mobile-report-recipe":{"href":"https://cookidoo.ch/created-recipes/{lang}/mobile/report-recipe{?recipeId}","templated":true},"customer-recipes:mobile-share-recipe":{"href":"https://cookidoo.ch/created-recipes/{lang}/mobile/share-recipe{?recipeId}","templated":true},"customer-recipes:device-recipe-details":{"href":"https://cookidoo.ch/created-recipes/{lang}/device/recipes/{recipe_id}","templated":true},"customer-recipes:device-offline-recipes":{"href":"https://cookidoo.ch/created-recipes/{lang}/device/offline-recipes","templated":true},"customer-recipes:device-lists":{"href":"https://cookidoo.ch/created-recipes/{lang}/device/lists/{type}","templated":true},"customer-recipes:device-list-details":{"href":"https://cookidoo.ch/created-recipes/{lang}/device/lists/{type}/{id}","templated":true},"fint:recipe-create":{"href":"/created-recipes/{lang}","templated":false},"fint:recipes-download":{"href":"/created-recipes/{lang}/download","templated":false},"fint:recipes-download-section":{"href":"/created-recipes/{lang}/partials/recipes-download-section","templated":false},"fint:recipes-list":{"href":"/created-recipes/{lang}{?ids,recipeUrl,partnerId,addToCookidoo}","templated":true},"fint:edit-page":{"href":"/created-recipes/{lang}/{id}/edit","templated":true},"fint:edit-ingredients-and-preparation-steps-page":{"href":"/created-recipes/{lang}/{id}/edit/ingredients-and-preparation-steps{?active}","templated":true},"fint:recipe-details":{"href":"/created-recipes/{lang}/{id}","templated":true},"fint:recipe-details-public":{"href":"/created-recipes/public/recipes/{lang}/{id}","templated":true},"fint:image-signature":{"href":"/created-recipes/{lang}/image/signature","templated":true},"fint:add-to-cookidoo":{"href":"/created-recipes/{lang}/add-to-cookidoo{?recipeUrl,partnerId}","templated":true},"fint:add-to-cookidoo-import":{"href":"/created-recipes/{lang}/add-to-cookidoo","templated":false},"fint:config":{"href":"/created-recipes/{lang}/config","templated":false},"fint:add-to-customer-recipes":{"href":"/created-recipes/{lang}/partials/add-to-customer-recipes{?recipeUrl}","templated":true},"fint:edit-created-recipe":{"href":"/created-recipes/{lang}/partials/edit-created-recipe{?recipeId}","templated":true},"fint:import-options":{"href":"/created-recipes/{lang}/import/options{?cookidooRecipeId}","templated":true},"fint:scale-in-created-recipes":{"href":"/created-recipes/{lang}/partials/scale-in-created-recipes{?cookidooRecipeId,servingSize}","templated":true},"fint:scale-explanation-modal":{"href":"/created-recipes/{lang}/partials/scale-explanation-modal{?cookidooRecipeId,servingSize}","templated":true},"fint:scale-recipe-page":{"href":"/created-recipes/{lang}/import/preview{?cookidooRecipeId,variantId,servingSize}","templated":true},"fint:mobile-report-recipe":{"href":"/created-recipes/{lang}/mobile/report-recipe{?recipeId}","templated":true},"fint:mobile-share-recipe":{"href":"/created-recipes/{lang}/mobile/share-recipe{?recipeId}","templated":true},"fint:device-recipe-details":{"href":"/created-recipes/{lang}/device/recipes/{recipe_id}","templated":true},"fint:device-offline-recipes":{"href":"/created-recipes/{lang}/device/offline-recipes","templated":true},"fint:device-lists":{"href":"/created-recipes/{lang}/device/lists/{type}","templated":true},"fint:device-list-details":{"href":"/created-recipes/{lang}/device/lists/{type}/{id}","templated":true}}}'
+    headers:
+      Cache-Control:
+      - public, max-age=300
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/hal+json
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - 1; mode=block
+      content-length:
+      - '6526'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+      User-Agent:
+      - Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like
+        Gecko) Chrome/125.0.0.0 Safari/537.36
+    method: GET
+    uri: https://cookidoo.ch/search/.well-known/home
+  response:
+    body:
+      string: '{"_links":{"self":{"href":"https://cookidoo.ch/search/.well-known/home"},"info":{"href":"https://cookidoo.ch/search/.well-known/info"},"specs":{"href":"https://cookidoo.ch/search/.well-known/specs"},"search:healthcheck":{"href":"https://cookidoo.ch/search/.well-known/health-check"},"search:home":{"href":"https://cookidoo.ch/search/{lang}{?query,context,filters*,focus,pagination,limit}","templated":true},"search:searchapi":{"href":"https://cookidoo.ch/search/api/{lang}/search{?query,context,filters*,focus,pagination,limit}","templated":true},"search:ingredientapi":{"href":"https://cookidoo.ch/search/api/ingredients{?query,filters*,language,limit}","templated":true},"search:home-with-filters-exploded":{"href":"https://cookidoo.ch/search/{lang}{?query,context,focus,pagination,limit,tags,categories,ratings,preparationTime,portions,difficulty,totalTime,tmv,countries,languages,additionalDevices,accessories,sortby,ids,ingredients,excludeIngredients,excludeTags,exclude,like}","templated":true},"fint:home":{"href":"/search/{lang}{?query,context,filters*}","templated":true,"profile":"frontend-integration"},"fint:searchapi":{"href":"/search/api/{lang}/search{?query,context,filters*,pagination,limit}","templated":true,"profile":"frontend-integration"},"fint:ingredientapi":{"href":"/search/api/ingredients{?query,filters*,language,limit}","templated":true,"profile":"frontend-integration"},"fint:home-with-filters-exploded":{"href":"/search/{lang}{?query,context,focus,pagination,limit,tags,categories,ratings,preparationTime,portions,difficulty,totalTime,tmv,countries,languages,additionalDevices,accessories,sortby,ids,ingredients,excludeIngredients,excludeTags,exclude,like}","templated":true,"profile":"frontend-integration"},"search:stripe":{"href":"https://cookidoo.ch/search/{lang}/fragments/stripe{?query,context,limit,exclude,includeRating,lazyLoading,filters*}","templated":true},"search:stripeapi":{"href":"https://cookidoo.ch/search/api/{lang}/stripe{?query,context,like,limit,exclude,sortby,ids,includeRating,lazyLoading,filters*}","templated":true},"fint:stripe":{"href":"/search/{lang}/fragments/stripe{?query,context,like,limit,exclude,sortby,includeRating,lazyLoading,filters*}","templated":true,"profile":"frontend-integration"},"fint:stripeapi":{"href":"/search/api/{lang}/stripe{?query,context,like,limit,exclude,sortby,ids,includeRating,lazyLoading,filters*}","templated":true,"profile":"frontend-integration"},"search:stripe-by-ids":{"href":"https://cookidoo.ch/search/{lang}/fragments/stripe{?query,context,like,limit,exclude,sortby,ids,includeRating,lazyLoading,filters*}","templated":true},"fint:stripe-by-ids":{"href":"/search/{lang}/fragments/stripe{?query,context,like,limit,exclude,sortby,ids,includeRating,lazyLoading,filters*}","templated":true,"profile":"frontend-integration"},"search:stripe-by-like":{"href":"https://cookidoo.ch/search/{lang}/fragments/stripe{?query,context,like,limit,exclude,sortby,includeRating,lazyLoading,filters*}","templated":true},"fint:stripe-by-like":{"href":"/search/{lang}/fragments/stripe{?query,context,like,limit,exclude,sortby,includeRating,lazyLoading,filters*}","templated":true,"profile":"frontend-integration"},"search:hero-search":{"href":"https://cookidoo.ch/search/{lang}/fragments/hero-search","templated":true},"fint:hero-search":{"href":"/search/{lang}/fragments/hero-search","templated":true,"profile":"frontend-integration"},"search:with-query":{"href":"/search/{lang}?{+query}","templated":true},"search:with-query-with-host":{"href":"https://cookidoo.ch/search/{lang}?{+query}","templated":true},"search:for-term-with-defaults":{"href":"https://cookidoo.ch/search/for-term?{query}","templated":true},"fint:for-term-with-defaults":{"href":"/search/for-term?{query}","templated":true},"search:insight:converted-object-ids-after-search":{"href":"https://cookidoo.ch/search/insight/converted-object-ids-after-search"},"fint:insight:converted-object-ids-after-search":{"href":"https://cookidoo.ch/search/insight/converted-object-ids-after-search"},"search:subscription-algolia-token":{"href":"https://cookidoo.ch/search/api/subscription/token"},"fint:subscription-algolia-token":{"href":"/search/api/subscription/token"},"search:search-config":{"href":"https://cookidoo.ch/search/api/search-config?version={version}","templated":true}}}'
+    headers:
+      Cache-Control:
+      - max-age=600
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Middleware-Rewrite:
+      - /search/api/well-known/home
+      content-length:
+      - '4320'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+    method: get
+    uri: https://cookidoo.ch/search/en?query=pasta&pageSize=5
+  response:
+    body:
+      string: '{"data":[{"id":"r769256","title":"Pasta alla carcerata","rating":4.885630498533724,"numberOfRatings":341,"publishedAt":"2026-10-19T11:02:55Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/f95c0864cbde62f917279de4200d0e9a/Derivates/fb561bb321351d5d61e4b0725638b67ae327ee57","totalTime":1800,"objectID":"r769256","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/f95c0864cbde62f917279de4200d0e9a/Derivates/fb561bb321351d5d61e4b0725638b67ae327ee57"}]},{"id":"r482637","title":"Pasta
+        rápida al gusto","rating":4.5,"numberOfRatings":734,"publishedAt":"2019-04-01T03:00:00Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/19E2A120-7478-4168-BEA6-D01E0C8CD010/Derivates/F7FE1BA8-6A47-470F-9B6A-CF535172891D","totalTime":1500,"objectID":"r482637","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/19E2A120-7478-4168-BEA6-D01E0C8CD010/Derivates/F7FE1BA8-6A47-470F-9B6A-CF535172891D"}]},{"id":"r757269","title":"Pasta
+        alla gricia","rating":4,"numberOfRatings":141,"publishedAt":"2022-01-21T15:55:28Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/e8f1b64b31f7e638e0c9f848e48af902/Derivates/71f0ca5c45343c04c4202d9c1437852b0dd10597","totalTime":1800,"objectID":"r757269","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/e8f1b64b31f7e638e0c9f848e48af902/Derivates/71f0ca5c45343c04c4202d9c1437852b0dd10597"}]},{"id":"r405269","title":"Pasta
+        risottata al pomodoro","rating":4.484472049689441,"numberOfRatings":966,"publishedAt":"2025-03-08T14:02:01Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/fcefe7d8-1589-4c33-b637-8cc9fea4c334/Derivates/df820137-20b3-45e3-83f0-2531470c0f3a","totalTime":2400,"objectID":"r405269","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/fcefe7d8-1589-4c33-b637-8cc9fea4c334/Derivates/df820137-20b3-45e3-83f0-2531470c0f3a"}]},{"id":"r478557","title":"Pasta
+        tonno, zucchine e pomodorini","rating":4.7,"numberOfRatings":741,"publishedAt":"2022-02-04T07:43:49Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/27603fd8-873c-4a5c-92aa-c514d89f29d3/Derivates/dc11aeac-f6df-43b0-94fb-851be06f2cd5","totalTime":2400,"objectID":"r478557","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/27603fd8-873c-4a5c-92aa-c514d89f29d3/Derivates/dc11aeac-f6df-43b0-94fb-851be06f2cd5"}]},{"id":"r242027","title":"Pasta
+        patate e speck","rating":4.5,"numberOfRatings":492,"publishedAt":"2024-06-29T18:24:45Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/C13F2212-5BA8-4D48-A152-0BA71C9D5F6A/Derivates/37f72637-bf21-4cab-8371-97426373047c","totalTime":2400,"objectID":"r242027","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/C13F2212-5BA8-4D48-A152-0BA71C9D5F6A/Derivates/37f72637-bf21-4cab-8371-97426373047c"}]},{"id":"r769490","title":"Pasta
+        alla ionica","rating":4.8,"numberOfRatings":218,"publishedAt":"2025-08-22T09:22:52Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/7c80ed638209f828ba82ade99f9cc023/Derivates/40eac8f00d35e48c5ff14a0fed45b269b511bf6e","totalTime":1800,"objectID":"r769490","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/7c80ed638209f828ba82ade99f9cc023/Derivates/40eac8f00d35e48c5ff14a0fed45b269b511bf6e"}]},{"id":"r764589","title":"Pasta
+        con salsa cremosa y gambas","rating":4.7,"numberOfRatings":98,"publishedAt":"2024-02-17T16:06:57Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/9554b7c9c78b60bf303b8591a739d129/Derivates/e7e01c472b3024f943bdce1ac53290f7077297df","totalTime":1800,"objectID":"r764589","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/9554b7c9c78b60bf303b8591a739d129/Derivates/e7e01c472b3024f943bdce1ac53290f7077297df"}]},{"id":"r135477","title":"Pasta
+        al forno veloce","rating":4.8,"numberOfRatings":1470,"publishedAt":"2024-06-06T14:01:20Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/8AA06477-6011-4004-977C-62EA82FC1E8C/Derivates/DBD6714D-C695-4B4C-8FBD-48F707A8F72D","totalTime":2700,"objectID":"r135477","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/8AA06477-6011-4004-977C-62EA82FC1E8C/Derivates/DBD6714D-C695-4B4C-8FBD-48F707A8F72D"}]},{"id":"r700044","title":"Pasta
+        con salsa de calabacín, langostinos y espinacas","rating":4.6,"numberOfRatings":364,"publishedAt":"2021-08-11T12:12:50Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/794b137c-612a-43d1-b6e7-58950637ed76/Derivates/f76583ee-3183-4d3a-9b92-e15070f5cc8f","totalTime":3600,"objectID":"r700044","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/794b137c-612a-43d1-b6e7-58950637ed76/Derivates/f76583ee-3183-4d3a-9b92-e15070f5cc8f"}]},{"id":"r66562","title":"Pasta
+        mista napoletana con sugo di fagioli","rating":4.6,"numberOfRatings":148,"publishedAt":"2024-02-17T16:06:57Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/202533F0-D73B-4B71-98BB-D844BA7192DA/Derivates/266BA682-5B69-4A53-989D-84040BABB0AE","totalTime":2700,"objectID":"r66562","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/202533F0-D73B-4B71-98BB-D844BA7192DA/Derivates/266BA682-5B69-4A53-989D-84040BABB0AE"}]},{"id":"r70569","title":"Creamy
+        chicken and sun-dried tomato pasta","rating":4.7,"numberOfRatings":2189,"publishedAt":"2024-08-16T12:48:23Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/8642B2FD-AF87-4AD2-8D40-F5C70A8B409C/Derivates/B6609BD6-8DFE-4236-87BB-7D6F4E6549FC","totalTime":1800,"objectID":"r70569","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/8642B2FD-AF87-4AD2-8D40-F5C70A8B409C/Derivates/B6609BD6-8DFE-4236-87BB-7D6F4E6549FC"}]},{"id":"r823249","title":"Creamy
+        \"marry me\" chicken pasta","rating":4.532941943900848,"numberOfRatings":1533,"publishedAt":"2025-12-08T23:58:09Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/1f8a9fac256056eb64e596962acd303c/Derivates/9216522206af083e33b8af9dbc6cd6566e2e0d87","totalTime":1800,"objectID":"r823249","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/1f8a9fac256056eb64e596962acd303c/Derivates/9216522206af083e33b8af9dbc6cd6566e2e0d87"}]},{"id":"r67902","title":"Pasta
+        e piselli","rating":4.7,"numberOfRatings":747,"publishedAt":"2024-04-22T13:11:28Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/66CC9169-493C-4EFE-AA88-97E5419D8E24/Derivates/0B8A6621-54FA-4EBA-B00C-329999E8E948","totalTime":2100,"objectID":"r67902","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/66CC9169-493C-4EFE-AA88-97E5419D8E24/Derivates/0B8A6621-54FA-4EBA-B00C-329999E8E948"}]},{"id":"r113394","title":"Pasta
+        patate e provola","rating":4.4,"numberOfRatings":647,"publishedAt":"2025-12-09T09:54:47Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/563E8462-3B0F-47EB-83C9-6A5A9842007C/Derivates/C79C437F-44D1-46D2-9878-551950D19C69","totalTime":3300,"objectID":"r113394","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/563E8462-3B0F-47EB-83C9-6A5A9842007C/Derivates/C79C437F-44D1-46D2-9878-551950D19C69"}]},{"id":"r761903","title":"Pasta
+        ‘ncasciata","rating":4.8,"numberOfRatings":77,"publishedAt":"2024-02-17T16:06:57Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/b77d08c1c6545b5e69a92610f5d4e7cd/Derivates/d7f3b031e838e8d1c5964dfcead01384fbed13e2","totalTime":6900,"objectID":"r761903","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/b77d08c1c6545b5e69a92610f5d4e7cd/Derivates/d7f3b031e838e8d1c5964dfcead01384fbed13e2"}]},{"id":"r433351","title":"Pasta
+        risottata con crema di ceci, rosmarino e zafferano","rating":4.312280701754386,"numberOfRatings":570,"publishedAt":"2026-04-04T00:10:32Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/3104b148-f6d9-4546-959d-8f0255a208ff/Derivates/f89c75e7-d1a7-4f32-88b8-73c79f507fbc","totalTime":2400,"objectID":"r433351","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/3104b148-f6d9-4546-959d-8f0255a208ff/Derivates/f89c75e7-d1a7-4f32-88b8-73c79f507fbc"}]},{"id":"r69338","title":"Pasta
+        in tomato sauce with ham and chorizo","rating":3.7,"numberOfRatings":266,"publishedAt":"2024-02-17T16:06:57Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/6F320FC7-CBD7-419D-B790-24DA25E975F9/Derivates/9774C36E-8478-4BE3-A8CD-FF02AC5B9BCB","totalTime":1800,"objectID":"r69338","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/6F320FC7-CBD7-419D-B790-24DA25E975F9/Derivates/9774C36E-8478-4BE3-A8CD-FF02AC5B9BCB"}]},{"id":"r717536","title":"Pasta
+        alla mugnaia","rating":4.8,"numberOfRatings":4,"publishedAt":"2025-05-16T08:36:04Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/15d5e244-f1be-48fa-aabd-44e6f38c1635/Derivates/3f861c1c-4c25-4189-bf27-7ecd3eb0f401","totalTime":7200,"objectID":"r717536","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/15d5e244-f1be-48fa-aabd-44e6f38c1635/Derivates/3f861c1c-4c25-4189-bf27-7ecd3eb0f401"}]},{"id":"r113855","title":"Pasta
+        risottata con cavolo broccolo e zafferano","rating":4.4,"numberOfRatings":731,"publishedAt":"2024-08-02T08:28:46Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/F6BAA23B-35DF-491A-B93F-A4629DA576FD/Derivates/F30285C2-B990-41F7-A251-BE285B1508C4","totalTime":2100,"objectID":"r113855","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/F6BAA23B-35DF-491A-B93F-A4629DA576FD/Derivates/F30285C2-B990-41F7-A251-BE285B1508C4"}]}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      content-length:
+      - '10873'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+    method: get
+    uri: https://cookidoo.ch/search/en?query=pasta&excludeIngredients=cheese&pageSize=5
+  response:
+    body:
+      string: '{"data":[{"id":"r769256","title":"Pasta alla carcerata","rating":4.885630498533724,"numberOfRatings":341,"publishedAt":"2026-10-19T11:02:55Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/f95c0864cbde62f917279de4200d0e9a/Derivates/fb561bb321351d5d61e4b0725638b67ae327ee57","totalTime":1800,"objectID":"r769256","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/f95c0864cbde62f917279de4200d0e9a/Derivates/fb561bb321351d5d61e4b0725638b67ae327ee57"}]},{"id":"r482637","title":"Pasta
+        rápida al gusto","rating":4.5,"numberOfRatings":734,"publishedAt":"2019-04-01T03:00:00Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/19E2A120-7478-4168-BEA6-D01E0C8CD010/Derivates/F7FE1BA8-6A47-470F-9B6A-CF535172891D","totalTime":1500,"objectID":"r482637","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/19E2A120-7478-4168-BEA6-D01E0C8CD010/Derivates/F7FE1BA8-6A47-470F-9B6A-CF535172891D"}]},{"id":"r757269","title":"Pasta
+        alla gricia","rating":4,"numberOfRatings":141,"publishedAt":"2022-01-21T15:55:28Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/e8f1b64b31f7e638e0c9f848e48af902/Derivates/71f0ca5c45343c04c4202d9c1437852b0dd10597","totalTime":1800,"objectID":"r757269","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/e8f1b64b31f7e638e0c9f848e48af902/Derivates/71f0ca5c45343c04c4202d9c1437852b0dd10597"}]},{"id":"r405269","title":"Pasta
+        risottata al pomodoro","rating":4.484472049689441,"numberOfRatings":966,"publishedAt":"2025-03-08T14:02:01Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/fcefe7d8-1589-4c33-b637-8cc9fea4c334/Derivates/df820137-20b3-45e3-83f0-2531470c0f3a","totalTime":2400,"objectID":"r405269","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/fcefe7d8-1589-4c33-b637-8cc9fea4c334/Derivates/df820137-20b3-45e3-83f0-2531470c0f3a"}]},{"id":"r478557","title":"Pasta
+        tonno, zucchine e pomodorini","rating":4.7,"numberOfRatings":741,"publishedAt":"2022-02-04T07:43:49Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/27603fd8-873c-4a5c-92aa-c514d89f29d3/Derivates/dc11aeac-f6df-43b0-94fb-851be06f2cd5","totalTime":2400,"objectID":"r478557","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/27603fd8-873c-4a5c-92aa-c514d89f29d3/Derivates/dc11aeac-f6df-43b0-94fb-851be06f2cd5"}]},{"id":"r242027","title":"Pasta
+        patate e speck","rating":4.5,"numberOfRatings":492,"publishedAt":"2024-06-29T18:24:45Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/C13F2212-5BA8-4D48-A152-0BA71C9D5F6A/Derivates/37f72637-bf21-4cab-8371-97426373047c","totalTime":2400,"objectID":"r242027","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/C13F2212-5BA8-4D48-A152-0BA71C9D5F6A/Derivates/37f72637-bf21-4cab-8371-97426373047c"}]},{"id":"r769490","title":"Pasta
+        alla ionica","rating":4.8,"numberOfRatings":218,"publishedAt":"2025-08-22T09:22:52Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/7c80ed638209f828ba82ade99f9cc023/Derivates/40eac8f00d35e48c5ff14a0fed45b269b511bf6e","totalTime":1800,"objectID":"r769490","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/7c80ed638209f828ba82ade99f9cc023/Derivates/40eac8f00d35e48c5ff14a0fed45b269b511bf6e"}]},{"id":"r764589","title":"Pasta
+        con salsa cremosa y gambas","rating":4.7,"numberOfRatings":98,"publishedAt":"2024-02-17T16:06:57Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/9554b7c9c78b60bf303b8591a739d129/Derivates/e7e01c472b3024f943bdce1ac53290f7077297df","totalTime":1800,"objectID":"r764589","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/9554b7c9c78b60bf303b8591a739d129/Derivates/e7e01c472b3024f943bdce1ac53290f7077297df"}]},{"id":"r135477","title":"Pasta
+        al forno veloce","rating":4.8,"numberOfRatings":1470,"publishedAt":"2024-06-06T14:01:20Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/8AA06477-6011-4004-977C-62EA82FC1E8C/Derivates/DBD6714D-C695-4B4C-8FBD-48F707A8F72D","totalTime":2700,"objectID":"r135477","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/8AA06477-6011-4004-977C-62EA82FC1E8C/Derivates/DBD6714D-C695-4B4C-8FBD-48F707A8F72D"}]},{"id":"r700044","title":"Pasta
+        con salsa de calabacín, langostinos y espinacas","rating":4.6,"numberOfRatings":364,"publishedAt":"2021-08-11T12:12:50Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/794b137c-612a-43d1-b6e7-58950637ed76/Derivates/f76583ee-3183-4d3a-9b92-e15070f5cc8f","totalTime":3600,"objectID":"r700044","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/794b137c-612a-43d1-b6e7-58950637ed76/Derivates/f76583ee-3183-4d3a-9b92-e15070f5cc8f"}]},{"id":"r66562","title":"Pasta
+        mista napoletana con sugo di fagioli","rating":4.6,"numberOfRatings":148,"publishedAt":"2024-02-17T16:06:57Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/202533F0-D73B-4B71-98BB-D844BA7192DA/Derivates/266BA682-5B69-4A53-989D-84040BABB0AE","totalTime":2700,"objectID":"r66562","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/202533F0-D73B-4B71-98BB-D844BA7192DA/Derivates/266BA682-5B69-4A53-989D-84040BABB0AE"}]},{"id":"r70569","title":"Creamy
+        chicken and sun-dried tomato pasta","rating":4.7,"numberOfRatings":2189,"publishedAt":"2024-08-16T12:48:23Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/8642B2FD-AF87-4AD2-8D40-F5C70A8B409C/Derivates/B6609BD6-8DFE-4236-87BB-7D6F4E6549FC","totalTime":1800,"objectID":"r70569","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/8642B2FD-AF87-4AD2-8D40-F5C70A8B409C/Derivates/B6609BD6-8DFE-4236-87BB-7D6F4E6549FC"}]},{"id":"r823249","title":"Creamy
+        \"marry me\" chicken pasta","rating":4.532941943900848,"numberOfRatings":1533,"publishedAt":"2025-12-08T23:58:09Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/1f8a9fac256056eb64e596962acd303c/Derivates/9216522206af083e33b8af9dbc6cd6566e2e0d87","totalTime":1800,"objectID":"r823249","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/1f8a9fac256056eb64e596962acd303c/Derivates/9216522206af083e33b8af9dbc6cd6566e2e0d87"}]},{"id":"r67902","title":"Pasta
+        e piselli","rating":4.7,"numberOfRatings":747,"publishedAt":"2024-04-22T13:11:28Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/66CC9169-493C-4EFE-AA88-97E5419D8E24/Derivates/0B8A6621-54FA-4EBA-B00C-329999E8E948","totalTime":2100,"objectID":"r67902","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/66CC9169-493C-4EFE-AA88-97E5419D8E24/Derivates/0B8A6621-54FA-4EBA-B00C-329999E8E948"}]},{"id":"r113394","title":"Pasta
+        patate e provola","rating":4.4,"numberOfRatings":647,"publishedAt":"2025-12-09T09:54:47Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/563E8462-3B0F-47EB-83C9-6A5A9842007C/Derivates/C79C437F-44D1-46D2-9878-551950D19C69","totalTime":3300,"objectID":"r113394","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/563E8462-3B0F-47EB-83C9-6A5A9842007C/Derivates/C79C437F-44D1-46D2-9878-551950D19C69"}]},{"id":"r761903","title":"Pasta
+        ‘ncasciata","rating":4.8,"numberOfRatings":77,"publishedAt":"2024-02-17T16:06:57Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/b77d08c1c6545b5e69a92610f5d4e7cd/Derivates/d7f3b031e838e8d1c5964dfcead01384fbed13e2","totalTime":6900,"objectID":"r761903","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/b77d08c1c6545b5e69a92610f5d4e7cd/Derivates/d7f3b031e838e8d1c5964dfcead01384fbed13e2"}]},{"id":"r433351","title":"Pasta
+        risottata con crema di ceci, rosmarino e zafferano","rating":4.312280701754386,"numberOfRatings":570,"publishedAt":"2026-04-04T00:10:32Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/3104b148-f6d9-4546-959d-8f0255a208ff/Derivates/f89c75e7-d1a7-4f32-88b8-73c79f507fbc","totalTime":2400,"objectID":"r433351","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/3104b148-f6d9-4546-959d-8f0255a208ff/Derivates/f89c75e7-d1a7-4f32-88b8-73c79f507fbc"}]},{"id":"r69338","title":"Pasta
+        in tomato sauce with ham and chorizo","rating":3.7,"numberOfRatings":266,"publishedAt":"2024-02-17T16:06:57Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/6F320FC7-CBD7-419D-B790-24DA25E975F9/Derivates/9774C36E-8478-4BE3-A8CD-FF02AC5B9BCB","totalTime":1800,"objectID":"r69338","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/6F320FC7-CBD7-419D-B790-24DA25E975F9/Derivates/9774C36E-8478-4BE3-A8CD-FF02AC5B9BCB"}]},{"id":"r717536","title":"Pasta
+        alla mugnaia","rating":4.8,"numberOfRatings":4,"publishedAt":"2025-05-16T08:36:04Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/15d5e244-f1be-48fa-aabd-44e6f38c1635/Derivates/3f861c1c-4c25-4189-bf27-7ecd3eb0f401","totalTime":7200,"objectID":"r717536","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/15d5e244-f1be-48fa-aabd-44e6f38c1635/Derivates/3f861c1c-4c25-4189-bf27-7ecd3eb0f401"}]},{"id":"r113855","title":"Pasta
+        risottata con cavolo broccolo e zafferano","rating":4.4,"numberOfRatings":731,"publishedAt":"2024-08-02T08:28:46Z","image":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/F6BAA23B-35DF-491A-B93F-A4629DA576FD/Derivates/F30285C2-B990-41F7-A251-BE285B1508C4","totalTime":2100,"objectID":"r113855","descriptiveAssets":[{"square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/F6BAA23B-35DF-491A-B93F-A4629DA576FD/Derivates/F30285C2-B990-41F7-A251-BE285B1508C4"}]}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      content-length:
+      - '10873'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+    method: get
+    uri: https://cookidoo.ch/recipes/recipe/en/r769256
+  response:
+    body:
+      string: '{"id":"r769256","tags":[{"id":"145-recipetag-rdpf3","name":"Ssenza
+        dado"},{"id":"146-recipetag-rdpf3","name":"Senza zuccheri"},{"id":"166-recipetag-rdpf3","name":"senza
+        alcool"},{"id":"8-marketingtag-rdpf3","name":"Europea"},{"id":"209-marketingtag-rdpf3","name":"Autunno"},{"id":"228-marketingtag-rdpf3","name":"Primavera"},{"id":"230-marketingtag-rdpf3","name":"Estate"},{"id":"233-marketingtag-rdpf3","name":"Inverno"},{"id":"244-marketingtag-rdpf3","name":"Ricette
+        per tutti i giorni"}],"times":[{"type":"activeTime","comment":"","quantity":{"value":600}},{"type":"totalTime","comment":"","quantity":{"value":1800}}],"title":"Pasta
+        alla carcerata","locale":"it","status":"ok","cluster":{"uid":"3d72ca63-d15a-4edf-b4e3-71b8a058f369","master":"r769256"},"markets":["it"],"language":"it","categories":[{"id":"VrkNavCategory-RPF-003","title":"Primi
+        piatti","subtitle":"","defaultTitle":"Pasta and rice dishes"}],"difficulty":"easy","exportDate":"2026-10-19T09:03:21Z","ingredients":[{"id":"com.vorwerk.ingredients.Ingredient-rpf-238","icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/238","title":"di
+        scalogno","defaultTitle":"shallot","shoppingCategory_ref":"com.vorwerk.categories.ShoppingCategory-rpf-1"},{"id":"com.vorwerk.ingredients.Ingredient-rpf-103","icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/103","title":"peperoncino
+        piccante rosso, fresco","defaultTitle":"red chilli, fresh","shoppingCategory_ref":"com.vorwerk.categories.ShoppingCategory-rpf-1"},{"id":"com.vorwerk.ingredients.Ingredient-rpf-306","icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/306","title":"olio
+        extravergine di oliva","defaultTitle":"extra virgin olive oil","shoppingCategory_ref":"com.vorwerk.categories.ShoppingCategory-rpf-11"},{"id":"com.vorwerk.ingredients.Ingredient-rpf-624","icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/624","title":"di
+        salsiccia","defaultTitle":"sausage, any kind","shoppingCategory_ref":"com.vorwerk.categories.ShoppingCategory-rpf-3"},{"id":"com.vorwerk.ingredients.Ingredient-rpf-172","icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/172","title":"di
+        Cognac","defaultTitle":"cognac","shoppingCategory_ref":"com.vorwerk.categories.ShoppingCategory-rpf-9"},{"id":"com.vorwerk.ingredients.Ingredient-rpf-230","icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/230","title":"di
+        passata di pomodoro","defaultTitle":"canned crushed tomatoes","shoppingCategory_ref":"com.vorwerk.categories.ShoppingCategory-rpf-16"},{"id":"com.vorwerk.ingredients.Ingredient-rpf-269","icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/269","title":"di
+        sale","defaultTitle":"salt","shoppingCategory_ref":"com.vorwerk.categories.ShoppingCategory-rpf-5"},{"id":"com.vorwerk.ingredients.Ingredient-rpf-4252","icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/4252","title":"di
+        pasta corta a piacere","defaultTitle":"pasta, dried, short","shoppingCategory_ref":"com.vorwerk.categories.ShoppingCategory-rpf-7"},{"id":"com.vorwerk.ingredients.Ingredient-rpf-1963","icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/1963","title":"di
+        panna da cucina","defaultTitle":"single cream, approx. 18% fat","shoppingCategory_ref":"com.vorwerk.categories.ShoppingCategory-rpf-2"},{"id":"com.vorwerk.ingredients.Ingredient-rpf-33","icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/33","title":"prezzemolo
+        tritato","defaultTitle":"parsley, fresh","shoppingCategory_ref":"com.vorwerk.categories.ShoppingCategory-rpf-1"}],"languageTag":"it-IT","servingSize":{"quantity":{"value":4},"unitNotation":"porzioni"},"usefulItems":[{"id":"5459","name":"pentola
+        capiente"},{"id":"5824","name":"zuppiera"},{"id":"5472","name":"scolapasta"}],"recipeUtensils":[{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/utensil_icons/5459","utensilRef":"5459-utensil-rdpf3","utensilNotation":"pentola
+        capiente"},{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/utensil_icons/5824","utensilRef":"5824-utensil-rdpf3","utensilNotation":"zuppiera"},{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/utensil_icons/5472","utensilRef":"5472-utensil-rdpf3","utensilNotation":"scolapasta"}],"variantCluster":[{"uid":"3d72ca63-d15a-4edf-b4e3-71b8a058f369","clusterType":"portion","clusterDefaultId":"r769256"}],"categories_refs":["VrkNavCategory-RPF-003"],"nutritionGroups":[{"name":"","recipeNutritions":[{"quantity":1,"nutritions":[{"type":"sodium","number":1422.3,"unittype":"mg"},{"type":"protein","number":27.3,"unittype":"g"},{"type":"kJ","number":3785.5,"unittype":"kJ"},{"type":"fat","number":57.4,"unittype":"g"},{"type":"kcal","number":904.8,"unittype":"kcal"},{"type":"dietaryFibre","number":3.4,"unittype":"g"},{"type":"saturatedFat","number":10.5,"unittype":"g"},{"type":"carb2","number":74.4,"unittype":"g"}],"unitNotation":"porzione"}]}],"optionalDevices":[],"publicationDate":"2026-10-19T11:02:55Z","targetCountries":["it"],"recipeStepGroups":[{"title":"","recipeSteps":[{"title":"1","formattedText":"Mettere
+        nel boccale lo scalogno, il peperoncino e l''olio extravergine di oliva, tritare:
+        <nobr>5 sec./vel. 7</nobr>. Riunire sul fondo con la spatola e insaporire:
+        <nobr>3 min./120°C/vel. 1</nobr>."},{"title":"2","formattedText":"Aggiungere
+        la salsiccia e insaporire: <nobr>3 min./100°C//vel. 1</nobr>"},{"title":"3","formattedText":"Unire
+        il Cognac e sfumare: <nobr>3 min./100°C//vel. 1</nobr> senza misurino."},{"title":"4","formattedText":"Aggiungere
+        la passata di pomodoro e il sale, cuocere: <nobr>15 min./120°C//vel. 1</nobr>.  Nel
+        frattempo, in una pentola capiente portare ad ebollizione abbondante acqua
+        salata e cuocere la pasta per il tempo riportato sulla confezione."},{"title":"5","formattedText":"Unire
+        nel boccale la panna e cuocere: <nobr>5 min./100°C//vel. 1</nobr>"},{"title":"6","formattedText":"Scolare
+        la pasta, trasferirla in una zuppiera e amalgamare con il condimento. A piacere,
+        spolverizzare con del prezzemolo tritato e servire subito."}]}],"additionalDevices":[],"descriptiveAssets":[{"type":"image","square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/f95c0864cbde62f917279de4200d0e9a/Derivates/fb561bb321351d5d61e4b0725638b67ae327ee57","portrait":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/f95c0864cbde62f917279de4200d0e9a/Derivates/fb561bb321351d5d61e4b0725638b67ae327ee57","landscape":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/f95c0864cbde62f917279de4200d0e9a/Derivates/fb561bb321351d5d61e4b0725638b67ae327ee57"},{"type":"image","square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/9375a33179b7b828f65aedce712424c0/Derivates/d20f7e55fff244fa366260197ecdf6de06cde1d9","portrait":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/9375a33179b7b828f65aedce712424c0/Derivates/d20f7e55fff244fa366260197ecdf6de06cde1d9","landscape":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/9375a33179b7b828f65aedce712424c0/Derivates/d20f7e55fff244fa366260197ecdf6de06cde1d9"},{"type":"image","square":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/a444535c879c1ff45ad8f80c0f1e9ca8/Derivates/c5c0d08d5afe496e8db9628e9292ae7b7b6010e5","portrait":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/a444535c879c1ff45ad8f80c0f1e9ca8/Derivates/c5c0d08d5afe496e8db9628e9292ae7b7b6010e5","landscape":"https://assets.tmecosys.com/image/upload/{transformation}/img/recipe/ras/Assets/a444535c879c1ff45ad8f80c0f1e9ca8/Derivates/c5c0d08d5afe496e8db9628e9292ae7b7b6010e5"}],"thermomixVersions":["TM7","TM6","TM5","TM31"],"transformationDate":"2026-10-19T09:03:29Z","additionalInformation":[{"type":"VrkRecipeAdditionalInformationType","content":"E''
+        possibile preparare il condimento in anticipo e conservarlo in frigorifero
+        massimo per 1 giorno, all''interno di un contenitore a chiusura ermetica."}],"recipeIngredientGroups":[{"title":"","recipeIngredients":[{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/238","localId":"com.vorwerk.ingredients.Ingredient-rpf-238","optional":false,"quantity":{"value":40},"unit_ref":"11-unit-rdpf3","preparation":"tagliato
+        a metà","unitNotation":"g","ingredient_ref":"com.vorwerk.ingredients.Ingredient-rpf-238","ingredientNotation":"di
+        scalogno"},{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/103","localId":"com.vorwerk.ingredients.Ingredient-rpf-103","optional":false,"quantity":{"value":0.5},"unit_ref":"","preparation":"","unitNotation":"","ingredient_ref":"com.vorwerk.ingredients.Ingredient-rpf-103","ingredientNotation":"peperoncino
+        piccante rosso, fresco"},{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/306","localId":"com.vorwerk.ingredients.Ingredient-rpf-306","optional":false,"quantity":{"value":30},"unit_ref":"11-unit-rdpf3","preparation":"","unitNotation":"g","ingredient_ref":"com.vorwerk.ingredients.Ingredient-rpf-306","ingredientNotation":"olio
+        extravergine di oliva"},{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/624","localId":"com.vorwerk.ingredients.Ingredient-rpf-624","optional":false,"quantity":{"value":400},"unit_ref":"11-unit-rdpf3","preparation":"senza
+        pelle, sbriciolata","unitNotation":"g","ingredient_ref":"com.vorwerk.ingredients.Ingredient-rpf-624","ingredientNotation":"di
+        salsiccia"},{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/172","localId":"com.vorwerk.ingredients.Ingredient-rpf-172","optional":false,"quantity":{"value":40},"unit_ref":"11-unit-rdpf3","preparation":"","unitNotation":"g","ingredient_ref":"com.vorwerk.ingredients.Ingredient-rpf-172","ingredientNotation":"di
+        Cognac"},{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/230","localId":"com.vorwerk.ingredients.Ingredient-rpf-230","optional":false,"quantity":{"value":250},"unit_ref":"11-unit-rdpf3","preparation":"","unitNotation":"g","ingredient_ref":"com.vorwerk.ingredients.Ingredient-rpf-230","ingredientNotation":"di
+        passata di pomodoro"},{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/269","localId":"com.vorwerk.ingredients.Ingredient-rpf-269","optional":false,"quantity":{"value":1},"unit_ref":"65-unit-rdpf3","preparation":"","unitNotation":"pizzico","ingredient_ref":"com.vorwerk.ingredients.Ingredient-rpf-269","ingredientNotation":"di
+        sale"},{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/4252","localId":"com.vorwerk.ingredients.Ingredient-rpf-4252","optional":false,"quantity":{"value":350},"unit_ref":"11-unit-rdpf3","preparation":"","unitNotation":"g","ingredient_ref":"com.vorwerk.ingredients.Ingredient-rpf-4252","ingredientNotation":"di
+        pasta corta a piacere"},{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/1963","localId":"com.vorwerk.ingredients.Ingredient-rpf-1963","optional":false,"quantity":{"value":250},"unit_ref":"11-unit-rdpf3","preparation":"","unitNotation":"g","ingredient_ref":"com.vorwerk.ingredients.Ingredient-rpf-1963","ingredientNotation":"di
+        panna da cucina"},{"icon":"https://assets.tmecosys.com/image/upload/{transformation}/icons/ingredient_icons/33","localId":"com.vorwerk.ingredients.Ingredient-rpf-33","optional":true,"quantity":{"value":0},"unit_ref":"","preparation":"a
+        piacere","unitNotation":"","ingredient_ref":"com.vorwerk.ingredients.Ingredient-rpf-33","ingredientNotation":"prezzemolo
+        tritato"}]}],"inCollections":[{"id":"VrkCollection-it–000000001000-tm5","title":"Pasta","recipesCount":{"value":27,"text":"other"},"market":"it","marketName":"Italy","descriptiveAssets":[{"type":"image","square":"https://assets.tmecosys.com/image/upload/{transformation}/img/collection/ras/Assets/3d716fe5bddfbbd84141663aabf3282c/Derivates/c2c289c529ac9e932f8e2284e418215636582513"}]},{"id":"col456079","title":"Voi...Noi...Bimby®
+        - Giugno 2022","recipesCount":{"value":31,"text":"other"},"market":"it","marketName":"Italy","descriptiveAssets":[{"type":"image","square":"https://assets.tmecosys.com/image/upload/{transformation}/img/collection/ras/Assets/9582da75de56f243c41f674847107d64/Derivates/5fecbaefd6ac637ee57016db4767357f3f043ca0"}]}]}'
+    headers:
+      Cache-Control:
+      - no-cache, no-store, must-revalidate
+      Cache-Fetch-Status:
+      - MISS
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json;charset=utf-8
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      - origin,accept-encoding
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - 1; mode=block
+      content-length:
+      - '12738'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+    method: get
+    uri: https://cookidoo.ch/recipes/recipe/en/r000000
+  response:
+    body:
+      string: '{"statusCode":404,"error":"Not Found","message":"Not Found"}
+
+        '
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '61'
+      Content-Type:
+      - application/json
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Strict-Transport-Security:
+      - max-age=31536000
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 404
+      message: Not Found
+- request:
+    body: null
+    headers:
+      ACCEPT:
+      - application/json
+    method: get
+    uri: https://cookidoo.ch/planning/en/api/my-week/2027-03-01
+  response:
+    body:
+      string: '{"author":null,"myDays":[],"recipeCount":0,"userId":"<scrubbed>"}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '91'
+      Content-Type:
+      - application/json
+      Strict-Transport-Security:
+      - max-age=31536000
+    status:
+      code: 200
+      message: OK
+version: 1

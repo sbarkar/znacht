@@ -92,5 +92,40 @@ def demo(
     _render(result)
 
 
+@app.command()
+def cookidoo_dry_run(
+    week: Annotated[str, typer.Option(help="Monday of the week, YYYY-MM-DD")],
+    query: Annotated[str, typer.Option(help="a recipe search to try")] = "pasta",
+) -> None:
+    """Read-only check against the live Cookidoo account: My Week and a search. Writes nothing."""
+    from znacht.ports.recipes import RecipeQuery
+    from znacht_cookidoo import (
+        CookidooMealPlanSink,
+        CookidooRecipeSource,
+        CookidooSession,
+        CookidooSettings,
+    )
+
+    settings = CookidooSettings.from_env()
+
+    async def run() -> None:
+        async with CookidooSession(settings) as session:
+            assert session.client is not None
+            plan = await CookidooMealPlanSink(session.client).read_week(
+                Week(start=date.fromisoformat(week))
+            )
+            typer.echo(f"My Week {week}: {len(plan.meals)} planned")
+            for meal in plan.meals:
+                typer.echo(f"  {meal.date} {meal.recipe_id}")
+            source = CookidooRecipeSource(session.client, locale=settings.language)
+            for recipe in await source.search(RecipeQuery(text=query, limit=3)):
+                tags = ",".join(sorted(recipe.tags))
+                n = len(recipe.ingredients)
+                typer.echo(f"  {recipe.id.external_id}  {recipe.title}  [{tags}]  {n} ingredients")
+        typer.echo("dry run complete; nothing was written")
+
+    asyncio.run(run())
+
+
 if __name__ == "__main__":
     app()

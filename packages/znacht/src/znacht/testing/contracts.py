@@ -120,7 +120,9 @@ class MealPlanSinkContract:
         )
         result = await sink.apply(await sink.diff(plan))
         assert result.ok
-        assert set((await sink.read_week(week)).meals) == set(plan.meals)
+        # servings are not stored by every sink: compare by (date, recipe)
+        read = {(m.date, m.recipe_id.key) for m in (await sink.read_week(week)).meals}
+        assert read == {(m.date, m.recipe_id.key) for m in plan.meals}
         assert (await sink.diff(plan)).is_empty
         # clean up
         await sink.apply(await sink.diff(MealPlan(week=week)))

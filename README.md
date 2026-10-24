@@ -26,7 +26,13 @@ Phase 1 done: core domain, ports, deterministic planner, constraint checker, gro
 uv run znacht demo --household examples/household.example.yaml --week 2026-10-26
 ```
 
-Next: the Cookidoo adapter (Phase 2). No live adapters yet. See [docs/architecture.md](docs/architecture.md) and the [decision log](docs/decisions/).
+Phase 2 done: the Cookidoo adapter (`znacht-cookidoo`) searches recipes, maps them to the domain, and reads and writes My Week. Read-only check against your account:
+
+```bash
+ZNACHT_COOKIDOO_EMAIL=you@example.com ZNACHT_COOKIDOO_PASSWORD=... make e2e-dry-run
+```
+
+Next: the Migros adapter (Phase 3). See [docs/architecture.md](docs/architecture.md) and the [decision log](docs/decisions/).
 
 ## Development
 

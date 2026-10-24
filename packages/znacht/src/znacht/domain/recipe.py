@@ -55,6 +55,7 @@ class Ingredient(Frozen):
     category: Category = Category.OTHER
     staple: bool = False
     optional: bool = False
+    raw: str | None = None
 
     @field_validator("name")
     @classmethod

@@ -14,6 +14,7 @@ members = ["packages/*"]
 [tool.uv.sources]
 znacht = { workspace = true }
 znacht-memory = { workspace = true }
+znacht-cookidoo = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -23,12 +24,17 @@ dev = [
   "mypy>=1.13",
   "ruff>=0.8",
   "types-PyYAML>=6.0",
+  "vcrpy>=6.0",
+  "python-dotenv>=1.0",
+  "znacht",
+  "znacht-memory",
+  "znacht-cookidoo",
 ]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["packages/znacht/src", "packages/znacht-memory/src", "tests"]
+src = ["packages/znacht/src", "packages/znacht-memory/src", "packages/znacht-cookidoo/src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "ANN", "ASYNC"]
@@ -42,8 +48,8 @@ python_version = "3.12"
 strict = true
 warn_unreachable = true
 plugins = ["pydantic.mypy"]
-mypy_path = "packages/znacht/src:packages/znacht-memory/src"
-packages = ["znacht", "znacht_memory"]
+mypy_path = "packages/znacht/src:packages/znacht-memory/src:packages/znacht-cookidoo/src"
+packages = ["znacht", "znacht_memory", "znacht_cookidoo"]
 
 [[tool.mypy.overrides]]
 module = "tests.*"

@@ -182,7 +182,7 @@ class Notifier(Protocol):
 |---|---|---|
 | 0 | this document, ADR-0001…0004, name, repo created | your go |
 | 1 | core domain, ports, config schema, in-memory fakes, deterministic planner, checker, splitter, optimiser, CLI | **done 2026-10-24**: golden-week test green on fakes; seed-rules conversion follows once `docs/seed/meal-planning-rules.md` lands |
-| 2 | `znacht-cookidoo` (RecipeSource + MealPlanSink) | contract suite + cassettes green; `e2e-dry-run` shows a correct diff against your My Week |
+| 2 | `znacht-cookidoo` (RecipeSource + MealPlanSink) | **done 2026-10-24**: contract suites green on a fake client, replay tests green on a scrubbed read-only cassette, `make e2e-dry-run` reads My Week live |
 | 3 | `znacht-migros` (native) | contract suite + cassettes green; dry-run reproduces last week's hand-made split |
 | 4 | `znacht-llm-anthropic`, prompt/schema, re-prompt loop, lab-PDF and pantry-photo extraction with confirmation | golden week green with the real planner on fixture catalogues |
 | 5 | engine API, HACS integration, notifications | entities and actions working on your HA |

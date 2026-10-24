@@ -22,6 +22,9 @@ check: lint typecheck test
 demo:
 	uv run znacht demo --household examples/household.example.yaml --week 2026-10-26
 
-# Phase 2+: live accounts, read-only, prints the diff it would apply.
+# Live accounts, read-only. Needs ZNACHT_COOKIDOO_EMAIL (+ PASSWORD on first run) in the env.
 e2e-dry-run:
-	@echo "e2e-dry-run needs live adapters (Phase 2+)."; exit 1
+	uv run znacht cookidoo-dry-run --week $(shell date -d 'next monday' +%F)
+
+record-cookidoo:
+	uv run python scripts/record_cookidoo.py --env-file $(ENV_FILE)
