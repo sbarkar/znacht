@@ -1,0 +1,63 @@
+# One household per file. Human-editable; validated with pydantic on load.
+# This example is the fixture the golden-week test runs on. Replace with your own.
+id: example
+name: Example household
+
+members:
+  - name: Adult one
+    age_group: adult
+    dislikes: [dill]
+  - name: Adult two
+    age_group: adult
+  - name: Toddler
+    age_group: toddler        # implies mild food; set mild_food: false to override
+
+rules:
+  dinners_per_week: 7
+  min_per_week:              # counted on dinners
+    fish: 2
+    legumes: 2
+    red_meat: 1
+  max_per_week:
+    red_meat: 1
+  banned_ingredients: [dill]
+  max_total_minutes_weekday: 60
+  max_repeats_per_week: 1
+
+health:
+  markers: {}                # filled from YAML or a confirmed lab-report extraction
+  rules: []                  # e.g. "limit added sugar and refined carbs"
+
+pantry:                      # name: quantity; checked before buying staples
+  olive oil: 500 ml
+  rice: 1 kg
+  salt: 500 g
+  pasta: 250 g
+
+delivery:
+  postcode: "8000"
+  preferred_slot_id: mon-19-21
+
+store_lists:                 # explicit IDs; the store's "active list" is never trusted
+  online: list-online
+  in_store: list-store
+
+store_policy:
+  prefer_store_categories: [bakery]
+  prefer_store_when_cheaper_by: 0.50   # CHF; such lines stay movable for the minimum order
+  freezer_box_deposit: 20
+
+make_at_home:                # bought dish -> components to buy instead
+  hummus:
+    chickpeas: 400 g
+    tahini: 100 g
+    lemon: 1
+
+preferred_products:          # ingredient -> product id; good picks are persisted here
+  minced beef: p-beef-15
+  pasta: p-pasta-white
+  yogurt: p-yog-sweet
+  milk: p-milk-whole
+
+free_text_items: [dishwasher tabs]
+default_servings: 3

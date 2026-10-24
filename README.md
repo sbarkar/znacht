@@ -20,7 +20,13 @@ The core knows nothing about any store, recipe platform or appliance. Each one i
 
 ## Status
 
-Phase 1: core domain, ports, deterministic planner, in-memory fakes and the golden-week test. No live adapters yet. See [docs/architecture.md](docs/architecture.md) and the [decision log](docs/decisions/).
+Phase 1 done: core domain, ports, deterministic planner, constraint checker, grocery split, product optimiser, in-memory fakes, and the golden-week test, all green. Try it without any account:
+
+```bash
+uv run znacht demo --household examples/household.example.yaml --week 2026-10-26
+```
+
+Next: the Cookidoo adapter (Phase 2). No live adapters yet. See [docs/architecture.md](docs/architecture.md) and the [decision log](docs/decisions/).
 
 ## Development
 

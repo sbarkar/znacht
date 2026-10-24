@@ -1,0 +1,30 @@
+[project]
+name = "znacht-memory"
+version = "0.1.0.dev0"
+description = "In-memory adapters for every Znacht port, plus fixture catalogues. Used by tests and the CLI demo."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.12"
+dependencies = ["znacht"]
+
+[project.entry-points."znacht.recipe_sources"]
+memory = "znacht_memory.recipes:MemoryRecipeSource"
+
+[project.entry-points."znacht.meal_plan_sinks"]
+memory = "znacht_memory.sink:MemoryMealPlanSink"
+
+[project.entry-points."znacht.grocery_stores"]
+memory = "znacht_memory.store:MemoryGroceryStore"
+
+[project.entry-points."znacht.health_profile_sources"]
+memory = "znacht_memory.health:MemoryHealthProfileSource"
+
+[project.entry-points."znacht.notifiers"]
+memory = "znacht_memory.notifier:MemoryNotifier"
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/znacht_memory"]

@@ -83,32 +83,50 @@ Sketch only; exact signatures are Phase 1 work. All async.
 ```python
 class RecipeSource(Protocol):
     async def search(self, q: RecipeQuery) -> list[RecipeSummary]: ...
-    async def get(self, recipe_id: RecipeId) -> Recipe: ...          # ingredients, servings, rating, time, tags
+    async def get(
+        self, recipe_id: RecipeId
+    ) -> Recipe: ...  # ingredients, servings, rating, time, tags
+
 
 class MealPlanSink(Protocol):
     async def read_week(self, week: Week) -> MealPlan: ...
-    async def diff(self, plan: MealPlan) -> PlanDiff: ...             # dry-run, no writes
-    async def apply(self, diff: PlanDiff) -> ApplyResult: ...         # only path that writes
+    async def diff(self, plan: MealPlan) -> PlanDiff: ...  # dry-run, no writes
+    async def apply(self, diff: PlanDiff) -> ApplyResult: ...  # only path that writes
+
 
 class GroceryStore(Protocol):
     async def search(self, q: str, *, limit: int = 6) -> list[Product]: ...
-    async def product(self, product_id: ProductId) -> Product: ...    # price_online, price_store, unit_price, pack, nutrition, promos, coupons
-    async def deliverability(self, ids: list[ProductId], postcode: str) -> dict[ProductId, Deliverability]: ...
-    async def delivery_slots(self, postcode: str) -> list[DeliverySlot]: ...   # start, end, cutoff
+    async def product(
+        self, product_id: ProductId
+    ) -> Product: ...  # price_online, price_store, unit_price, pack, nutrition, promos, coupons
+    async def deliverability(
+        self, ids: list[ProductId], postcode: str
+    ) -> dict[ProductId, Deliverability]: ...
+    async def delivery_slots(self, postcode: str) -> list[DeliverySlot]: ...  # start, end, cutoff
     async def minimum_order(self) -> Money: ...
-    async def lists(self) -> list[ShoppingListRef]: ...               # always by explicit ID
+    async def lists(self) -> list[ShoppingListRef]: ...  # always by explicit ID
     async def read_list(self, list_id: ListId) -> ShoppingList: ...
     async def diff_list(self, list_id: ListId, target: ShoppingList) -> ListDiff: ...
     async def apply_list(self, list_id: ListId, diff: ListDiff) -> ApplyResult: ...
     async def stock(self, ids: list[ProductId]) -> dict[ProductId, StockStatus]: ...
+
     # deliberately absent: checkout, order, pay, slot booking
 
+
 class HealthProfileSource(Protocol):
-    async def load(self, household: HouseholdId) -> HealthProfile: ...   # YAML, or LLM-extracted lab PDF after user confirmation
+    async def load(
+        self, household: HouseholdId
+    ) -> HealthProfile: ...  # YAML, or LLM-extracted lab PDF after user confirmation
+
 
 class PlannerProvider(Protocol):
-    async def propose(self, ctx: PlanningContext) -> PlanProposal: ...   # LLM; output is validated by the checker, never trusted
-    async def extract(self, doc: Document, schema: type[T]) -> T: ...    # lab PDF → markers, pantry photo → items
+    async def propose(
+        self, ctx: PlanningContext
+    ) -> PlanProposal: ...  # LLM; output is validated by the checker, never trusted
+    async def extract(
+        self, doc: Document, schema: type[T]
+    ) -> T: ...  # lab PDF → markers, pantry photo → items
+
 
 class Notifier(Protocol):
     async def notify(self, event: PlanEvent) -> None: ...
@@ -163,7 +181,7 @@ class Notifier(Protocol):
 | Phase | Deliverable | Exit criterion |
 |---|---|---|
 | 0 | this document, ADR-0001…0004, name, repo created | your go |
-| 1 | core domain, ports, config schema seeded from your rules, in-memory fakes, planner checker, splitter, optimiser (pure logic), CLI | golden-week test green on fakes |
+| 1 | core domain, ports, config schema, in-memory fakes, deterministic planner, checker, splitter, optimiser, CLI | **done 2026-10-24**: golden-week test green on fakes; seed-rules conversion follows once `docs/seed/meal-planning-rules.md` lands |
 | 2 | `znacht-cookidoo` (RecipeSource + MealPlanSink) | contract suite + cassettes green; `e2e-dry-run` shows a correct diff against your My Week |
 | 3 | `znacht-migros` (native) | contract suite + cassettes green; dry-run reproduces last week's hand-made split |
 | 4 | `znacht-llm-anthropic`, prompt/schema, re-prompt loop, lab-PDF and pantry-photo extraction with confirmation | golden week green with the real planner on fixture catalogues |
