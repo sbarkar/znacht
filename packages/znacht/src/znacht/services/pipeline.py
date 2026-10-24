@@ -236,7 +236,12 @@ def name_overlap(need_name: str, product_name: str) -> int:
 _SYNONYMS: tuple[tuple[str, str], ...] = (
     ("garlic cloves", "garlic"),
     ("garlic clove", "garlic"),
-    ("capsicum", "pepper"),
+    ("capsicum", "peppers"),
+    ("pouring", ""),
+    ("whipping", ""),
+    ("thickened", ""),
+    ("eschalots", "shallots"),
+    ("eschalot", "shallot"),
     ("tomato paste", "tomato purée"),
     ("cilantro", "coriander"),
     ("courgette", "zucchini"),
@@ -253,7 +258,7 @@ def search_variants(need_name: str) -> list[str]:
     out = [name]
     for src, dst in _SYNONYMS:
         if src in name:
-            out.append(name.replace(src, dst))
+            out.append(" ".join(name.replace(src, dst).replace("(", " ").replace(")", " ").split()))
     kept = [w for w in name.replace("-", " ").replace(",", " ").split() if w not in _STOPWORDS]
     if kept and " ".join(kept) != name:
         out.append(" ".join(kept))
@@ -304,8 +309,8 @@ async def _choose_all(
     for need in needs:
         relevant: list[Product] = []
         for variant in search_variants(need.name):
-            candidates = list(await store.search(variant, category=need.category, limit=8))
-            relevant = shortlist_for(need.name, candidates)
+            candidates = list(await store.search(variant, category=need.category, limit=12))
+            relevant = shortlist_for(variant, candidates)
             if relevant:
                 break
         baseline = baselines.get(need.name)

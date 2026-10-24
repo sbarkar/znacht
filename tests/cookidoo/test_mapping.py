@@ -18,7 +18,8 @@ from znacht_cookidoo.mapping import categorise, infer_spiciness, parse_quantity,
         ("1 l", Decimal(1), Unit.L),
         ("1", Decimal(1), Unit.PIECE),
         ("1 - 2", Decimal(2), Unit.PIECE),
-        ("2 tbsp", Decimal(2), Unit.PIECE),
+        ("2 tbsp", Decimal(30), Unit.ML),
+        ("1 tsp", Decimal(5), Unit.ML),
         ("½", Decimal("0.5"), Unit.PIECE),
         ("3 cloves", Decimal(3), Unit.PIECE),
         ("1 - 2 sprigs", Decimal(2), Unit.PIECE),
@@ -75,7 +76,7 @@ def test_recipe_from_details_maps_everything():
     assert salmon.raw == "500 g salmon fillet"
     oil = next(i for i in recipe.ingredients if i.name == "olive oil")
     assert oil.staple
-    assert oil.quantity.unit == Unit.PIECE  # tbsp counted as pieces, raw notation kept
+    assert oil.quantity.unit == Unit.ML and oil.quantity.value == 30  # 2 tbsp -> 30 ml
 
 
 def test_tags_and_spiciness_are_inferred():

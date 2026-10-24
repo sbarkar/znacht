@@ -39,6 +39,19 @@ _UNITS: Final[dict[str, Unit]] = {
     "cl": Unit.ML,
 }
 _UNIT_FACTOR: Final[dict[str, Decimal]] = {"dl": Decimal(100), "cl": Decimal(10)}
+# Spoon and cup measures become millilitres so pantry quantities in ml can cover them.
+_SPOONS: Final[dict[str, Decimal]] = {
+    "tbsp": Decimal(15),
+    "tablespoon": Decimal(15),
+    "tablespoons": Decimal(15),
+    "el": Decimal(15),
+    "tsp": Decimal(5),
+    "teaspoon": Decimal(5),
+    "teaspoons": Decimal(5),
+    "tl": Decimal(5),
+    "cup": Decimal(240),
+    "cups": Decimal(240),
+}
 
 # Loose count-like units: one of these is one "piece" for shopping purposes.
 _PIECE_UNITS: Final = frozenset(
@@ -192,6 +205,8 @@ def parse_quantity(description: str) -> Quantity | None:
     if unit in _UNITS:
         factor = _UNIT_FACTOR.get(unit, Decimal(1))
         return Quantity(value=value * factor, unit=_UNITS[unit])
+    if unit in _SPOONS:
+        return Quantity(value=value * _SPOONS[unit], unit=Unit.ML)
     if unit in _PIECE_UNITS or not unit:
         return Quantity(value=value, unit=Unit.PIECE)
     # unknown unit: count it as pieces but keep the raw text on the ingredient
