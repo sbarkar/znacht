@@ -13,7 +13,14 @@ from znacht.domain.plan import Week
 from znacht.domain.quantity import Quantity
 from znacht.domain.recipe import Recipe
 from znacht.ports.notify import Notifier, PlanEvent
-from znacht.services.pipeline import PlanStatus, WeekResult, apply_week, basket_summary, run_week
+from znacht.services.pipeline import (
+    PlanStatus,
+    WeekResult,
+    apply_week,
+    basket_summary,
+    revert_week,
+    run_week,
+)
 from znacht_engine.brief import Brief, build_brief, lifetime, price_rows
 from znacht_engine.config import EngineSettings
 from znacht_engine.repo import Repo
@@ -122,6 +129,20 @@ class ZnachtService:
                         )
                     )
                 return rid, applied
+            finally:
+                self._busy = None
+
+    async def revert(self, run_id: int) -> tuple[int, WeekResult]:
+        """Undo an applied run on Cookidoo and the store. Explicit, like apply."""
+        async with self._lock:
+            self._busy = "reverting"
+            try:
+                rid, result = self._run(run_id)
+                reverted = await revert_week(
+                    result, store=self.adapters.store, sink=self.adapters.sink, approved=True
+                )
+                self.repo.update_run(rid, reverted)
+                return rid, reverted
             finally:
                 self._busy = None
 

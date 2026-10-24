@@ -88,3 +88,36 @@ async def test_plan_week_endpoint_runs_in_background(
         if service.repo.latest_run("example"):
             break
     assert service.repo.latest_run("example") is not None
+
+
+async def test_revert_restores_my_week_and_lists(client: httpx.AsyncClient, service: ZnachtService):
+    from datetime import date as _date
+
+    from znacht.domain.plan import Meal, MealPlan, MealSlot, Week
+    from znacht.domain.recipe import RecipeId
+
+    # the household already had a plan in the sink before Znacht ran
+    week = Week(start=GOLDEN_WEEK_START)
+    existing = Meal(
+        date=_date(2026, 10, 27),
+        slot=MealSlot.DINNER,
+        recipe_id=RecipeId(source="memory", external_id="omelette"),
+        servings=2,
+    )
+    await service.adapters.sink.apply(
+        await service.adapters.sink.diff(MealPlan(week=week, meals=(existing,)))
+    )
+    online_before = await service.adapters.store.read_list("list-online")
+
+    run_id, _ = await service.plan_week(GOLDEN_WEEK_START)
+    applied = await client.post(f"/api/apply?run_id={run_id}")
+    assert applied.json()["status"] == "applied"
+    assert existing not in (await service.adapters.sink.read_week(week)).meals
+
+    reverted = await client.post(f"/api/runs/{run_id}/revert")
+    assert reverted.status_code == 200 and reverted.json()["status"] == "reverted"
+    assert set((await service.adapters.sink.read_week(week)).meals) == {existing}
+    assert (
+        await service.adapters.store.read_list("list-online")
+    ).as_dict().keys() == online_before.as_dict().keys()
+    assert (await client.post(f"/api/runs/{run_id}/revert")).status_code == 409

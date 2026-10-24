@@ -46,6 +46,30 @@ class ListDiff(Frozen):
     def is_empty(self) -> bool:
         return not self.lines
 
+    def inverse(self) -> ListDiff:
+        """The diff that undoes this one: adds become removes, removes become adds,
+        quantity changes go back to the previous quantity."""
+        out: list[ListLineDiff] = []
+        for change in self.lines:
+            if change.op == "add":
+                out.append(
+                    ListLineDiff(
+                        op="remove", line=change.line, previous_quantity=change.line.quantity
+                    )
+                )
+            elif change.op == "remove":
+                out.append(ListLineDiff(op="add", line=change.line))
+            else:
+                previous = change.previous_quantity if change.previous_quantity is not None else 1
+                out.append(
+                    ListLineDiff(
+                        op="change",
+                        line=change.line.model_copy(update={"quantity": previous}),
+                        previous_quantity=change.line.quantity,
+                    )
+                )
+        return ListDiff(list_id=self.list_id, lines=tuple(out))
+
 
 def diff_lists(current: ShoppingList, target: ShoppingList) -> ListDiff:
     """Pure diff between two lists, keyed by product ID or free text."""
@@ -73,6 +97,10 @@ class PlanDiff(Frozen):
     @property
     def is_empty(self) -> bool:
         return not self.add and not self.remove
+
+    def inverse(self) -> PlanDiff:
+        """The diff that undoes this one."""
+        return PlanDiff(week=self.week, add=self.remove, remove=self.add)
 
 
 class ApplyResult(Frozen):

@@ -48,6 +48,7 @@ def slots_from_templates(templates: tuple[SlotTemplate, ...], week: Week) -> lis
 
 class PlanStatus(StrEnum):
     DRAFT = "draft"
+    REVERTED = "reverted"
     NEEDS_INPUT = "needs_input"
     NEEDS_APPROVAL = "needs_approval"
     APPLIED = "applied"
@@ -593,6 +594,25 @@ async def apply_week(
             applied = await store.apply_list(diff.list_id, diff)
             notes.append(f"list {diff.list_id}: {applied.message or applied.applied}")
     return result.model_copy(update={"status": PlanStatus.APPLIED, "notes": tuple(notes)})
+
+
+async def revert_week(
+    result: WeekResult, *, store: GroceryStore, sink: MealPlanSink, approved: bool
+) -> WeekResult:
+    """Undo an applied run: put back what apply removed and take out what it added."""
+    if not approved:
+        raise PermissionError("revert_week needs approved=True; nothing was written")
+    if result.status != PlanStatus.APPLIED:
+        raise ValueError(f"cannot revert a result in status {result.status}")
+    notes = list(result.notes)
+    if result.plan_diff is not None and not result.plan_diff.is_empty:
+        undone = await sink.apply(result.plan_diff.inverse())
+        notes.append(f"meal plan reverted: {undone.message or undone.applied}")
+    for diff in (result.online_diff, result.in_store_diff):
+        if diff is not None and not diff.is_empty:
+            undone = await store.apply_list(diff.list_id, diff.inverse())
+            notes.append(f"list {diff.list_id} reverted: {undone.message or undone.applied}")
+    return result.model_copy(update={"status": PlanStatus.REVERTED, "notes": tuple(notes)})
 
 
 def basket_summary(shopping: ShoppingPlan) -> dict[str, Money | int | bool]:

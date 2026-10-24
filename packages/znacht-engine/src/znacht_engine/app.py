@@ -124,6 +124,16 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return {"run_id": rid, "status": str(result.status), "notes": list(result.notes)}
 
+    @app.post("/api/runs/{run_id}/revert", dependencies=[Depends(auth)])
+    async def revert(run_id: int, s: ZnachtService = Depends(svc)) -> dict[str, Any]:
+        try:
+            rid, result = await s.revert(run_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except (PermissionError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return {"run_id": rid, "status": str(result.status), "notes": list(result.notes)}
+
     @app.post("/api/refresh", dependencies=[Depends(auth)])
     async def refresh(s: ZnachtService = Depends(svc)) -> dict[str, Any]:
         return await s.refresh()
