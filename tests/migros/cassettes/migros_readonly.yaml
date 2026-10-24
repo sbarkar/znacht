@@ -1,0 +1,1295 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9
+      connection:
+      - keep-alive
+      host:
+      - www.migros.ch
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: GET
+    uri: https://www.migros.ch/authentication/public/v1/api/guest?authorizationNotRequired=true
+  response:
+    body:
+      string: '{"userid":"<scrubbed>"}'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      connection:
+      - keep-alive
+      content-length:
+      - '55'
+      content-type:
+      - application/json
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      leshopch:
+      - replay-guest-token
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"regionId":"national","language":"en","productIds":[],"query":"broccoli","sortFields":[],"sortOrder":"asc","algorithm":"DEFAULT"}'
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9
+      connection:
+      - keep-alive
+      content-length:
+      - '130'
+      content-type:
+      - application/json
+      host:
+      - www.migros.ch
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: POST
+    uri: https://www.migros.ch/onesearch-oc-seaapi/public/v5/search
+  response:
+    body:
+      string: '{"productIds":[100025235,100024248,100142530,100143175,100023046,100031579,100002999,100030836,100193306,100218484,100036030,100047630,100005783,100041653,100162055],"categories":[{"id":7494732,"name":"Fruits
+        & vegetables","numberOfProducts":6,"sortPriority":1,"parentSortPriority":1,"path":"/DS/Fruitsvegetables","type":"MAIN","slug":"fruits-vegetables","addAllItemsToBasket":false,"level":2},{"id":7494738,"name":"Frozen
+        food","numberOfProducts":3,"sortPriority":7,"parentSortPriority":1,"path":"/DS/Frozenfood","type":"MAIN","slug":"frozen-food","addAllItemsToBasket":false,"level":2},{"id":30009000,"name":"Baby
+        and kids","numberOfProducts":2,"sortPriority":16,"parentSortPriority":1,"path":"/DS/Babyandkids","type":"MAIN","slug":"baby-and-kids","addAllItemsToBasket":false,"level":2},{"id":7494735,"name":"Pasta,
+        condiments & canned food","numberOfProducts":2,"sortPriority":5,"parentSortPriority":1,"path":"/DS/Pastacondimentscannedfood","type":"MAIN","slug":"pasta-condiments-canned-food","addAllItemsToBasket":false,"level":2},{"id":7494730,"name":"Meat
+        & fish","numberOfProducts":1,"sortPriority":2,"parentSortPriority":1,"path":"/DS/Meatfish","type":"MAIN","slug":"meat-fish","addAllItemsToBasket":false,"level":2},{"id":30009561,"name":"Garden
+        & outdoor living","numberOfProducts":1,"sortPriority":21,"parentSortPriority":1,"path":"/DS/Gardenoutdoorliving","type":"MAIN","slug":"garden-outdoor-living","addAllItemsToBasket":false,"level":2}],"features":[{"id":"category","name":"Categories","type":"STRING","slug":"category","numberOfProducts":15,"values":[{"numberOfProducts":6,"slug":"7494732","value":"Fruits
+        & vegetables"},{"numberOfProducts":1,"slug":"7494730","value":"Meat & fish"},{"numberOfProducts":3,"slug":"7494738","value":"Frozen
+        food"},{"numberOfProducts":2,"slug":"30009000","value":"Baby and kids"},{"numberOfProducts":1,"slug":"30009561","value":"Garden
+        & outdoor living"},{"numberOfProducts":2,"slug":"7494735","value":"Pasta,
+        condiments & canned food"}]},{"id":"brand","name":"Brand","type":"STRING","slug":"brand","numberOfProducts":13,"values":[{"numberOfProducts":5,"slug":"migros","value":"Migros"},{"numberOfProducts":2,"slug":"farmers-best","value":"Farmer''s
+        Best"},{"numberOfProducts":1,"slug":"alnatura","value":"Alnatura"},{"numberOfProducts":1,"slug":"bon-chef","value":"Bon
+        Chef"},{"numberOfProducts":1,"slug":"hipp","value":"Hipp"},{"numberOfProducts":1,"slug":"living-seeds","value":"Living
+        Seeds"},{"numberOfProducts":1,"slug":"m-budget","value":"M-Budget"},{"numberOfProducts":1,"slug":"migros-bio","value":"Migros
+        Bio"}]},{"id":"CATEGORY_LEVEL_4","name":"category_level_4","type":"SPLITTED","slug":"category-level-4","numberOfProducts":15,"values":[{"numberOfProducts":2,"slug":"meals","value":"Meals"},{"numberOfProducts":1,"slug":"dehydrated-soups","value":"Dehydrated
+        soups"},{"numberOfProducts":1,"slug":"grilling-sausages","value":"Grilling
+        sausages"},{"numberOfProducts":1,"slug":"ready-to-eat-meals","value":"Ready-to-eat
+        meals"},{"numberOfProducts":1,"slug":"vegetable-seeds","value":"Vegetable
+        seeds"}]}],"labels":[{"id":"promotion","name":"Promotions","slug":"promotion","numberOfProducts":1},{"id":"PRODUCT_BIO","name":"Organic","slug":"product_bio","numberOfProducts":4},{"id":"PRODUCT_OF_SWITZERLAND","name":"Swiss
+        product","slug":"product_of_switzerland","numberOfProducts":6},{"id":"DIETARY_BOOLEAN_FILTER_VEGETARIAN","name":"Vegetarian","slug":"vegetarian","numberOfProducts":1},{"id":"DIETARY_BOOLEAN_FILTER_LACTOSE_FREE","name":"Lactose-free","slug":"lactose-free","numberOfProducts":1}],"groupedLabels":[{"id":"PRODUCT_SPECIAL_NUTRITION","name":"Special
+        Nutrition","slug":"product_special_nutrition","values":[{"id":"lactose-free","name":"Lactose-free","slug":"lactose-free","numberOfProducts":1},{"id":"vegetarian","name":"Vegetarian","slug":"vegetarian","numberOfProducts":1}]}],"migrosLabels":[{"id":"L53","value":{"de":"Swissness","en":"Swissness","fr":"Swissness","it":"Swissness"},"slug":{"de":"swissness","en":"swissness","fr":"swissness","it":"swissness"},"numberOfProducts":3},{"id":"L03","value":{"de":"IP-SUISSE","en":"IP-SUISSE","fr":"IP-SUISSE","it":"IP-SUISSE"},"slug":{"de":"ip-suisse","en":"ip-suisse","fr":"ip-suisse","it":"ip-suisse"},"numberOfProducts":2},{"id":"L56","value":{"de":"Demeter","en":"Demeter","fr":"Demeter","it":"Demeter"},"slug":{"de":"demeter","en":"demeter","fr":"demeter","it":"demeter"},"numberOfProducts":2},{"id":"L75","value":{"de":"Bio
+        Suisse Knospe","en":"Bio Suisse Knospe","fr":"Bio Suisse Knospe","it":"Bio
+        Suisse Knospe"},"slug":{"de":"bio-suisse-knospe","en":"bio-suisse-knospe","fr":"bio-suisse-knospe","it":"bio-suisse-knospe"},"numberOfProducts":1}],"additionalFields":{},"semanticResults":false,"numberOfProducts":15,"offset":15}'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      cache-control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      connection:
+      - keep-alive
+      content-length:
+      - '4748'
+      content-type:
+      - application/json
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      referrer-policy:
+      - no-referrer
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9
+      connection:
+      - keep-alive
+      host:
+      - www.migros.ch
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: GET
+    uri: https://www.migros.ch/product-display/public/v2/product-detail?uids=100025235%2C100024248%2C100142530%2C100143175%2C100023046%2C100031579&warehouseId=1&storeType=ONLINE&region=national
+  response:
+    body:
+      string: '[{"brand":"Migros","breadcrumb":[{"id":"7494732","name":"Fruits & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Migros
+        · Broccoli","gtins":["2124321000001","7617027556941"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/8bfb83a2fd62ce4dc79a47662f05f9c3e3d36441/migros-broccoli.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/8bfb83a2fd62ce4dc79a47662f05f9c3e3d36441/migros-broccoli.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"275704701000","migrosOnlineId":"6160685","name":"Broccoli","offer":{"channel":{"offerType":"ONLINE","warehouseId":1},"displayPrice":true,"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":true,"maxOrderableQuantity":96,"maxOrderableQuantityV2":96,"pictos":[{"description":"Switzerland","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"},{"description":"Product
+        with variable weight: When packing the order, we weigh it and charge you the
+        exact weight.","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679483133/labels/poids-variable","type":"VARIABLE_WEIGHT"}],"price":{"advertisedDisplayValue":"1.90","advertisedValue":1.90,"displayUnitPrice":true,"effectiveDisplayValue":"1.90","effectiveValue":1.90,"multiplier":1,"unitPrice":{"unit":"100g","value":0.51}},"quantity":"250–500
+        g","quantityPrice":"0.51/100g","type":"STANDARD"},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"brand":{"cdn":"cloudinary","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1760428057/brands/migros_QF8","name":"Migros","slug":"migros"},"mcheck":{"carbonFootprint":{"co2CarKmEquivalent":3,"co2KgRange":"1
+        - 1.9 kg CO₂eq / kg","contentUrl":"https://www.migros.ch/en/content/m-check-climate","image":"https://image.migros.ch/d/original/75c211490725bc9e106dfd6f3fe6205342835df3.png","packagingRatio":7,"productionRatio":86,"rating":4,"stackImage":"https://image.migros.ch/d/{stack}/75c211490725bc9e106dfd6f3fe6205342835df3.png","transportRatio":7}},"migipediaUrl":"https://migipedia.migros.ch/de/products/275704701000","origin":"Switzerland","rating":{"nbReviews":3321,"nbStars":4.5},"tags":[{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"otherInformation":{"articleNumber":"275704701000","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","mainSpecificities":[{"code":"Season from","value":"September"},{"code":"Season
+        to","value":"Mai"},{"code":"Packaging type","value":"Verpackt"},{"code":"Storage
+        at home","value":"gekühlt aufbewahren/lagern"}]},"usageInformation":{"additionalInformation":"Broccoli
+        has been known in Europe for four centuries. It can be eaten all year round.
+        Its mild taste and crunchy consistency are ideal for numerous dishes"}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/275704701000","title":"Migros
+        · Broccoli","uid":100025235},{"brand":"Migros","breadcrumb":[{"id":"7494732","name":"Fruits
+        & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Migros
+        · Broccoli · Bimi","gtins":["7613269307723","8675269874635"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/4a36332287596ab9df826970933f57385ad037fc/migros-broccoli-bimi.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/4a36332287596ab9df826970933f57385ad037fc/migros-broccoli-bimi.jpg"},{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/a06beed23f7f39cf7692a518d737ada7369866cc.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"275704902300","migrosOnlineId":"3534687","name":"Broccoli","offer":{"displayPrice":true,"hints":[{"type":"UNKNOWN_AVAILABILITY"}],"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"brand":{"cdn":"cloudinary","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1760428057/brands/migros_QF8","name":"Migros","slug":"migros"},"ingredients":"Broccoli","migipediaUrl":"https://migipedia.migros.ch/de/products/275704902300","origin":"Spanien","rating":{"nbReviews":279,"nbStars":4.5}},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g"],"rows":[{"label":"Energy","values":["131 kJ (31 kcal)","",""]},{"label":"Fat","values":["<
+        0.5 g","",""]},{"label":"of which saturates","values":["0.1 g","",""]},{"label":"Carbohydrate","values":["2.4
+        g","",""]},{"label":"of which sugars","values":["2.3 g","",""]},{"label":"Fibre","values":["3
+        g","",""]},{"label":"Protein","values":["3 g","",""]},{"label":"Salt","values":["0.03
+        g","",""]}]},"nutrientsTableV2":{"headers":[{"value":"100 g"}],"rows":[{"label":"Energy","values":["131
+        kJ (31 kcal)"]},{"label":"Fat","values":["< 0.5 g"]},{"label":"of which saturates","values":["0.1
+        g"]},{"label":"Carbohydrate","values":["2.4 g"]},{"label":"of which sugars","values":["2.3
+        g"]},{"label":"Fibre","values":["3 g"]},{"label":"Protein","values":["3 g"]},{"label":"Salt","values":["0.03
+        g"]}]}},"otherInformation":{"articleNumber":"275704902300","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","legalDesignation":"Broccoli","mainSpecificities":[{"code":"Season
+        from","value":"März"},{"code":"Season to","value":"Dezember"}],"remarks":[{"code":"Weitere
+        Zusatzangaben","value":"-"}]},"usageInformation":{"additionalInformation":"It’s
+        not just the taste that combines the best of these two vegetables. Broccolini
+        also contains minerals, trace elements, and vitamins that characterize broccoli
+        and asparagus. Its use is versatile: sushi, as a side dish to proteins, or
+        in salads.","usage":"The Broccolini is a cross between broccoli and Kai-lan.
+        Kai-lan is a Chinese leafy vegetable. Broccolini actually tastes like a mixture
+        of asparagus and broccoli. With this healthy vegetable, both the tender stems
+        and the sprouts are eaten"}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/275704902300","title":"Migros
+        · Broccoli · Bimi","uid":100024248,"versioning":"Bimi"},{"breadcrumb":[{"id":"7494732","name":"Fruits
+        & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Broccoli
+        · Bio","gtins":["2163680000000","358484","7613404055434"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/fe6dda0e4233296f88c2e13714f9cde216c0d0f3/bio-broccoli.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/fe6dda0e4233296f88c2e13714f9cde216c0d0f3/bio-broccoli.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"275780501000","name":"Broccoli","offer":{"displayPrice":true,"hints":[{"type":"OFFLINE_PRODUCT"}],"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false,"pictos":[{"description":"Organic","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679483586/labels/bio","type":"BIO"},{"description":"Swiss
+        product","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}]},"productAvailability":"INSTORE_ONLY","productInformation":{"mainInformation":{"brand":{"cdn":"cloudinary","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1678265962/brands/MIGROS_BIO_screen_pantone1_rgb","name":"Migros
+        Bio","slug":"migros-bio"},"ingredients":"Broccoli","labels":[{"cdn":"rokka","id":"L75","imagePath":"https://image.migros.ch/d/{stack}/382374e2537f429f3b917d6fddabda9a62aeb676.png","name":"Bio
+        Suisse Knospe","slug":"bio-suisse-knospe"}],"migipediaUrl":"https://migipedia.migros.ch/de/products/275780501000","nutritionalCharacteristicsV2":[{"name":"Organic"}],"origin":"-","productSpecificAttributes":["PRODUCT_BIO"],"rating":{"nbReviews":593,"nbStars":4.5},"tags":[{"id":"BIO","name":"Organic","slug":"organic"},{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g"],"rows":[{"label":"Energy","values":["131 kJ (31 kcal)","",""]},{"label":"Fat","values":["<
+        0.5 g","",""]},{"label":"of which saturates","values":["0.1 g","",""]},{"label":"Carbohydrate","values":["2.4
+        g","",""]},{"label":"of which sugars","values":["2.3 g","",""]},{"label":"Fibre","values":["3
+        g","",""]},{"label":"Protein","values":["3 g","",""]},{"label":"Salt","values":["0.03
+        g","",""]}]},"nutrientsTableV2":{"headers":[{"value":"100 g"}],"rows":[{"label":"Energy","values":["131
+        kJ (31 kcal)"]},{"label":"Fat","values":["< 0.5 g"]},{"label":"of which saturates","values":["0.1
+        g"]},{"label":"Carbohydrate","values":["2.4 g"]},{"label":"of which sugars","values":["2.3
+        g"]},{"label":"Fibre","values":["3 g"]},{"label":"Protein","values":["3 g"]},{"label":"Salt","values":["0.03
+        g"]}]}},"otherInformation":{"articleNumber":"275780501000","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","legalDesignation":"Broccoli","remarks":[{"code":"Weitere
+        Zusatzangaben","value":"-"}]}},"productRange":"STANDARD","productSpecificAttributes":["PRODUCT_BIO"],"productUrls":"https://www.migros.ch/en/product/275780501000","title":"Broccoli
+        · Bio","uid":100142530},{"breadcrumb":[{"id":"7494732","name":"Fruits & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Broccoli
+        · Steamed","gtins":["2165395000009","236553","7613404221853"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/f49c008885ed597af1c769f780116f5d1fbd1139/broccoli-steamed.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/f49c008885ed597af1c769f780116f5d1fbd1139/broccoli-steamed.jpg"},{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/7baec9bb213893a3bacef2935508eec287512425.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"236380011300","name":"Broccoli","offer":{"displayPrice":true,"hints":[{"type":"OFFLINE_PRODUCT"}],"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false},"productAvailability":"INSTORE_ONLY","productInformation":{"mainInformation":{"ingredients":"Broccoli,
+        Kochsalz.","migipediaUrl":"https://migipedia.migros.ch/de/products/236380011300","origin":"Hergestellt
+        in der Schweiz","rating":{"nbReviews":11,"nbStars":4.5}},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g"],"rows":[{"label":"Energy","values":["126 kJ (30 kcal)","",""]},{"fsaLevel":"LOW","label":"Fat","values":["<
+        0.5 g","",""]},{"fsaLevel":"LOW","label":"of which saturates","values":["0.1
+        g","",""]},{"label":"Carbohydrate","values":["2.3 g","",""]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["2.2 g","",""]},{"label":"Fibre","values":["2.9 g","",""]},{"label":"Protein","values":["2.9
+        g","",""]},{"fsaLevel":"MEDIUM","label":"Salt","values":["0.5 g","",""]}]},"nutrientsTableV2":{"headers":[{"value":"100
+        g"}],"rows":[{"label":"Energy","values":["126 kJ (30 kcal)"]},{"fsaLevel":"LOW","label":"Fat","values":["<
+        0.5 g"]},{"fsaLevel":"LOW","label":"of which saturates","values":["0.1 g"]},{"label":"Carbohydrate","values":["2.3
+        g"]},{"fsaLevel":"LOW","label":"of which sugars","values":["2.2 g"]},{"label":"Fibre","values":["2.9
+        g"]},{"label":"Protein","values":["2.9 g"]},{"fsaLevel":"MEDIUM","label":"Salt","values":["0.5
+        g"]}]}},"otherInformation":{"articleNumber":"236380011300","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","legalDesignation":"Broccoli gedämpft","remarks":[{"code":"Cooling
+        information/storage information","value":"Store refrigerated at max. +5 °C."},{"code":"Production
+        information","value":"Packaged in a protective atmosphere."}]}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/236380011300","title":"Broccoli
+        · Steamed","uid":100143175,"versioning":"Steamed"},{"brand":"Migros","breadcrumb":[{"id":"7494732","name":"Fruits
+        & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Migros
+        · Cauliflower & Broccoli","gtins":["7613404760277","7610632985397"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/09274e44ed8ef92b79582726133cf41e9cc1c462/migros-cauliflower-broccoli.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/09274e44ed8ef92b79582726133cf41e9cc1c462/migros-cauliflower-broccoli.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"275701302200","migrosOnlineId":"125199","name":"Cauliflower
+        & Broccoli","offer":{"displayPrice":true,"hints":[{"type":"UNKNOWN_AVAILABILITY"}],"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"brand":{"cdn":"cloudinary","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1760428057/brands/migros_QF8","name":"Migros","slug":"migros"},"ingredients":"Blumenkohl","mcheck":{"carbonFootprint":{"co2CarKmEquivalent":3,"co2KgRange":"0
+        - 0.9 kg CO₂eq / kg","contentUrl":"https://www.migros.ch/en/content/m-check-climate","image":"https://image.migros.ch/d/original/8e2ad43c6f1e5bfa4f9d59b8f27dd2c6575eeecf.png","packagingRatio":7,"productionRatio":86,"rating":5,"stackImage":"https://image.migros.ch/d/{stack}/8e2ad43c6f1e5bfa4f9d59b8f27dd2c6575eeecf.png","transportRatio":7}},"migipediaUrl":"https://migipedia.migros.ch/de/products/275701302200","origin":"Spanien","rating":{"nbReviews":265,"nbStars":4.5}},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g"],"rows":[{"label":"Energy","values":["110 kJ (26 kcal)","",""]},{"label":"Fat","values":["<
+        0.5 g","",""]},{"label":"of which saturates","values":["0 g","",""]},{"label":"Carbohydrate","values":["2.3
+        g","",""]},{"label":"of which sugars","values":["2 g","",""]},{"label":"Fibre","values":["2.4
+        g","",""]},{"label":"Protein","values":["2.4 g","",""]},{"label":"Salt","values":["0.04
+        g","",""]}]},"nutrientsTableV2":{"headers":[{"value":"100 g"}],"rows":[{"label":"Energy","values":["110
+        kJ (26 kcal)"]},{"label":"Fat","values":["< 0.5 g"]},{"label":"of which saturates","values":["0
+        g"]},{"label":"Carbohydrate","values":["2.3 g"]},{"label":"of which sugars","values":["2
+        g"]},{"label":"Fibre","values":["2.4 g"]},{"label":"Protein","values":["2.4
+        g"]},{"label":"Salt","values":["0.04 g"]}]}},"otherInformation":{"articleNumber":"275701302200","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","legalDesignation":"Blumenkohl","mainSpecificities":[{"code":"Season
+        from","value":"September"},{"code":"Season to","value":"Mai"},{"code":"Packaging
+        type","value":"Verpackt"},{"code":"Storage at home","value":"gekühlt aufbewahren/lagern"}],"remarks":[{"code":"Weitere
+        Zusatzangaben","value":"-"}]}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/275701302200","title":"Migros
+        · Cauliflower & Broccoli","uid":100023046},{"brand":"Migros","breadcrumb":[{"id":"7494732","name":"Fruits
+        & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Migros
+        · Cabbage Florets · Trio, Broccoli, Cauliflower, Romanesco ","gtins":["7613269137160"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/6d52044b4a1a4a22f5412276f6c5747ad3bd567c/migros-cabbage-florets-trio-broccoli-cauliflower-romanesco.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/6d52044b4a1a4a22f5412276f6c5747ad3bd567c/migros-cabbage-florets-trio-broccoli-cauliflower-romanesco.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"275702902300","migrosOnlineId":"5957227","name":"Cabbage
+        Florets","offer":{"channel":{"offerType":"ONLINE","warehouseId":1},"displayPrice":true,"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantity":96,"maxOrderableQuantityV2":96,"pictos":[{"description":"Switzerland","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}],"price":{"advertisedDisplayValue":"5.65","advertisedValue":5.65,"displayUnitPrice":false,"effectiveDisplayValue":"5.65","effectiveValue":5.65,"multiplier":1,"unitPrice":{"unit":"piece","value":5.65}},"quantity":"1
+        piece","type":"STANDARD"},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"brand":{"cdn":"cloudinary","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1760428057/brands/migros_QF8","name":"Migros","slug":"migros"},"mcheck":{"carbonFootprint":{"co2CarKmEquivalent":3,"co2KgRange":"0
+        - 0.9 kg CO₂eq / kg","contentUrl":"https://www.migros.ch/en/content/m-check-climate","image":"https://image.migros.ch/d/original/8e2ad43c6f1e5bfa4f9d59b8f27dd2c6575eeecf.png","packagingRatio":7,"productionRatio":86,"rating":5,"stackImage":"https://image.migros.ch/d/{stack}/8e2ad43c6f1e5bfa4f9d59b8f27dd2c6575eeecf.png","transportRatio":7}},"migipediaUrl":"https://migipedia.migros.ch/de/products/275702902300","origin":"Switerland","rating":{"nbReviews":220,"nbStars":4.5},"tags":[{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"otherInformation":{"articleNumber":"275702902300","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","mainSpecificities":[{"code":"Season from","value":"November"},{"code":"Season
+        to","value":"März"},{"code":"Packaging type","value":"Verpackt"},{"code":"Storage
+        at home","value":"gekühlt aufbewahren/lagern"}]}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/275702902300","title":"Migros
+        · Cabbage Florets · Trio, Broccoli, Cauliflower, Romanesco ","uid":100031579,"versioning":"Trio,
+        Broccoli, Cauliflower, Romanesco "}]'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      cache-control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      connection:
+      - keep-alive
+      content-length:
+      - '19320'
+      content-type:
+      - application/json
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9
+      connection:
+      - keep-alive
+      host:
+      - www.migros.ch
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: GET
+    uri: https://www.migros.ch/product-display/public/v2/product-detail?uids=100025235%2C100024248%2C100142530%2C100143175%2C100023046%2C100031579&warehouseId=1&storeType=OFFLINE&region=national
+  response:
+    body:
+      string: '[{"brand":"Migros","breadcrumb":[{"id":"7494732","name":"Fruits & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Migros
+        · Broccoli","gtins":["2124321000001","7617027556941"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/8bfb83a2fd62ce4dc79a47662f05f9c3e3d36441/migros-broccoli.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/8bfb83a2fd62ce4dc79a47662f05f9c3e3d36441/migros-broccoli.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"275704701000","migrosOnlineId":"6160685","name":"Broccoli","offer":{"channel":{"offerType":"OFFLINE","region":"national"},"displayPrice":true,"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":true,"maxOrderableQuantityV2":96,"pictos":[{"description":"Switzerland","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}],"price":{"advertisedDisplayValue":"4.80","advertisedValue":4.8,"displayUnitPrice":true,"effectiveDisplayValue":"4.80","effectiveValue":4.8,"multiplier":1,"unitPrice":{"unit":"100g","value":0.48}},"quantity":"1
+        kg","quantityPrice":"0.48/100g","type":"STANDARD"},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"brand":{"cdn":"cloudinary","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1760428057/brands/migros_QF8","name":"Migros","slug":"migros"},"mcheck":{"carbonFootprint":{"co2CarKmEquivalent":3,"co2KgRange":"1
+        - 1.9 kg CO₂eq / kg","contentUrl":"https://www.migros.ch/en/content/m-check-climate","image":"https://image.migros.ch/d/original/75c211490725bc9e106dfd6f3fe6205342835df3.png","packagingRatio":7,"productionRatio":86,"rating":4,"stackImage":"https://image.migros.ch/d/{stack}/75c211490725bc9e106dfd6f3fe6205342835df3.png","transportRatio":7}},"migipediaUrl":"https://migipedia.migros.ch/de/products/275704701000","origin":"You
+        can find information about the origin on the packaging in the store.","rating":{"nbReviews":3321,"nbStars":4.5},"tags":[{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"otherInformation":{"articleNumber":"275704701000","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","mainSpecificities":[{"code":"Season from","value":"September"},{"code":"Season
+        to","value":"Mai"},{"code":"Packaging type","value":"Verpackt"},{"code":"Storage
+        at home","value":"gekühlt aufbewahren/lagern"}]},"usageInformation":{"additionalInformation":"Broccoli
+        has been known in Europe for four centuries. It can be eaten all year round.
+        Its mild taste and crunchy consistency are ideal for numerous dishes"}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/275704701000","title":"Migros
+        · Broccoli","uid":100025235},{"brand":"Migros","breadcrumb":[{"id":"7494732","name":"Fruits
+        & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Migros
+        · Broccoli · Bimi","gtins":["7613269307723","8675269874635"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/4a36332287596ab9df826970933f57385ad037fc/migros-broccoli-bimi.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/4a36332287596ab9df826970933f57385ad037fc/migros-broccoli-bimi.jpg"},{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/a06beed23f7f39cf7692a518d737ada7369866cc.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"275704902300","migrosOnlineId":"3534687","name":"Broccoli","offer":{"channel":{"offerType":"OFFLINE","region":"national"},"displayPrice":true,"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantityV2":96,"price":{"advertisedDisplayValue":"4.95","advertisedValue":4.95,"displayUnitPrice":true,"effectiveDisplayValue":"4.95","effectiveValue":4.95,"multiplier":1,"unitPrice":{"unit":"100g","value":3.3}},"quantity":"200g","quantityPrice":"3.30/100g","type":"STANDARD"},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"brand":{"cdn":"cloudinary","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1760428057/brands/migros_QF8","name":"Migros","slug":"migros"},"ingredients":"Broccoli","migipediaUrl":"https://migipedia.migros.ch/de/products/275704902300","origin":"You
+        can find information about the origin on the packaging in the store.","rating":{"nbReviews":279,"nbStars":4.5}},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g"],"rows":[{"label":"Energy","values":["131 kJ (31 kcal)","",""]},{"label":"Fat","values":["<
+        0.5 g","",""]},{"label":"of which saturates","values":["0.1 g","",""]},{"label":"Carbohydrate","values":["2.4
+        g","",""]},{"label":"of which sugars","values":["2.3 g","",""]},{"label":"Fibre","values":["3
+        g","",""]},{"label":"Protein","values":["3 g","",""]},{"label":"Salt","values":["0.03
+        g","",""]}]},"nutrientsTableV2":{"headers":[{"value":"100 g"}],"rows":[{"label":"Energy","values":["131
+        kJ (31 kcal)"]},{"label":"Fat","values":["< 0.5 g"]},{"label":"of which saturates","values":["0.1
+        g"]},{"label":"Carbohydrate","values":["2.4 g"]},{"label":"of which sugars","values":["2.3
+        g"]},{"label":"Fibre","values":["3 g"]},{"label":"Protein","values":["3 g"]},{"label":"Salt","values":["0.03
+        g"]}]}},"otherInformation":{"articleNumber":"275704902300","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","legalDesignation":"Broccoli","mainSpecificities":[{"code":"Season
+        from","value":"März"},{"code":"Season to","value":"Dezember"}],"remarks":[{"code":"Weitere
+        Zusatzangaben","value":"-"}]},"usageInformation":{"additionalInformation":"It’s
+        not just the taste that combines the best of these two vegetables. Broccolini
+        also contains minerals, trace elements, and vitamins that characterize broccoli
+        and asparagus. Its use is versatile: sushi, as a side dish to proteins, or
+        in salads.","usage":"The Broccolini is a cross between broccoli and Kai-lan.
+        Kai-lan is a Chinese leafy vegetable. Broccolini actually tastes like a mixture
+        of asparagus and broccoli. With this healthy vegetable, both the tender stems
+        and the sprouts are eaten"}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/275704902300","title":"Migros
+        · Broccoli · Bimi","uid":100024248,"versioning":"Bimi"},{"breadcrumb":[{"id":"7494732","name":"Fruits
+        & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Broccoli
+        · Bio","gtins":["2163680000000","358484","7613404055434"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/fe6dda0e4233296f88c2e13714f9cde216c0d0f3/bio-broccoli.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/fe6dda0e4233296f88c2e13714f9cde216c0d0f3/bio-broccoli.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"275780501000","name":"Broccoli","offer":{"channel":{"offerType":"OFFLINE","region":"national"},"displayPrice":true,"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantityV2":96,"pictos":[{"description":"Organic","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679483586/labels/bio","type":"BIO"},{"description":"Swiss
+        product","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}],"price":{"advertisedDisplayValue":"8.50","advertisedValue":8.5,"displayUnitPrice":true,"effectiveDisplayValue":"8.50","effectiveValue":8.5,"multiplier":1,"unitPrice":{"unit":"100g","value":0.85}},"quantity":"1
+        kg","quantityPrice":"0.85/100g","type":"STANDARD"},"productAvailability":"INSTORE_ONLY","productInformation":{"mainInformation":{"brand":{"cdn":"cloudinary","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1678265962/brands/MIGROS_BIO_screen_pantone1_rgb","name":"Migros
+        Bio","slug":"migros-bio"},"ingredients":"Broccoli","labels":[{"cdn":"rokka","id":"L75","imagePath":"https://image.migros.ch/d/{stack}/382374e2537f429f3b917d6fddabda9a62aeb676.png","name":"Bio
+        Suisse Knospe","slug":"bio-suisse-knospe"}],"migipediaUrl":"https://migipedia.migros.ch/de/products/275780501000","nutritionalCharacteristicsV2":[{"name":"Organic"}],"origin":"You
+        can find information about the origin on the packaging in the store.","productSpecificAttributes":["PRODUCT_BIO"],"rating":{"nbReviews":593,"nbStars":4.5},"tags":[{"id":"BIO","name":"Organic","slug":"organic"},{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g"],"rows":[{"label":"Energy","values":["131 kJ (31 kcal)","",""]},{"label":"Fat","values":["<
+        0.5 g","",""]},{"label":"of which saturates","values":["0.1 g","",""]},{"label":"Carbohydrate","values":["2.4
+        g","",""]},{"label":"of which sugars","values":["2.3 g","",""]},{"label":"Fibre","values":["3
+        g","",""]},{"label":"Protein","values":["3 g","",""]},{"label":"Salt","values":["0.03
+        g","",""]}]},"nutrientsTableV2":{"headers":[{"value":"100 g"}],"rows":[{"label":"Energy","values":["131
+        kJ (31 kcal)"]},{"label":"Fat","values":["< 0.5 g"]},{"label":"of which saturates","values":["0.1
+        g"]},{"label":"Carbohydrate","values":["2.4 g"]},{"label":"of which sugars","values":["2.3
+        g"]},{"label":"Fibre","values":["3 g"]},{"label":"Protein","values":["3 g"]},{"label":"Salt","values":["0.03
+        g"]}]}},"otherInformation":{"articleNumber":"275780501000","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","legalDesignation":"Broccoli","remarks":[{"code":"Weitere
+        Zusatzangaben","value":"-"}]}},"productRange":"STANDARD","productSpecificAttributes":["PRODUCT_BIO"],"productUrls":"https://www.migros.ch/en/product/275780501000","title":"Broccoli
+        · Bio","uid":100142530},{"breadcrumb":[{"id":"7494732","name":"Fruits & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Broccoli
+        · Steamed","gtins":["2165395000009","236553","7613404221853"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/f49c008885ed597af1c769f780116f5d1fbd1139/broccoli-steamed.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/f49c008885ed597af1c769f780116f5d1fbd1139/broccoli-steamed.jpg"},{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/7baec9bb213893a3bacef2935508eec287512425.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"236380011300","name":"Broccoli","offer":{"channel":{"offerType":"OFFLINE","region":"national"},"displayPrice":true,"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantityV2":96,"price":{"advertisedDisplayValue":"2.30","advertisedValue":2.3,"displayUnitPrice":true,"effectiveDisplayValue":"2.30","effectiveValue":2.3,"multiplier":1,"unitPrice":{"unit":"100g","value":2.3}},"quantity":"100
+        g","quantityPrice":"2.30/100g","type":"STANDARD"},"productAvailability":"INSTORE_ONLY","productInformation":{"mainInformation":{"ingredients":"Broccoli,
+        Kochsalz.","migipediaUrl":"https://migipedia.migros.ch/de/products/236380011300","origin":"You
+        can find information about the origin on the packaging in the store.","rating":{"nbReviews":11,"nbStars":4.5}},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g"],"rows":[{"label":"Energy","values":["126 kJ (30 kcal)","",""]},{"fsaLevel":"LOW","label":"Fat","values":["<
+        0.5 g","",""]},{"fsaLevel":"LOW","label":"of which saturates","values":["0.1
+        g","",""]},{"label":"Carbohydrate","values":["2.3 g","",""]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["2.2 g","",""]},{"label":"Fibre","values":["2.9 g","",""]},{"label":"Protein","values":["2.9
+        g","",""]},{"fsaLevel":"MEDIUM","label":"Salt","values":["0.5 g","",""]}]},"nutrientsTableV2":{"headers":[{"value":"100
+        g"}],"rows":[{"label":"Energy","values":["126 kJ (30 kcal)"]},{"fsaLevel":"LOW","label":"Fat","values":["<
+        0.5 g"]},{"fsaLevel":"LOW","label":"of which saturates","values":["0.1 g"]},{"label":"Carbohydrate","values":["2.3
+        g"]},{"fsaLevel":"LOW","label":"of which sugars","values":["2.2 g"]},{"label":"Fibre","values":["2.9
+        g"]},{"label":"Protein","values":["2.9 g"]},{"fsaLevel":"MEDIUM","label":"Salt","values":["0.5
+        g"]}]}},"otherInformation":{"articleNumber":"236380011300","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","legalDesignation":"Broccoli gedämpft","remarks":[{"code":"Cooling
+        information/storage information","value":"Store refrigerated at max. +5 °C."},{"code":"Production
+        information","value":"Packaged in a protective atmosphere."}]}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/236380011300","title":"Broccoli
+        · Steamed","uid":100143175,"versioning":"Steamed"},{"brand":"Migros","breadcrumb":[{"id":"7494732","name":"Fruits
+        & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Migros
+        · Cauliflower & Broccoli","gtins":["7613404760277","7610632985397"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/09274e44ed8ef92b79582726133cf41e9cc1c462/migros-cauliflower-broccoli.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/09274e44ed8ef92b79582726133cf41e9cc1c462/migros-cauliflower-broccoli.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"275701302200","migrosOnlineId":"125199","name":"Cauliflower
+        & Broccoli","offer":{"channel":{"offerType":"OFFLINE","region":"national"},"displayPrice":true,"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantityV2":96,"price":{"advertisedDisplayValue":"4.60","advertisedValue":4.6,"displayUnitPrice":true,"effectiveDisplayValue":"4.60","effectiveValue":4.6,"multiplier":1,"unitPrice":{"unit":"piece","value":2.3}},"quantity":"2
+        Stück","quantityPrice":"2.30/piece","type":"STANDARD"},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"brand":{"cdn":"cloudinary","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1760428057/brands/migros_QF8","name":"Migros","slug":"migros"},"ingredients":"Blumenkohl","mcheck":{"carbonFootprint":{"co2CarKmEquivalent":3,"co2KgRange":"0
+        - 0.9 kg CO₂eq / kg","contentUrl":"https://www.migros.ch/en/content/m-check-climate","image":"https://image.migros.ch/d/original/8e2ad43c6f1e5bfa4f9d59b8f27dd2c6575eeecf.png","packagingRatio":7,"productionRatio":86,"rating":5,"stackImage":"https://image.migros.ch/d/{stack}/8e2ad43c6f1e5bfa4f9d59b8f27dd2c6575eeecf.png","transportRatio":7}},"migipediaUrl":"https://migipedia.migros.ch/de/products/275701302200","origin":"You
+        can find information about the origin on the packaging in the store.","rating":{"nbReviews":265,"nbStars":4.5}},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g"],"rows":[{"label":"Energy","values":["110 kJ (26 kcal)","",""]},{"label":"Fat","values":["<
+        0.5 g","",""]},{"label":"of which saturates","values":["0 g","",""]},{"label":"Carbohydrate","values":["2.3
+        g","",""]},{"label":"of which sugars","values":["2 g","",""]},{"label":"Fibre","values":["2.4
+        g","",""]},{"label":"Protein","values":["2.4 g","",""]},{"label":"Salt","values":["0.04
+        g","",""]}]},"nutrientsTableV2":{"headers":[{"value":"100 g"}],"rows":[{"label":"Energy","values":["110
+        kJ (26 kcal)"]},{"label":"Fat","values":["< 0.5 g"]},{"label":"of which saturates","values":["0
+        g"]},{"label":"Carbohydrate","values":["2.3 g"]},{"label":"of which sugars","values":["2
+        g"]},{"label":"Fibre","values":["2.4 g"]},{"label":"Protein","values":["2.4
+        g"]},{"label":"Salt","values":["0.04 g"]}]}},"otherInformation":{"articleNumber":"275701302200","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","legalDesignation":"Blumenkohl","mainSpecificities":[{"code":"Season
+        from","value":"September"},{"code":"Season to","value":"Mai"},{"code":"Packaging
+        type","value":"Verpackt"},{"code":"Storage at home","value":"gekühlt aufbewahren/lagern"}],"remarks":[{"code":"Weitere
+        Zusatzangaben","value":"-"}]}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/275701302200","title":"Migros
+        · Cauliflower & Broccoli","uid":100023046},{"brand":"Migros","breadcrumb":[{"id":"7494732","name":"Fruits
+        & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Migros
+        · Cabbage Florets · Trio, Broccoli, Cauliflower, Romanesco ","gtins":["7613269137160"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/6d52044b4a1a4a22f5412276f6c5747ad3bd567c/migros-cabbage-florets-trio-broccoli-cauliflower-romanesco.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/6d52044b4a1a4a22f5412276f6c5747ad3bd567c/migros-cabbage-florets-trio-broccoli-cauliflower-romanesco.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"275702902300","migrosOnlineId":"5957227","name":"Cabbage
+        Florets","offer":{"channel":{"offerType":"OFFLINE","region":"national"},"displayPrice":true,"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantityV2":96,"pictos":[{"description":"Switzerland","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}],"price":{"displayUnitPrice":false,"multiplier":1},"quantity":"400g","type":"REGIONAL"},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"brand":{"cdn":"cloudinary","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1760428057/brands/migros_QF8","name":"Migros","slug":"migros"},"mcheck":{"carbonFootprint":{"co2CarKmEquivalent":3,"co2KgRange":"0
+        - 0.9 kg CO₂eq / kg","contentUrl":"https://www.migros.ch/en/content/m-check-climate","image":"https://image.migros.ch/d/original/8e2ad43c6f1e5bfa4f9d59b8f27dd2c6575eeecf.png","packagingRatio":7,"productionRatio":86,"rating":5,"stackImage":"https://image.migros.ch/d/{stack}/8e2ad43c6f1e5bfa4f9d59b8f27dd2c6575eeecf.png","transportRatio":7}},"migipediaUrl":"https://migipedia.migros.ch/de/products/275702902300","origin":"You
+        can find information about the origin on the packaging in the store.","rating":{"nbReviews":220,"nbStars":4.5},"tags":[{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"otherInformation":{"articleNumber":"275702902300","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","mainSpecificities":[{"code":"Season from","value":"November"},{"code":"Season
+        to","value":"März"},{"code":"Packaging type","value":"Verpackt"},{"code":"Storage
+        at home","value":"gekühlt aufbewahren/lagern"}]}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/275702902300","title":"Migros
+        · Cabbage Florets · Trio, Broccoli, Cauliflower, Romanesco ","uid":100031579,"versioning":"Trio,
+        Broccoli, Cauliflower, Romanesco "}]'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      cache-control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      connection:
+      - keep-alive
+      content-length:
+      - '20446'
+      content-type:
+      - application/json
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"regionId":"national","language":"en","productIds":[],"query":"natural
+      yogurt","sortFields":[],"sortOrder":"asc","algorithm":"DEFAULT"}'
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9
+      connection:
+      - keep-alive
+      content-length:
+      - '136'
+      content-type:
+      - application/json
+      host:
+      - www.migros.ch
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: POST
+    uri: https://www.migros.ch/onesearch-oc-seaapi/public/v5/search
+  response:
+    body:
+      string: '{"productIds":[100018064,100226331,100226327,100226212,100226332],"categories":[{"id":7494731,"name":"Dairy,
+        eggs & fresh convenience food","numberOfProducts":4,"sortPriority":3,"parentSortPriority":1,"path":"/DS/Dairyeggsfreshconveniencefood","type":"MAIN","slug":"dairy-eggs-fresh-convenience-foo","addAllItemsToBasket":false,"level":2},{"id":30009000,"name":"Baby
+        and kids","numberOfProducts":1,"sortPriority":16,"parentSortPriority":1,"path":"/DS/Babyandkids","type":"MAIN","slug":"baby-and-kids","addAllItemsToBasket":false,"level":2}],"features":[{"id":"category","name":"Categories","type":"STRING","slug":"category","numberOfProducts":5,"values":[{"numberOfProducts":4,"slug":"7494731","value":"Dairy,
+        eggs & fresh convenience food"},{"numberOfProducts":1,"slug":"30009000","value":"Baby
+        and kids"}]},{"id":"brand","name":"Brand","type":"STRING","slug":"brand","numberOfProducts":5,"values":[{"numberOfProducts":3,"slug":"yogos","value":"Yogos"},{"numberOfProducts":1,"slug":"bifidus","value":"Bifidus"},{"numberOfProducts":1,"slug":"nestle","value":"Nestlé"}]},{"id":"CATEGORY_LEVEL_4","name":"category_level_4","type":"SPLITTED","slug":"category-level-4","numberOfProducts":5,"values":[{"numberOfProducts":1,"slug":"probiotic","value":"Probiotic"},{"numberOfProducts":1,"slug":"yoghurts-puddings","value":"Yoghurts
+        & puddings"},{"numberOfProducts":3,"slug":"greek-high-protein","value":"Greek
+        & high protein"}]}],"labels":[{"id":"promotion","name":"Promotions","slug":"promotion","numberOfProducts":4},{"id":"new","name":"New","slug":"new","numberOfProducts":4},{"id":"PRODUCT_BIO","name":"Organic","slug":"product_bio","numberOfProducts":2},{"id":"PRODUCT_OF_SWITZERLAND","name":"Swiss
+        product","slug":"product_of_switzerland","numberOfProducts":4},{"id":"DIETARY_BOOLEAN_FILTER_NO_ADDED_SUGAR","name":"No
+        added sugar","slug":"no-added-sugar","numberOfProducts":1},{"id":"PRODUCT_NO_ADDED_SUGAR","name":"No
+        added sugar","slug":"product_no_added_sugar","numberOfProducts":1}],"groupedLabels":[{"id":"PRODUCT_SPECIAL_NUTRITION","name":"Special
+        Nutrition","slug":"product_special_nutrition","values":[{"id":"no-added-sugar","name":"No
+        added sugar","slug":"no-added-sugar","numberOfProducts":1}]}],"migrosLabels":[{"id":"L53","value":{"de":"Swissness","en":"Swissness","fr":"Swissness","it":"Swissness"},"slug":{"de":"swissness","en":"swissness","fr":"swissness","it":"swissness"},"numberOfProducts":4},{"id":"L75","value":{"de":"Bio
+        Suisse Knospe","en":"Bio Suisse Knospe","fr":"Bio Suisse Knospe","it":"Bio
+        Suisse Knospe"},"slug":{"de":"bio-suisse-knospe","en":"bio-suisse-knospe","fr":"bio-suisse-knospe","it":"bio-suisse-knospe"},"numberOfProducts":1}],"additionalFields":{},"semanticResults":false,"numberOfProducts":5,"offset":5}'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      cache-control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      connection:
+      - keep-alive
+      content-length:
+      - '2743'
+      content-type:
+      - application/json
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      referrer-policy:
+      - no-referrer
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9
+      connection:
+      - keep-alive
+      host:
+      - www.migros.ch
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: GET
+    uri: https://www.migros.ch/product-display/public/v2/product-detail?uids=100018064%2C100226331%2C100226327%2C100226212%2C100226332&warehouseId=1&storeType=ONLINE&region=national
+  response:
+    body:
+      string: '[{"brand":"Nestlé","brandLine":"Yogolino","breadcrumb":[{"id":"30009000","name":"Baby
+        and kids","slugs":["baby-and-kids"]},{"id":"30009001","name":"Baby food &
+        formula","slugs":["baby-and-kids","baby-food-formula"]},{"id":"30009002","name":"Food
+        jars & pouches","slugs":["baby-and-kids","baby-food-formula","food-jars-pouches"]},{"id":"30009006","name":"Yoghurts
+        & puddings","slugs":["baby-and-kids","baby-food-formula","food-jars-pouches","yoghurts-puddings"]}],"description":"Nestlé
+        Yogolino · Natural yoghurt · Bio, after 6 months ","gtins":["7613037819861"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/7599fb6c45738f3ca9252422f27ac077f67253d5/nestle-bio-natural-yoghurt-after-6-months.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/7599fb6c45738f3ca9252422f27ac077f67253d5/nestle-bio-natural-yoghurt-after-6-months.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"521055100000","migrosOnlineId":"6654953","name":"Natural
+        yoghurt","offer":{"channel":{"offerType":"ONLINE","warehouseId":1},"displayPrice":true,"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantity":96,"maxOrderableQuantityV2":96,"pictos":[{"description":"Organic","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679483586/labels/bio","type":"BIO"}],"price":{"advertisedDisplayValue":"4.20","advertisedValue":4.20,"displayUnitPrice":true,"effectiveDisplayValue":"4.20","effectiveValue":4.20,"multiplier":1,"unitPrice":{"unit":"100g","value":1.17}},"quantity":"360
+        g","quantityPrice":"1.17/100g","type":"STANDARD"},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"allergens":"Milk
+        and its derivatives","brand":{"cdn":"rokka","imagePath":"https://image.migros.ch/d/{stack}/85ff984ac62be1d94559adf3b527972881edf551.png","name":"Nestlé","slug":"nestle"},"ingredients":"Ingredients:
+        heat treated fermented MILK* 76% (whole MILK*, lactic ferments), water, starch*,
+        HALF-CREAM*, rice semolina*, thickener (pectins).*Products from organic growth.","labels":[{"cdn":"rokka","id":"L52","imagePath":"https://image.migros.ch/d/{stack}/ba3285f2a6f44c03a166bb2f11547b7ad6178fcc.png","name":"Third-party
+        organic food","slug":"third-party-organic-food"},{"id":"L76","name":"No added
+        sugar","slug":"no-added-sugar"}],"migipediaUrl":"https://migipedia.migros.ch/de/products/521055100000","nutritionalCharacteristicsV2":[{"name":"Organic"},{"additionalInformation":"No
+        added sugar. Contains naturally occurring sugars.","name":"No added sugar"}],"origin":"Frankreich","productSpecificAttributes":["PRODUCT_BIO"],"rating":{"nbReviews":27,"nbStars":4.0},"tags":[{"id":"BIO","name":"Organic","slug":"organic"},{"additionalInformation":"No
+        added sugar. Contains naturally occurring sugars.","id":"NO_ADDED_SUGAR","name":"No
+        added sugar","slug":"no-added-sugar"}]},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g"],"rows":[{"label":"Energy","values":["~ 309 kJ (~ 74 kcal)","~ 278 kJ (~
+        66 kcal)",""]},{"fsaLevel":"MEDIUM","label":"Fat","values":["~ 3.2 g","~ 2.9
+        g",""]},{"fsaLevel":"MEDIUM","label":"of which saturates","values":["~ 1.9
+        g","~ 1.7 g",""]},{"label":"Carbohydrate","values":["~ 8.2 g","~ 7.4 g",""]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["~ 3.3 g","~ 3 g",""]},{"label":"Fibre","values":["~
+        0.6 g","~ 0.5 g",""]},{"label":"Protein","values":["~ 2.8 g","~ 2.5 g",""]},{"fsaLevel":"LOW","label":"Salt","values":["~
+        0.08 g","~ 0.08 g",""]},{"label":"Sodium","values":["~ 33 mg","~ 30 mg",""]},{"label":"Calcium","values":["~
+        95 mg","~ 85.5 mg","~ 21 %"]}]},"nutrientsTableV2":{"headers":[{"value":"100
+        g"},{"infoText":"% of the reference intake for an average adult (8400kj/2000kcal)","value":"Reference
+        intake"},{"value":""},{"infoText":"% of the reference intake for an average
+        adult (8400kj/2000kcal)","value":"Reference intake"}],"rows":[{"label":"Energy","values":["~
+        309 kJ (~ 74 kcal)","","~ 278 kJ (~ 66 kcal)",""]},{"fsaLevel":"MEDIUM","label":"Fat","values":["~
+        3.2 g","","~ 2.9 g",""]},{"fsaLevel":"MEDIUM","label":"of which saturates","values":["~
+        1.9 g","","~ 1.7 g",""]},{"label":"Carbohydrate","values":["~ 8.2 g","","~
+        7.4 g",""]},{"fsaLevel":"LOW","label":"of which sugars","values":["~ 3.3 g","","~
+        3 g",""]},{"label":"Fibre","values":["~ 0.6 g","","~ 0.5 g",""]},{"label":"Protein","values":["~
+        2.8 g","","~ 2.5 g",""]},{"fsaLevel":"LOW","label":"Salt","values":["~ 0.08
+        g","","~ 0.08 g",""]},{"label":"Sodium","values":["~ 33 mg","","~ 30 mg",""]},{"label":"Calcium","values":["~
+        95 mg","~ 24 %","~ 85.5 mg","~ 21 %"]}]},"portionSentence":"1 pack ≈ 4 servings"},"otherInformation":{"articleNumber":"521055100000","distributorName":"Nestlé
+        Suisse S.A.","distributorStreetAndNumber":"CP 2222, 1800 Vevey","legalDesignation":"Babyfood
+        for infants and very young children","mainSpecificities":[{"code":"Health
+        and nutritional claims","value":"No added sugar. Contains naturally occurring
+        sugars."}],"remarks":[{"code":"Warnings / mandatory notes","value":"It is
+        important to have a varied and balanced diet as well as a healthy lifestyle."},{"code":"Consumer
+        storage instructions","value":"Pasteurized. Packaged in a protective atmosphere.
+        Store at room temperature. Do not store once opened."}]},"usageInformation":{"additionalInformation":"Good
+        milk . The new NaturNes Bio Natur flavor milk dessert is ideal for starting
+        with side dishes. It is produced without added sugar*, preservatives** and
+        colorings** and is gluten-free.  *Contains sugar by nature **Complies with
+        legislation"}},"productRange":"STANDARD","productSpecificAttributes":["PRODUCT_BIO"],"productUrls":"https://www.migros.ch/en/product/521055100000","title":"Nestlé
+        Yogolino · Natural yoghurt · Bio, after 6 months ","uid":100018064,"versioning":"after
+        6 months "},{"brand":"Yogos","breadcrumb":[{"id":"7494731","name":"Dairy,
+        eggs & fresh convenience food","slugs":["dairy-eggs-fresh-convenience-foo"]},{"id":"7494753","name":"Yogurts
+        & desserts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts"]},{"id":"7494879","name":"Yogurts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts"]},{"id":"7495347","name":"Greek
+        & high protein","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts","greek-high-protein"]}],"description":"Yogos
+        · Yoghurt · Natural, Greek-Style, 0% Fat","gtins":["7623186780028"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/59e2e41308f3eedb4a16897655566b3aadd70b31/yogos-yoghurt-natural-greek-style-0-fat.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/59e2e41308f3eedb4a16897655566b3aadd70b31/yogos-yoghurt-natural-greek-style-0-fat.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"205011800000","migrosOnlineId":"18204395","name":"Yoghurt","offer":{"badges":[{"description":"New","enrichedDescription":"New","rawDescription":"New","type":"NEW"}],"channel":{"offerType":"ONLINE","warehouseId":1},"displayPrice":true,"isNewOffer":true,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantity":10,"maxOrderableQuantityV2":10,"pictos":[{"description":"Switzerland","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"},{"description":"Delivered
+        in a cool bag.","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679483166/labels/fresh","type":"FRESHNESS"}],"price":{"advertisedDisplayValue":"1.15","advertisedValue":1.15,"displayUnitPrice":true,"effectiveDisplayValue":"1.15","effectiveValue":1.15,"multiplier":1,"unitPrice":{"unit":"100g","value":0.64}},"quantity":"180
+        g","quantityPrice":"0.64/100g","type":"STANDARD"},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"allergens":"Milk
+        and products thereof","brand":{"cdn":"rokka","imagePath":"https://image.migros.ch/d/{stack}/75b4fe5abdcda40631fd70bc39675db530c96781.png","name":"Yogos","slug":"yogos"},"ingredients":"skimmed
+        <strong>milk</strong>, <strong>milk</strong> protein.","labels":[{"cdn":"rokka","id":"L53","imagePath":"https://image.migros.ch/d/{stack}/6c05f96b8ea904d75510d914ed4e8df9755d5222.png","name":"Swissness","slug":"swissness"}],"migipediaUrl":"https://migipedia.migros.ch/de/products/205011800000","origin":"Schweiz","rating":{"nbReviews":13,"nbStars":3.5},"tags":[{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g","1 Becher (180 g)"],"rows":[{"label":"Energy","values":["233 kJ (55 kcal)","422
+        kJ (99 kcal)","5 %"]},{"fsaLevel":"LOW","label":"Fat","values":["0 g","0 g","0
+        %"]},{"fsaLevel":"LOW","label":"of which saturates","values":["0 g","0 g","0
+        %"]},{"label":"Carbohydrate","values":["4.9 g","8.8 g","3 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["4.9 g","8.8 g","10 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["8.8 g","16 g","32 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.1
+        g","0.18 g","3 %"]}]},"nutrientsTableV2":{"headers":[{"value":"100 g"},{"value":"1
+        Becher (180 g)"},{"infoText":"% of the reference intake for an average adult
+        (8400kj/2000kcal)","value":"Reference intake"}],"rows":[{"label":"Energy","values":["233
+        kJ (55 kcal)","422 kJ (99 kcal)","5 %"]},{"fsaLevel":"LOW","label":"Fat","values":["0
+        g","0 g","0 %"]},{"fsaLevel":"LOW","label":"of which saturates","values":["0
+        g","0 g","0 %"]},{"label":"Carbohydrate","values":["4.9 g","8.8 g","3 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["4.9 g","8.8 g","10 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["8.8 g","16 g","32 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.1
+        g","0.18 g","3 %"]}]},"portionSentence":"1 cup = 1 serving"},"otherInformation":{"articleNumber":"205011800000","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"CH-8031
+        Zürich","identificationMark":"CH 5678","legalDesignation":"Protein enriched
+        low-fat yoghurt made from pasteurised milk with 0% fat in the milk portion","remarks":[{"code":"Cooling
+        information/storage information","value":"Store refrigerated at max. +5 °C."},{"code":"Production
+        information","value":"homogenized"}]}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/205011800000","title":"Yogos
+        · Yoghurt · Natural, Greek-Style, 0% Fat","uid":100226331,"versioning":"Natural,
+        Greek-Style, 0% Fat"},{"brand":"Bifidus","breadcrumb":[{"id":"7494731","name":"Dairy,
+        eggs & fresh convenience food","slugs":["dairy-eggs-fresh-convenience-foo"]},{"id":"7494753","name":"Yogurts
+        & desserts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts"]},{"id":"7494879","name":"Yogurts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts"]},{"id":"7495345","name":"Probiotic","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts","probiotic"]}],"description":"Bifidus
+        · Yoghurt · Bio, Bio, Natural","gtins":["7623186780790"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/e192639a05d5772c5ecc875b32956f55c326d379/bifidus-bio-bio-yoghurt-natural.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/e192639a05d5772c5ecc875b32956f55c326d379/bifidus-bio-bio-yoghurt-natural.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"204542700000","name":"Yoghurt","offer":{"displayPrice":true,"hints":[{"type":"OFFLINE_PRODUCT"}],"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false,"pictos":[{"description":"Organic","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679483586/labels/bio","type":"BIO"},{"description":"Swiss
+        product","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}]},"productAvailability":"INSTORE_ONLY","productInformation":{"mainInformation":{"allergens":"Milk
+        and products thereof","brand":{"cdn":"rokka","imagePath":"https://image.migros.ch/d/{stack}/e7ddc622c32fd8d81de09bdc27391bfa421de2e2.png","name":"Bifidus","slug":"bifidus"},"ingredients":"Voll<strong>milch</strong>*
+        (homogenisiert, pasteurisiert, CH), Mager<strong>milch</strong>pulver* (CH),
+        <strong>Milch</strong>protein* (CH).\n* aus biologischer Landwirtschaft\n
+        Mit selektionierten Milchsäurebakterien Bifidobacterium","labels":[{"cdn":"rokka","id":"L75","imagePath":"https://image.migros.ch/d/{stack}/382374e2537f429f3b917d6fddabda9a62aeb676.png","name":"Bio
+        Suisse Knospe","slug":"bio-suisse-knospe"},{"cdn":"rokka","id":"L02","imagePath":"https://image.migros.ch/d/{stack}/cd243920004f2027b69070fb0cbc5b0afb9898c7.png","name":"Migros
+        Organic Guidelines","slug":"migros-organic-guidelines"},{"cdn":"rokka","id":"L53","imagePath":"https://image.migros.ch/d/{stack}/6c05f96b8ea904d75510d914ed4e8df9755d5222.png","name":"Swissness","slug":"swissness"}],"migipediaUrl":"https://migipedia.migros.ch/de/products/204542700000","nutritionalCharacteristicsV2":[{"name":"Organic"}],"origin":"Switzerland","productSpecificAttributes":["PRODUCT_BIO"],"rating":{"nbReviews":8,"nbStars":4.5},"tags":[{"id":"BIO","name":"Organic","slug":"organic"},{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g","1 Portion (150 g)"],"rows":[{"label":"Energy","values":["285 kJ (68 kcal)","428
+        kJ (102 kcal)","5 %"]},{"fsaLevel":"MEDIUM","label":"Fat","values":["3.9 g","5.9
+        g","8 %"]},{"fsaLevel":"MEDIUM","label":"of which saturates","values":["2.3
+        g","3.5 g","18 %"]},{"label":"Carbohydrate","values":["4 g","6 g","2 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["4 g","6 g","7 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["4.3 g","6.5 g","13 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.13
+        g","0.2 g","3 %"]},{"label":"Calcium","values":["120 mg","180 mg","23 %"]}]},"nutrientsTableV2":{"headers":[{"value":"100
+        g"},{"infoText":"% of the reference intake for an average adult (8400kj/2000kcal)","value":"Reference
+        intake"},{"value":"1 Portion (150 g)"},{"infoText":"% of the reference intake
+        for an average adult (8400kj/2000kcal)","value":"Reference intake"}],"rows":[{"label":"Energy","values":["285
+        kJ (68 kcal)","","428 kJ (102 kcal)","5 %"]},{"fsaLevel":"MEDIUM","label":"Fat","values":["3.9
+        g","","5.9 g","8 %"]},{"fsaLevel":"MEDIUM","label":"of which saturates","values":["2.3
+        g","","3.5 g","18 %"]},{"label":"Carbohydrate","values":["4 g","","6 g","2
+        %"]},{"fsaLevel":"LOW","label":"of which sugars","values":["4 g","","6 g","7
+        %"]},{"label":"Fibre","values":["0 g","","0 g",""]},{"label":"Protein","values":["4.3
+        g","","6.5 g","13 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.13 g","","0.2
+        g","3 %"]},{"label":"Calcium","values":["120 mg","15 %","180 mg","23 %"]}]},"portionSentence":"1
+        package ≈ 3 servings"},"otherInformation":{"articleNumber":"204542700000","bioCertification":"Organic
+        certification: CH-BIO-006","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","identificationMark":"CH 2434","legalDesignation":"Vollmilchjoghurt
+        mild, min. 3,5% Fett im Milchanteil.","remarks":[{"code":"Other additional
+        information","value":"1 portion per day Supports digestion*. *Calcium contributes
+        to the normal function of digestive enzymes, Eine abwechslungsreiche und ausgewogene
+        Ernährung und eine gesunde Lebensweise sind wichtig für unsere Gesundheit."},{"code":"Cooling
+        information/storage information","value":"Store refrigerated at max. +5 °C."},{"code":"Production
+        information","value":"from pasteurized milk"}]}},"productRange":"STANDARD","productSpecificAttributes":["PRODUCT_BIO"],"productUrls":"https://www.migros.ch/en/product/204542700000","title":"Bifidus
+        · Yoghurt · Bio, Bio, Natural","uid":100226327,"versioning":"Natural"},{"brand":"Yogos","breadcrumb":[{"id":"7494731","name":"Dairy,
+        eggs & fresh convenience food","slugs":["dairy-eggs-fresh-convenience-foo"]},{"id":"7494753","name":"Yogurts
+        & desserts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts"]},{"id":"7494879","name":"Yogurts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts"]},{"id":"7495347","name":"Greek
+        & high protein","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts","greek-high-protein"]}],"description":"Yogos
+        · Yoghurt · Natural, Greek Style","gtins":["7623186788840"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/980c6d83af598e74865fd67a2a1794cf33e95892/yogos-yoghurt-natural-greek-style.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/980c6d83af598e74865fd67a2a1794cf33e95892/yogos-yoghurt-natural-greek-style.jpg"},{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/e444e498d6cd3f48e5f4b37ddd8dd08fd22c9246.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"205073200000","name":"Yoghurt","offer":{"displayPrice":true,"hints":[{"type":"OFFLINE_PRODUCT"}],"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false,"pictos":[{"description":"Swiss
+        product","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}]},"productAvailability":"INSTORE_ONLY","productInformation":{"mainInformation":{"allergens":"Milk
+        and products thereof","brand":{"cdn":"rokka","imagePath":"https://image.migros.ch/d/{stack}/75b4fe5abdcda40631fd70bc39675db530c96781.png","name":"Yogos","slug":"yogos"},"ingredients":"Mager<strong>milch</strong>
+        (CH), <strong>Rahm</strong> (CH), <strong>Milch</strong>protein.","labels":[{"cdn":"rokka","id":"L53","imagePath":"https://image.migros.ch/d/{stack}/6c05f96b8ea904d75510d914ed4e8df9755d5222.png","name":"Swissness","slug":"swissness"}],"migipediaUrl":"https://migipedia.migros.ch/de/products/205073200000","origin":"Switzerland","rating":{"nbReviews":18,"nbStars":4.5},"tags":[{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g","1 Portion (150 g)"],"rows":[{"label":"Energy","values":["535 kJ (129 kcal)","933
+        kJ (225 kcal)","11 %"]},{"fsaLevel":"MEDIUM","label":"Fat","values":["11 g","19
+        g","27 %"]},{"fsaLevel":"HIGH","label":"of which saturates","values":["6.4
+        g","11 g","55 %"]},{"label":"Carbohydrate","values":["3.6 g","6.5 g","3 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["3.6 g","6.5 g","7 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["3.9 g","7 g","14 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.11
+        g","0.19 g","3 %"]}]},"nutrientsTableV2":{"headers":[{"value":"100 g"},{"value":"1
+        Portion (150 g)"},{"infoText":"% of the reference intake for an average adult
+        (8400kj/2000kcal)","value":"Reference intake"}],"rows":[{"label":"Energy","values":["535
+        kJ (129 kcal)","933 kJ (225 kcal)","11 %"]},{"fsaLevel":"MEDIUM","label":"Fat","values":["11
+        g","19 g","27 %"]},{"fsaLevel":"HIGH","label":"of which saturates","values":["6.4
+        g","11 g","55 %"]},{"label":"Carbohydrate","values":["3.6 g","6.5 g","3 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["3.6 g","6.5 g","7 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["3.9 g","7 g","14 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.11
+        g","0.19 g","3 %"]}]},"portionSentence":"1 package ≈ 7 servings"},"otherInformation":{"articleNumber":"205073200000","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","identificationMark":"CH 2434","legalDesignation":"Rahmjoghurt,
+        10% Fett im Milchanteil","remarks":[{"code":"Cooling information/storage information","value":"Store
+        refrigerated at max. +5 °C."},{"code":"Production information","value":"from
+        pasteurized skimmed milk and pasteurized cream"}]}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/205073200000","title":"Yogos
+        · Yoghurt · Natural, Greek Style","uid":100226212,"versioning":"Natural, Greek
+        Style"},{"brand":"Yogos","breadcrumb":[{"id":"7494731","name":"Dairy, eggs
+        & fresh convenience food","slugs":["dairy-eggs-fresh-convenience-foo"]},{"id":"7494753","name":"Yogurts
+        & desserts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts"]},{"id":"7494879","name":"Yogurts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts"]},{"id":"7495347","name":"Greek
+        & high protein","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts","greek-high-protein"]}],"description":"Yogos
+        · Yoghurt · Natural, Greek-Style, 5% fat","gtins":["7623186779787"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/ac8d9e6c409641bffa95343ab9cd1cc98800fc6c/yogos-yoghurt-natural-greek-style-5-fat.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/ac8d9e6c409641bffa95343ab9cd1cc98800fc6c/yogos-yoghurt-natural-greek-style-5-fat.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"205011900000","name":"Yoghurt","offer":{"displayPrice":true,"hints":[{"type":"OFFLINE_PRODUCT"}],"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false,"pictos":[{"description":"Swiss
+        product","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}]},"productAvailability":"INSTORE_ONLY","productInformation":{"mainInformation":{"allergens":"Milk
+        and products thereof","brand":{"cdn":"rokka","imagePath":"https://image.migros.ch/d/{stack}/75b4fe5abdcda40631fd70bc39675db530c96781.png","name":"Yogos","slug":"yogos"},"ingredients":"whole
+        <strong>milk</strong> (pasteurised), <strong>milk</strong> protein, full-fat
+        <strong>cream</strong> (pasteurised).","labels":[{"cdn":"rokka","id":"L53","imagePath":"https://image.migros.ch/d/{stack}/6c05f96b8ea904d75510d914ed4e8df9755d5222.png","name":"Swissness","slug":"swissness"}],"migipediaUrl":"https://migipedia.migros.ch/de/products/205011900000","origin":"Switzerland","rating":{"nbReviews":6,"nbStars":4.0},"tags":[{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g","1 Becher (150 g)"],"rows":[{"label":"Energy","values":["433 kJ (103 kcal)","658
+        kJ (157 kcal)","8 %"]},{"fsaLevel":"MEDIUM","label":"Fat","values":["5 g","7.5
+        g","11 %"]},{"fsaLevel":"MEDIUM","label":"of which saturates","values":["3.2
+        g","4.8 g","24 %"]},{"label":"Carbohydrate","values":["4.9 g","7.4 g","3 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["4.9 g","7.4 g","8 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["9.7 g","15 g","30 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.1
+        g","0.15 g","3 %"]}]},"nutrientsTableV2":{"headers":[{"value":"100 g"},{"value":"1
+        Becher (150 g)"},{"infoText":"% of the reference intake for an average adult
+        (8400kj/2000kcal)","value":"Reference intake"}],"rows":[{"label":"Energy","values":["433
+        kJ (103 kcal)","658 kJ (157 kcal)","8 %"]},{"fsaLevel":"MEDIUM","label":"Fat","values":["5
+        g","7.5 g","11 %"]},{"fsaLevel":"MEDIUM","label":"of which saturates","values":["3.2
+        g","4.8 g","24 %"]},{"label":"Carbohydrate","values":["4.9 g","7.4 g","3 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["4.9 g","7.4 g","8 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["9.7 g","15 g","30 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.1
+        g","0.15 g","3 %"]}]},"portionSentence":"1 package ≈ 3 servings"},"otherInformation":{"articleNumber":"205011900000","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"CH-8031
+        Zürich","identificationMark":"CH 5678","legalDesignation":"Cream and protein
+        enriched yogurt with 5% fat in the milk portion","remarks":[{"code":"Cooling
+        information/storage information","value":"Store refrigerated at max. +5 °C."},{"code":"Production
+        information","value":"homogenized"}]}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/205011900000","title":"Yogos
+        · Yoghurt · Natural, Greek-Style, 5% fat","uid":100226332,"versioning":"Natural,
+        Greek-Style, 5% fat"}]'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      cache-control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      connection:
+      - keep-alive
+      content-length:
+      - '24501'
+      content-type:
+      - application/json
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9
+      connection:
+      - keep-alive
+      host:
+      - www.migros.ch
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: GET
+    uri: https://www.migros.ch/product-display/public/v2/product-detail?uids=100018064%2C100226331%2C100226327%2C100226212%2C100226332&warehouseId=1&storeType=OFFLINE&region=national
+  response:
+    body:
+      string: '[{"brand":"Nestlé","brandLine":"Yogolino","breadcrumb":[{"id":"30009000","name":"Baby
+        and kids","slugs":["baby-and-kids"]},{"id":"30009001","name":"Baby food &
+        formula","slugs":["baby-and-kids","baby-food-formula"]},{"id":"30009002","name":"Food
+        jars & pouches","slugs":["baby-and-kids","baby-food-formula","food-jars-pouches"]},{"id":"30009006","name":"Yoghurts
+        & puddings","slugs":["baby-and-kids","baby-food-formula","food-jars-pouches","yoghurts-puddings"]}],"description":"Nestlé
+        Yogolino · Natural yoghurt · Bio, after 6 months ","gtins":["7613037819861"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/7599fb6c45738f3ca9252422f27ac077f67253d5/nestle-bio-natural-yoghurt-after-6-months.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/7599fb6c45738f3ca9252422f27ac077f67253d5/nestle-bio-natural-yoghurt-after-6-months.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"521055100000","migrosOnlineId":"6654953","name":"Natural
+        yoghurt","offer":{"channel":{"offerType":"OFFLINE","region":"national"},"displayPrice":true,"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantityV2":96,"pictos":[{"description":"Organic","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679483586/labels/bio","type":"BIO"}],"price":{"advertisedDisplayValue":"4.20","advertisedValue":4.2,"displayUnitPrice":true,"effectiveDisplayValue":"4.20","effectiveValue":4.2,"multiplier":1,"unitPrice":{"unit":"piece","value":1.05}},"quantity":"4
+        Stk.","quantityPrice":"1.05/piece","type":"STANDARD"},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"allergens":"Milk
+        and its derivatives","brand":{"cdn":"rokka","imagePath":"https://image.migros.ch/d/{stack}/85ff984ac62be1d94559adf3b527972881edf551.png","name":"Nestlé","slug":"nestle"},"ingredients":"Ingredients:
+        heat treated fermented MILK* 76% (whole MILK*, lactic ferments), water, starch*,
+        HALF-CREAM*, rice semolina*, thickener (pectins).*Products from organic growth.","labels":[{"cdn":"rokka","id":"L52","imagePath":"https://image.migros.ch/d/{stack}/ba3285f2a6f44c03a166bb2f11547b7ad6178fcc.png","name":"Third-party
+        organic food","slug":"third-party-organic-food"},{"id":"L76","name":"No added
+        sugar","slug":"no-added-sugar"}],"migipediaUrl":"https://migipedia.migros.ch/de/products/521055100000","nutritionalCharacteristicsV2":[{"name":"Organic"},{"additionalInformation":"No
+        added sugar. Contains naturally occurring sugars.","name":"No added sugar"}],"origin":"You
+        can find information about the origin on the packaging in the store.","productSpecificAttributes":["PRODUCT_BIO"],"rating":{"nbReviews":27,"nbStars":4.0},"tags":[{"id":"BIO","name":"Organic","slug":"organic"},{"additionalInformation":"No
+        added sugar. Contains naturally occurring sugars.","id":"NO_ADDED_SUGAR","name":"No
+        added sugar","slug":"no-added-sugar"}]},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g"],"rows":[{"label":"Energy","values":["~ 309 kJ (~ 74 kcal)","~ 278 kJ (~
+        66 kcal)",""]},{"fsaLevel":"MEDIUM","label":"Fat","values":["~ 3.2 g","~ 2.9
+        g",""]},{"fsaLevel":"MEDIUM","label":"of which saturates","values":["~ 1.9
+        g","~ 1.7 g",""]},{"label":"Carbohydrate","values":["~ 8.2 g","~ 7.4 g",""]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["~ 3.3 g","~ 3 g",""]},{"label":"Fibre","values":["~
+        0.6 g","~ 0.5 g",""]},{"label":"Protein","values":["~ 2.8 g","~ 2.5 g",""]},{"fsaLevel":"LOW","label":"Salt","values":["~
+        0.08 g","~ 0.08 g",""]},{"label":"Sodium","values":["~ 33 mg","~ 30 mg",""]},{"label":"Calcium","values":["~
+        95 mg","~ 85.5 mg","~ 21 %"]}]},"nutrientsTableV2":{"headers":[{"value":"100
+        g"},{"infoText":"% of the reference intake for an average adult (8400kj/2000kcal)","value":"Reference
+        intake"},{"value":""},{"infoText":"% of the reference intake for an average
+        adult (8400kj/2000kcal)","value":"Reference intake"}],"rows":[{"label":"Energy","values":["~
+        309 kJ (~ 74 kcal)","","~ 278 kJ (~ 66 kcal)",""]},{"fsaLevel":"MEDIUM","label":"Fat","values":["~
+        3.2 g","","~ 2.9 g",""]},{"fsaLevel":"MEDIUM","label":"of which saturates","values":["~
+        1.9 g","","~ 1.7 g",""]},{"label":"Carbohydrate","values":["~ 8.2 g","","~
+        7.4 g",""]},{"fsaLevel":"LOW","label":"of which sugars","values":["~ 3.3 g","","~
+        3 g",""]},{"label":"Fibre","values":["~ 0.6 g","","~ 0.5 g",""]},{"label":"Protein","values":["~
+        2.8 g","","~ 2.5 g",""]},{"fsaLevel":"LOW","label":"Salt","values":["~ 0.08
+        g","","~ 0.08 g",""]},{"label":"Sodium","values":["~ 33 mg","","~ 30 mg",""]},{"label":"Calcium","values":["~
+        95 mg","~ 24 %","~ 85.5 mg","~ 21 %"]}]},"portionSentence":"1 pack ≈ 4 servings"},"otherInformation":{"articleNumber":"521055100000","distributorName":"Nestlé
+        Suisse S.A.","distributorStreetAndNumber":"CP 2222, 1800 Vevey","legalDesignation":"Babyfood
+        for infants and very young children","mainSpecificities":[{"code":"Health
+        and nutritional claims","value":"No added sugar. Contains naturally occurring
+        sugars."}],"remarks":[{"code":"Warnings / mandatory notes","value":"It is
+        important to have a varied and balanced diet as well as a healthy lifestyle."},{"code":"Consumer
+        storage instructions","value":"Pasteurized. Packaged in a protective atmosphere.
+        Store at room temperature. Do not store once opened."}]},"usageInformation":{"additionalInformation":"Good
+        milk . The new NaturNes Bio Natur flavor milk dessert is ideal for starting
+        with side dishes. It is produced without added sugar*, preservatives** and
+        colorings** and is gluten-free.  *Contains sugar by nature **Complies with
+        legislation"}},"productRange":"STANDARD","productSpecificAttributes":["PRODUCT_BIO"],"productUrls":"https://www.migros.ch/en/product/521055100000","title":"Nestlé
+        Yogolino · Natural yoghurt · Bio, after 6 months ","uid":100018064,"versioning":"after
+        6 months "},{"brand":"Yogos","breadcrumb":[{"id":"7494731","name":"Dairy,
+        eggs & fresh convenience food","slugs":["dairy-eggs-fresh-convenience-foo"]},{"id":"7494753","name":"Yogurts
+        & desserts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts"]},{"id":"7494879","name":"Yogurts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts"]},{"id":"7495347","name":"Greek
+        & high protein","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts","greek-high-protein"]}],"description":"Yogos
+        · Yoghurt · Natural, Greek-Style, 0% Fat","gtins":["7623186780028"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/59e2e41308f3eedb4a16897655566b3aadd70b31/yogos-yoghurt-natural-greek-style-0-fat.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/59e2e41308f3eedb4a16897655566b3aadd70b31/yogos-yoghurt-natural-greek-style-0-fat.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"205011800000","migrosOnlineId":"18204395","name":"Yoghurt","offer":{"badges":[{"a11yDescription":"20×","description":"20x","enrichedDescription":"20x","rawDescription":"20x","type":"CUMULUS_PROMOTION"},{"description":"New","enrichedDescription":"New","rawDescription":"New","type":"NEW"}],"channel":{"offerType":"OFFLINE","region":"national"},"displayPrice":true,"isNewOffer":true,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantityV2":96,"pictos":[{"description":"Switzerland","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}],"price":{"advertisedDisplayValue":"1.15","advertisedValue":1.15,"displayUnitPrice":true,"effectiveDisplayValue":"1.15","effectiveValue":1.15,"multiplier":1,"unitPrice":{"unit":"100g","value":0.64}},"priceInsteadOfLabel":"was","promotionDateRange":{"endDate":"2026-11-04","startDate":"2026-10-22"},"promotionPrice":{"advertisedDisplayValue":"1.15","advertisedValue":1.15,"displayUnitPrice":false,"effectiveDisplayValue":"1.15","effectiveValue":1.15,"multiplier":1},"quantity":"180g","quantityPrice":"0.64/100g","type":"STANDARD"},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"allergens":"Milk
+        and products thereof","brand":{"cdn":"rokka","imagePath":"https://image.migros.ch/d/{stack}/75b4fe5abdcda40631fd70bc39675db530c96781.png","name":"Yogos","slug":"yogos"},"ingredients":"skimmed
+        <strong>milk</strong>, <strong>milk</strong> protein.","labels":[{"cdn":"rokka","id":"L53","imagePath":"https://image.migros.ch/d/{stack}/6c05f96b8ea904d75510d914ed4e8df9755d5222.png","name":"Swissness","slug":"swissness"}],"migipediaUrl":"https://migipedia.migros.ch/de/products/205011800000","origin":"You
+        can find information about the origin on the packaging in the store.","rating":{"nbReviews":13,"nbStars":3.5},"tags":[{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g","1 Becher (180 g)"],"rows":[{"label":"Energy","values":["233 kJ (55 kcal)","422
+        kJ (99 kcal)","5 %"]},{"fsaLevel":"LOW","label":"Fat","values":["0 g","0 g","0
+        %"]},{"fsaLevel":"LOW","label":"of which saturates","values":["0 g","0 g","0
+        %"]},{"label":"Carbohydrate","values":["4.9 g","8.8 g","3 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["4.9 g","8.8 g","10 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["8.8 g","16 g","32 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.1
+        g","0.18 g","3 %"]}]},"nutrientsTableV2":{"headers":[{"value":"100 g"},{"value":"1
+        Becher (180 g)"},{"infoText":"% of the reference intake for an average adult
+        (8400kj/2000kcal)","value":"Reference intake"}],"rows":[{"label":"Energy","values":["233
+        kJ (55 kcal)","422 kJ (99 kcal)","5 %"]},{"fsaLevel":"LOW","label":"Fat","values":["0
+        g","0 g","0 %"]},{"fsaLevel":"LOW","label":"of which saturates","values":["0
+        g","0 g","0 %"]},{"label":"Carbohydrate","values":["4.9 g","8.8 g","3 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["4.9 g","8.8 g","10 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["8.8 g","16 g","32 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.1
+        g","0.18 g","3 %"]}]},"portionSentence":"1 cup = 1 serving"},"otherInformation":{"articleNumber":"205011800000","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"CH-8031
+        Zürich","identificationMark":"CH 5678","legalDesignation":"Protein enriched
+        low-fat yoghurt made from pasteurised milk with 0% fat in the milk portion","remarks":[{"code":"Cooling
+        information/storage information","value":"Store refrigerated at max. +5 °C."},{"code":"Production
+        information","value":"homogenized"}]}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/205011800000","title":"Yogos
+        · Yoghurt · Natural, Greek-Style, 0% Fat","uid":100226331,"versioning":"Natural,
+        Greek-Style, 0% Fat"},{"brand":"Bifidus","breadcrumb":[{"id":"7494731","name":"Dairy,
+        eggs & fresh convenience food","slugs":["dairy-eggs-fresh-convenience-foo"]},{"id":"7494753","name":"Yogurts
+        & desserts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts"]},{"id":"7494879","name":"Yogurts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts"]},{"id":"7495345","name":"Probiotic","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts","probiotic"]}],"description":"Bifidus
+        · Yoghurt · Bio, Bio, Natural","gtins":["7623186780790"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/e192639a05d5772c5ecc875b32956f55c326d379/bifidus-bio-bio-yoghurt-natural.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/e192639a05d5772c5ecc875b32956f55c326d379/bifidus-bio-bio-yoghurt-natural.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"204542700000","name":"Yoghurt","offer":{"badges":[{"a11yDescription":"20×","description":"20x","enrichedDescription":"20x","rawDescription":"20x","type":"CUMULUS_PROMOTION"},{"description":"New","enrichedDescription":"New","rawDescription":"New","type":"NEW"}],"channel":{"offerType":"OFFLINE","region":"national"},"displayPrice":true,"isNewOffer":true,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantityV2":96,"pictos":[{"description":"Organic","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679483586/labels/bio","type":"BIO"},{"description":"Swiss
+        product","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}],"price":{"advertisedDisplayValue":"1.80","advertisedValue":1.8,"displayUnitPrice":true,"effectiveDisplayValue":"1.80","effectiveValue":1.8,"multiplier":1,"unitPrice":{"unit":"100g","value":0.36}},"priceInsteadOfLabel":"was","promotionDateRange":{"endDate":"2026-11-04","startDate":"2026-10-22"},"promotionPrice":{"advertisedDisplayValue":"1.80","advertisedValue":1.8,"displayUnitPrice":false,"effectiveDisplayValue":"1.80","effectiveValue":1.8,"multiplier":1},"quantity":"500g","quantityPrice":"0.36/100g","type":"STANDARD"},"productAvailability":"INSTORE_ONLY","productInformation":{"mainInformation":{"allergens":"Milk
+        and products thereof","brand":{"cdn":"rokka","imagePath":"https://image.migros.ch/d/{stack}/e7ddc622c32fd8d81de09bdc27391bfa421de2e2.png","name":"Bifidus","slug":"bifidus"},"ingredients":"Voll<strong>milch</strong>*
+        (homogenisiert, pasteurisiert, CH), Mager<strong>milch</strong>pulver* (CH),
+        <strong>Milch</strong>protein* (CH).\n* aus biologischer Landwirtschaft\n
+        Mit selektionierten Milchsäurebakterien Bifidobacterium","labels":[{"cdn":"rokka","id":"L75","imagePath":"https://image.migros.ch/d/{stack}/382374e2537f429f3b917d6fddabda9a62aeb676.png","name":"Bio
+        Suisse Knospe","slug":"bio-suisse-knospe"},{"cdn":"rokka","id":"L02","imagePath":"https://image.migros.ch/d/{stack}/cd243920004f2027b69070fb0cbc5b0afb9898c7.png","name":"Migros
+        Organic Guidelines","slug":"migros-organic-guidelines"},{"cdn":"rokka","id":"L53","imagePath":"https://image.migros.ch/d/{stack}/6c05f96b8ea904d75510d914ed4e8df9755d5222.png","name":"Swissness","slug":"swissness"}],"migipediaUrl":"https://migipedia.migros.ch/de/products/204542700000","nutritionalCharacteristicsV2":[{"name":"Organic"}],"origin":"You
+        can find information about the origin on the packaging in the store.","productSpecificAttributes":["PRODUCT_BIO"],"rating":{"nbReviews":8,"nbStars":4.5},"tags":[{"id":"BIO","name":"Organic","slug":"organic"},{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g","1 Portion (150 g)"],"rows":[{"label":"Energy","values":["285 kJ (68 kcal)","428
+        kJ (102 kcal)","5 %"]},{"fsaLevel":"MEDIUM","label":"Fat","values":["3.9 g","5.9
+        g","8 %"]},{"fsaLevel":"MEDIUM","label":"of which saturates","values":["2.3
+        g","3.5 g","18 %"]},{"label":"Carbohydrate","values":["4 g","6 g","2 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["4 g","6 g","7 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["4.3 g","6.5 g","13 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.13
+        g","0.2 g","3 %"]},{"label":"Calcium","values":["120 mg","180 mg","23 %"]}]},"nutrientsTableV2":{"headers":[{"value":"100
+        g"},{"infoText":"% of the reference intake for an average adult (8400kj/2000kcal)","value":"Reference
+        intake"},{"value":"1 Portion (150 g)"},{"infoText":"% of the reference intake
+        for an average adult (8400kj/2000kcal)","value":"Reference intake"}],"rows":[{"label":"Energy","values":["285
+        kJ (68 kcal)","","428 kJ (102 kcal)","5 %"]},{"fsaLevel":"MEDIUM","label":"Fat","values":["3.9
+        g","","5.9 g","8 %"]},{"fsaLevel":"MEDIUM","label":"of which saturates","values":["2.3
+        g","","3.5 g","18 %"]},{"label":"Carbohydrate","values":["4 g","","6 g","2
+        %"]},{"fsaLevel":"LOW","label":"of which sugars","values":["4 g","","6 g","7
+        %"]},{"label":"Fibre","values":["0 g","","0 g",""]},{"label":"Protein","values":["4.3
+        g","","6.5 g","13 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.13 g","","0.2
+        g","3 %"]},{"label":"Calcium","values":["120 mg","15 %","180 mg","23 %"]}]},"portionSentence":"1
+        package ≈ 3 servings"},"otherInformation":{"articleNumber":"204542700000","bioCertification":"Organic
+        certification: CH-BIO-006","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","identificationMark":"CH 2434","legalDesignation":"Vollmilchjoghurt
+        mild, min. 3,5% Fett im Milchanteil.","remarks":[{"code":"Other additional
+        information","value":"1 portion per day Supports digestion*. *Calcium contributes
+        to the normal function of digestive enzymes, Eine abwechslungsreiche und ausgewogene
+        Ernährung und eine gesunde Lebensweise sind wichtig für unsere Gesundheit."},{"code":"Cooling
+        information/storage information","value":"Store refrigerated at max. +5 °C."},{"code":"Production
+        information","value":"from pasteurized milk"}]}},"productRange":"STANDARD","productSpecificAttributes":["PRODUCT_BIO"],"productUrls":"https://www.migros.ch/en/product/204542700000","title":"Bifidus
+        · Yoghurt · Bio, Bio, Natural","uid":100226327,"versioning":"Natural"},{"brand":"Yogos","breadcrumb":[{"id":"7494731","name":"Dairy,
+        eggs & fresh convenience food","slugs":["dairy-eggs-fresh-convenience-foo"]},{"id":"7494753","name":"Yogurts
+        & desserts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts"]},{"id":"7494879","name":"Yogurts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts"]},{"id":"7495347","name":"Greek
+        & high protein","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts","greek-high-protein"]}],"description":"Yogos
+        · Yoghurt · Natural, Greek Style","gtins":["7623186788840"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/980c6d83af598e74865fd67a2a1794cf33e95892/yogos-yoghurt-natural-greek-style.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/980c6d83af598e74865fd67a2a1794cf33e95892/yogos-yoghurt-natural-greek-style.jpg"},{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/e444e498d6cd3f48e5f4b37ddd8dd08fd22c9246.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"205073200000","name":"Yoghurt","offer":{"badges":[{"a11yDescription":"20×","description":"20x","enrichedDescription":"20x","rawDescription":"20x","type":"CUMULUS_PROMOTION"},{"description":"New","enrichedDescription":"New","rawDescription":"New","type":"NEW"}],"channel":{"offerType":"OFFLINE","region":"national"},"displayPrice":true,"isNewOffer":true,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantityV2":96,"pictos":[{"description":"Swiss
+        product","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}],"price":{"advertisedDisplayValue":"4.25","advertisedValue":4.25,"displayUnitPrice":true,"effectiveDisplayValue":"4.25","effectiveValue":4.25,"multiplier":1,"unitPrice":{"unit":"100g","value":0.43}},"priceInsteadOfLabel":"was","promotionDateRange":{"endDate":"2026-11-04","startDate":"2026-10-22"},"promotionPrice":{"advertisedDisplayValue":"4.25","advertisedValue":4.25,"displayUnitPrice":false,"effectiveDisplayValue":"4.25","effectiveValue":4.25,"multiplier":1},"quantity":"1kg","quantityPrice":"0.43/100g","type":"STANDARD"},"productAvailability":"INSTORE_ONLY","productInformation":{"mainInformation":{"allergens":"Milk
+        and products thereof","brand":{"cdn":"rokka","imagePath":"https://image.migros.ch/d/{stack}/75b4fe5abdcda40631fd70bc39675db530c96781.png","name":"Yogos","slug":"yogos"},"ingredients":"Mager<strong>milch</strong>
+        (CH), <strong>Rahm</strong> (CH), <strong>Milch</strong>protein.","labels":[{"cdn":"rokka","id":"L53","imagePath":"https://image.migros.ch/d/{stack}/6c05f96b8ea904d75510d914ed4e8df9755d5222.png","name":"Swissness","slug":"swissness"}],"migipediaUrl":"https://migipedia.migros.ch/de/products/205073200000","origin":"You
+        can find information about the origin on the packaging in the store.","rating":{"nbReviews":18,"nbStars":4.5},"tags":[{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g","1 Portion (150 g)"],"rows":[{"label":"Energy","values":["535 kJ (129 kcal)","933
+        kJ (225 kcal)","11 %"]},{"fsaLevel":"MEDIUM","label":"Fat","values":["11 g","19
+        g","27 %"]},{"fsaLevel":"HIGH","label":"of which saturates","values":["6.4
+        g","11 g","55 %"]},{"label":"Carbohydrate","values":["3.6 g","6.5 g","3 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["3.6 g","6.5 g","7 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["3.9 g","7 g","14 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.11
+        g","0.19 g","3 %"]}]},"nutrientsTableV2":{"headers":[{"value":"100 g"},{"value":"1
+        Portion (150 g)"},{"infoText":"% of the reference intake for an average adult
+        (8400kj/2000kcal)","value":"Reference intake"}],"rows":[{"label":"Energy","values":["535
+        kJ (129 kcal)","933 kJ (225 kcal)","11 %"]},{"fsaLevel":"MEDIUM","label":"Fat","values":["11
+        g","19 g","27 %"]},{"fsaLevel":"HIGH","label":"of which saturates","values":["6.4
+        g","11 g","55 %"]},{"label":"Carbohydrate","values":["3.6 g","6.5 g","3 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["3.6 g","6.5 g","7 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["3.9 g","7 g","14 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.11
+        g","0.19 g","3 %"]}]},"portionSentence":"1 package ≈ 7 servings"},"otherInformation":{"articleNumber":"205073200000","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","identificationMark":"CH 2434","legalDesignation":"Rahmjoghurt,
+        10% Fett im Milchanteil","remarks":[{"code":"Cooling information/storage information","value":"Store
+        refrigerated at max. +5 °C."},{"code":"Production information","value":"from
+        pasteurized skimmed milk and pasteurized cream"}]}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/205073200000","title":"Yogos
+        · Yoghurt · Natural, Greek Style","uid":100226212,"versioning":"Natural, Greek
+        Style"},{"brand":"Yogos","breadcrumb":[{"id":"7494731","name":"Dairy, eggs
+        & fresh convenience food","slugs":["dairy-eggs-fresh-convenience-foo"]},{"id":"7494753","name":"Yogurts
+        & desserts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts"]},{"id":"7494879","name":"Yogurts","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts"]},{"id":"7495347","name":"Greek
+        & high protein","slugs":["dairy-eggs-fresh-convenience-foo","yogurts-desserts","yogurts","greek-high-protein"]}],"description":"Yogos
+        · Yoghurt · Natural, Greek-Style, 5% fat","gtins":["7623186779787"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/ac8d9e6c409641bffa95343ab9cd1cc98800fc6c/yogos-yoghurt-natural-greek-style-5-fat.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/ac8d9e6c409641bffa95343ab9cd1cc98800fc6c/yogos-yoghurt-natural-greek-style-5-fat.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"205011900000","name":"Yoghurt","offer":{"badges":[{"a11yDescription":"20×","description":"20x","enrichedDescription":"20x","rawDescription":"20x","type":"CUMULUS_PROMOTION"},{"description":"New","enrichedDescription":"New","rawDescription":"New","type":"NEW"}],"channel":{"offerType":"OFFLINE","region":"national"},"displayPrice":true,"isNewOffer":true,"isNotMorningDeliverable":false,"isVariableWeight":false,"maxOrderableQuantityV2":96,"pictos":[{"description":"Swiss
+        product","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}],"price":{"advertisedDisplayValue":"1.15","advertisedValue":1.15,"displayUnitPrice":true,"effectiveDisplayValue":"1.15","effectiveValue":1.15,"multiplier":1,"unitPrice":{"unit":"100g","value":0.64}},"priceInsteadOfLabel":"was","promotionDateRange":{"endDate":"2026-11-04","startDate":"2026-10-22"},"promotionPrice":{"advertisedDisplayValue":"1.15","advertisedValue":1.15,"displayUnitPrice":false,"effectiveDisplayValue":"1.15","effectiveValue":1.15,"multiplier":1},"quantity":"180g","quantityPrice":"0.64/100g","type":"STANDARD"},"productAvailability":"INSTORE_ONLY","productInformation":{"mainInformation":{"allergens":"Milk
+        and products thereof","brand":{"cdn":"rokka","imagePath":"https://image.migros.ch/d/{stack}/75b4fe5abdcda40631fd70bc39675db530c96781.png","name":"Yogos","slug":"yogos"},"ingredients":"whole
+        <strong>milk</strong> (pasteurised), <strong>milk</strong> protein, full-fat
+        <strong>cream</strong> (pasteurised).","labels":[{"cdn":"rokka","id":"L53","imagePath":"https://image.migros.ch/d/{stack}/6c05f96b8ea904d75510d914ed4e8df9755d5222.png","name":"Swissness","slug":"swissness"}],"migipediaUrl":"https://migipedia.migros.ch/de/products/205011900000","origin":"You
+        can find information about the origin on the packaging in the store.","rating":{"nbReviews":6,"nbStars":4.0},"tags":[{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"nutrientsInformation":{"isAnalyticalConstituents":false,"nutrientsTable":{"headers":["100
+        g","1 Becher (150 g)"],"rows":[{"label":"Energy","values":["433 kJ (103 kcal)","658
+        kJ (157 kcal)","8 %"]},{"fsaLevel":"MEDIUM","label":"Fat","values":["5 g","7.5
+        g","11 %"]},{"fsaLevel":"MEDIUM","label":"of which saturates","values":["3.2
+        g","4.8 g","24 %"]},{"label":"Carbohydrate","values":["4.9 g","7.4 g","3 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["4.9 g","7.4 g","8 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["9.7 g","15 g","30 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.1
+        g","0.15 g","3 %"]}]},"nutrientsTableV2":{"headers":[{"value":"100 g"},{"value":"1
+        Becher (150 g)"},{"infoText":"% of the reference intake for an average adult
+        (8400kj/2000kcal)","value":"Reference intake"}],"rows":[{"label":"Energy","values":["433
+        kJ (103 kcal)","658 kJ (157 kcal)","8 %"]},{"fsaLevel":"MEDIUM","label":"Fat","values":["5
+        g","7.5 g","11 %"]},{"fsaLevel":"MEDIUM","label":"of which saturates","values":["3.2
+        g","4.8 g","24 %"]},{"label":"Carbohydrate","values":["4.9 g","7.4 g","3 %"]},{"fsaLevel":"LOW","label":"of
+        which sugars","values":["4.9 g","7.4 g","8 %"]},{"label":"Fibre","values":["0
+        g","0 g",""]},{"label":"Protein","values":["9.7 g","15 g","30 %"]},{"fsaLevel":"LOW","label":"Salt","values":["0.1
+        g","0.15 g","3 %"]}]},"portionSentence":"1 package ≈ 3 servings"},"otherInformation":{"articleNumber":"205011900000","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"CH-8031
+        Zürich","identificationMark":"CH 5678","legalDesignation":"Cream and protein
+        enriched yogurt with 5% fat in the milk portion","remarks":[{"code":"Cooling
+        information/storage information","value":"Store refrigerated at max. +5 °C."},{"code":"Production
+        information","value":"homogenized"}]}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/205011900000","title":"Yogos
+        · Yoghurt · Natural, Greek-Style, 5% fat","uid":100226332,"versioning":"Natural,
+        Greek-Style, 5% fat"}]'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      cache-control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      connection:
+      - keep-alive
+      content-length:
+      - '27370'
+      content-type:
+      - application/json
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9
+      connection:
+      - keep-alive
+      host:
+      - www.migros.ch
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: GET
+    uri: https://www.migros.ch/product-display/public/v2/product-detail?uids=100025235&warehouseId=1&storeType=ONLINE&region=national
+  response:
+    body:
+      string: '[{"brand":"Migros","breadcrumb":[{"id":"7494732","name":"Fruits & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Migros
+        · Broccoli","gtins":["2124321000001","7617027556941"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/8bfb83a2fd62ce4dc79a47662f05f9c3e3d36441/migros-broccoli.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/8bfb83a2fd62ce4dc79a47662f05f9c3e3d36441/migros-broccoli.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"275704701000","migrosOnlineId":"6160685","name":"Broccoli","offer":{"channel":{"offerType":"ONLINE","warehouseId":1},"displayPrice":true,"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":true,"maxOrderableQuantity":96,"maxOrderableQuantityV2":96,"pictos":[{"description":"Switzerland","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"},{"description":"Product
+        with variable weight: When packing the order, we weigh it and charge you the
+        exact weight.","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679483133/labels/poids-variable","type":"VARIABLE_WEIGHT"}],"price":{"advertisedDisplayValue":"1.90","advertisedValue":1.90,"displayUnitPrice":true,"effectiveDisplayValue":"1.90","effectiveValue":1.90,"multiplier":1,"unitPrice":{"unit":"100g","value":0.51}},"quantity":"250–500
+        g","quantityPrice":"0.51/100g","type":"STANDARD"},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"brand":{"cdn":"cloudinary","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1760428057/brands/migros_QF8","name":"Migros","slug":"migros"},"mcheck":{"carbonFootprint":{"co2CarKmEquivalent":3,"co2KgRange":"1
+        - 1.9 kg CO₂eq / kg","contentUrl":"https://www.migros.ch/en/content/m-check-climate","image":"https://image.migros.ch/d/original/75c211490725bc9e106dfd6f3fe6205342835df3.png","packagingRatio":7,"productionRatio":86,"rating":4,"stackImage":"https://image.migros.ch/d/{stack}/75c211490725bc9e106dfd6f3fe6205342835df3.png","transportRatio":7}},"migipediaUrl":"https://migipedia.migros.ch/de/products/275704701000","origin":"Switzerland","rating":{"nbReviews":3321,"nbStars":4.5},"tags":[{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"otherInformation":{"articleNumber":"275704701000","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","mainSpecificities":[{"code":"Season from","value":"September"},{"code":"Season
+        to","value":"Mai"},{"code":"Packaging type","value":"Verpackt"},{"code":"Storage
+        at home","value":"gekühlt aufbewahren/lagern"}]},"usageInformation":{"additionalInformation":"Broccoli
+        has been known in Europe for four centuries. It can be eaten all year round.
+        Its mild taste and crunchy consistency are ideal for numerous dishes"}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/275704701000","title":"Migros
+        · Broccoli","uid":100025235}]'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      cache-control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      connection:
+      - keep-alive
+      content-length:
+      - '3292'
+      content-type:
+      - application/json
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9
+      connection:
+      - keep-alive
+      host:
+      - www.migros.ch
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: GET
+    uri: https://www.migros.ch/product-display/public/v2/product-detail?uids=100025235&warehouseId=1&storeType=OFFLINE&region=national
+  response:
+    body:
+      string: '[{"brand":"Migros","breadcrumb":[{"id":"7494732","name":"Fruits & vegetables","slugs":["fruits-vegetables"]},{"id":"7494757","name":"Vegetables","slugs":["fruits-vegetables","vegetables"]},{"id":"7494905","name":"Cauliflower,
+        broccoli & cabbage","slugs":["fruits-vegetables","vegetables","cauliflower-broccoli-cabbage"]}],"description":"Migros
+        · Broccoli","gtins":["2124321000001","7617027556941"],"imageTransparent":{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/8bfb83a2fd62ce4dc79a47662f05f9c3e3d36441/migros-broccoli.png"},"images":[{"cdn":"rokka","url":"https://image.migros.ch/d/{stack}/o-af-1-t.clr-fff/8bfb83a2fd62ce4dc79a47662f05f9c3e3d36441/migros-broccoli.jpg"}],"isConsignmentProduct":false,"isMgbCompatible":true,"migrosId":"275704701000","migrosOnlineId":"6160685","name":"Broccoli","offer":{"channel":{"offerType":"OFFLINE","region":"national"},"displayPrice":true,"isNewOffer":false,"isNotMorningDeliverable":false,"isVariableWeight":true,"maxOrderableQuantityV2":96,"pictos":[{"description":"Switzerland","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1679482984/labels/suisse","type":"REGION"}],"price":{"advertisedDisplayValue":"4.80","advertisedValue":4.8,"displayUnitPrice":true,"effectiveDisplayValue":"4.80","effectiveValue":4.8,"multiplier":1,"unitPrice":{"unit":"100g","value":0.48}},"quantity":"1
+        kg","quantityPrice":"0.48/100g","type":"STANDARD"},"productAvailability":"ONLINE_AND_INSTORE","productInformation":{"mainInformation":{"brand":{"cdn":"cloudinary","imagePath":"https://www-leshop-ch-cld-res.cloudinary.com/image/upload/{stack}/v1760428057/brands/migros_QF8","name":"Migros","slug":"migros"},"mcheck":{"carbonFootprint":{"co2CarKmEquivalent":3,"co2KgRange":"1
+        - 1.9 kg CO₂eq / kg","contentUrl":"https://www.migros.ch/en/content/m-check-climate","image":"https://image.migros.ch/d/original/75c211490725bc9e106dfd6f3fe6205342835df3.png","packagingRatio":7,"productionRatio":86,"rating":4,"stackImage":"https://image.migros.ch/d/{stack}/75c211490725bc9e106dfd6f3fe6205342835df3.png","transportRatio":7}},"migipediaUrl":"https://migipedia.migros.ch/de/products/275704701000","origin":"You
+        can find information about the origin on the packaging in the store.","rating":{"nbReviews":3321,"nbStars":4.5},"tags":[{"id":"SWISSNESS","name":"Swiss
+        product","slug":"swiss-product"}]},"otherInformation":{"articleNumber":"275704701000","distributorName":"Migros-Genossenschafts-Bund","distributorStreetAndNumber":"Limmatstrasse
+        152, CH-8031 Zürich","mainSpecificities":[{"code":"Season from","value":"September"},{"code":"Season
+        to","value":"Mai"},{"code":"Packaging type","value":"Verpackt"},{"code":"Storage
+        at home","value":"gekühlt aufbewahren/lagern"}]},"usageInformation":{"additionalInformation":"Broccoli
+        has been known in Europe for four centuries. It can be eaten all year round.
+        Its mild taste and crunchy consistency are ideal for numerous dishes"}},"productRange":"STANDARD","productUrls":"https://www.migros.ch/en/product/275704701000","title":"Migros
+        · Broccoli","uid":100025235}]'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      cache-control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      connection:
+      - keep-alive
+      content-length:
+      - '3067'
+      content-type:
+      - application/json
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9
+      connection:
+      - keep-alive
+      host:
+      - www.migros.ch
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: GET
+    uri: https://www.migros.ch/product-display/public/v2/product-detail?uids=1&warehouseId=1&storeType=ONLINE&region=national
+  response:
+    body:
+      string: '[]'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      cache-control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      connection:
+      - keep-alive
+      content-length:
+      - '2'
+      content-type:
+      - application/json
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9
+      connection:
+      - keep-alive
+      host:
+      - www.migros.ch
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: GET
+    uri: https://www.migros.ch/product-display/public/v2/product-detail?uids=1&warehouseId=1&storeType=OFFLINE&region=national
+  response:
+    body:
+      string: '[]'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      cache-control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      connection:
+      - keep-alive
+      content-length:
+      - '2'
+      content-type:
+      - application/json
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9, en
+      connection:
+      - keep-alive
+      host:
+      - www.migros.ch
+      migros-language:
+      - en
+      origin:
+      - https://www.migros.ch
+      peer-id:
+      - website-js-1143.0.0
+      referer:
+      - https://www.migros.ch/en
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: GET
+    uri: https://www.migros.ch/shopping-list/public/v1/lists/overview
+  response:
+    body:
+      string: '[{"collaborators":[{"badgeIdentifier":"<scrubbed>","firstName":"<scrubbed>","isOwner":true,"lastName":"<scrubbed>","personId":"<scrubbed>"}],"createdAt":"2026-10-24T09:33:35.781039Z","isOwner":true,"itemsCount":0,"shoppingListId":97185194,"shoppingListName":"In-Person
+        Shopping"},{"collaborators":[{"badgeIdentifier":"<scrubbed>","firstName":"<scrubbed>","isOwner":true,"lastName":"<scrubbed>","personId":"<scrubbed>"},{"badgeIdentifier":"<scrubbed>","firstName":"<scrubbed>","isOwner":false,"lastName":"<scrubbed>","personId":"<scrubbed>"}],"createdAt":"2025-10-09T13:34:38.577143Z","isOwner":false,"itemsCount":0,"shoppingListId":340420,"shoppingListName":"Shopping
+        list"}]'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      cache-control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      connection:
+      - keep-alive
+      content-length:
+      - '708'
+      content-type:
+      - application/json
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json, text/plain, */*
+      accept-encoding:
+      - gzip, deflate
+      accept-language:
+      - en-US,en;q=0.9, en
+      connection:
+      - keep-alive
+      host:
+      - www.migros.ch
+      migros-language:
+      - en
+      origin:
+      - https://www.migros.ch
+      peer-id:
+      - website-js-1143.0.0
+      referer:
+      - https://www.migros.ch/en
+      user-agent:
+      - Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0
+    method: GET
+    uri: https://www.migros.ch/shopping-list/public/v2/list/details?shoppingListId=97185194
+  response:
+    body:
+      string: '{"categories":[],"name":"In-Person Shopping","shoppingListId":97185194,"totals":{"frozenBoxProgressBarValue":0,"instoreTotal":0,"onlineTotal":{"credits":0,"deliveryPassActive":false,"estimatedTotal":0,"firstOrder":false,"freeDelivery":false,"limitedCategories":[],"minimumOrderValueReached":false},"showFrozenBox":false}}'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=86400
+      cache-control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      connection:
+      - keep-alive
+      content-length:
+      - '321'
+      content-type:
+      - application/json
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      server:
+      - cloudflare
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+version: 1

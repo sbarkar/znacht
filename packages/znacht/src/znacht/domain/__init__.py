@@ -22,6 +22,7 @@ from znacht.domain.household import (
     Pantry,
     PantryItem,
     Rules,
+    SlotTemplate,
     StoreLists,
     StorePolicy,
 )
@@ -83,6 +84,7 @@ __all__ = [
     "ShoppingListLine",
     "ShoppingListRef",
     "ShoppingPlan",
+    "SlotTemplate",
     "Spiciness",
     "StockStatus",
     "StoreLists",

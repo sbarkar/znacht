@@ -28,3 +28,6 @@ e2e-dry-run:
 
 record-cookidoo:
 	uv run python scripts/record_cookidoo.py --env-file $(ENV_FILE)
+
+record-migros:
+	uv run python scripts/record_migros.py

@@ -15,6 +15,8 @@ members = ["packages/*"]
 znacht = { workspace = true }
 znacht-memory = { workspace = true }
 znacht-cookidoo = { workspace = true }
+znacht-migros = { workspace = true }
+znacht-llm-anthropic = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -29,14 +31,18 @@ dev = [
   "znacht",
   "znacht-memory",
   "znacht-cookidoo",
+  "znacht-migros",
+  "znacht-llm-anthropic",
+  "respx>=0.21",
 ]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["packages/znacht/src", "packages/znacht-memory/src", "packages/znacht-cookidoo/src", "tests"]
+src = ["packages/znacht/src", "packages/znacht-memory/src", "packages/znacht-cookidoo/src", "packages/znacht-migros/src", "packages/znacht-llm-anthropic/src", "tests"]
 
 [tool.ruff.lint]
+allowed-confusables = ["–", "×"]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "ANN", "ASYNC"]
 ignore = ["ANN401"]
 
@@ -48,8 +54,8 @@ python_version = "3.12"
 strict = true
 warn_unreachable = true
 plugins = ["pydantic.mypy"]
-mypy_path = "packages/znacht/src:packages/znacht-memory/src:packages/znacht-cookidoo/src"
-packages = ["znacht", "znacht_memory", "znacht_cookidoo"]
+mypy_path = "packages/znacht/src:packages/znacht-memory/src:packages/znacht-cookidoo/src:packages/znacht-migros/src:packages/znacht-llm-anthropic/src"
+packages = ["znacht", "znacht_memory", "znacht_cookidoo", "znacht_migros", "znacht_llm_anthropic"]
 
 [[tool.mypy.overrides]]
 module = "tests.*"

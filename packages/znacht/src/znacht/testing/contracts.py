@@ -217,7 +217,8 @@ class GroceryStoreContract:
         original = await store.read_list(list_id)
         result = await store.apply_list(list_id, await store.diff_list(list_id, target))
         assert result.ok
-        assert (await store.read_list(list_id)).as_dict() == target.as_dict()
+        read = {k: v.quantity for k, v in (await store.read_list(list_id)).as_dict().items()}
+        assert read == {k: v.quantity for k, v in target.as_dict().items()}
         assert (await store.diff_list(list_id, target)).is_empty
         await store.apply_list(list_id, await store.diff_list(list_id, original))
 

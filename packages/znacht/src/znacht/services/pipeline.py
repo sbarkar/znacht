@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from enum import StrEnum
 
 from pydantic import Field
@@ -9,7 +10,7 @@ from pydantic import Field
 from znacht.domain._base import Frozen
 from znacht.domain.delivery import DeliverySlot
 from znacht.domain.diff import ListDiff, PlanDiff
-from znacht.domain.household import Household
+from znacht.domain.household import Household, SlotTemplate
 from znacht.domain.money import Money
 from znacht.domain.needs import IngredientNeed
 from znacht.domain.plan import MealPlan, Week
@@ -27,6 +28,22 @@ from znacht.services.minimum_order import ensure_minimum_order
 from znacht.services.needs import explode_needs, merge_needs
 from znacht.services.optimiser import choose_product
 from znacht.services.split import timing_split
+
+
+def slots_from_templates(templates: tuple[SlotTemplate, ...], week: Week) -> list[DeliverySlot]:
+    out: list[DeliverySlot] = []
+    for t in templates:
+        day = week.start + timedelta(days=t.weekday)
+        sh, sm = (int(x) for x in t.start.split(":"))
+        eh, em = (int(x) for x in t.end.split(":"))
+        out.append(
+            DeliverySlot(
+                id=t.id,
+                start=datetime(day.year, day.month, day.day, sh, sm),
+                end=datetime(day.year, day.month, day.day, eh, em),
+            )
+        )
+    return out
 
 
 class PlanStatus(StrEnum):
@@ -153,7 +170,10 @@ async def run_week(
     needs = explode_needs(plan, known, household)
 
     if slot is None:
-        slots = await store.delivery_slots(household.delivery.postcode)
+        slots = list(await store.delivery_slots(household.delivery.postcode))
+        if not slots and household.delivery.slot_templates:
+            slots = slots_from_templates(household.delivery.slot_templates, week)
+            notes.append("store listed no delivery slots; using the household's slot templates")
         preferred = household.delivery.preferred_slot_id
         slot = next((s for s in slots if s.id == preferred), slots[0] if slots else None)
         if slot is None:

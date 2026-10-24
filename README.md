@@ -32,7 +32,9 @@ Phase 2 done: the Cookidoo adapter (`znacht-cookidoo`) searches recipes, maps th
 ZNACHT_COOKIDOO_EMAIL=you@example.com ZNACHT_COOKIDOO_PASSWORD=... make e2e-dry-run
 ```
 
-Next: the Migros adapter (Phase 3). See [docs/architecture.md](docs/architecture.md) and the [decision log](docs/decisions/).
+Phase 3 done: the native Migros adapter (`znacht-migros`) with both channel prices, nutrition, lists by ID and learned availability.
+
+Next: the LLM planner (Phase 4). See [docs/architecture.md](docs/architecture.md) and the [decision log](docs/decisions/).
 
 ## Development
 

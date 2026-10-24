@@ -1,0 +1,18 @@
+[project]
+name = "znacht-llm-anthropic"
+version = "0.1.0.dev0"
+description = "Anthropic (Claude) planner provider for Znacht: proposes weekly plans and extracts structure from lab reports and pantry photos. Never trusted on quantities, prices or rules."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.12"
+dependencies = ["znacht", "anthropic>=0.70"]
+
+[project.entry-points."znacht.planner_providers"]
+anthropic = "znacht_llm_anthropic.provider:AnthropicPlanner"
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/znacht_llm_anthropic"]

@@ -132,9 +132,19 @@ class StorePolicy(Frozen):
     freezer_box_deposit: Money = Money.chf(20)
 
 
+class SlotTemplate(Frozen):
+    """A weekly delivery window used when the store cannot list slots (or as a preference)."""
+
+    id: str
+    weekday: int  # 0 = Monday
+    start: str  # "19:00"
+    end: str  # "21:00"
+
+
 class DeliveryPrefs(Frozen):
     postcode: str
     preferred_slot_id: str | None = None
+    slot_templates: tuple[SlotTemplate, ...] = ()
 
 
 class Household(Frozen):

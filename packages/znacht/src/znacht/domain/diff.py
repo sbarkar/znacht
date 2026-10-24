@@ -17,6 +17,7 @@ class ShoppingListLine(Frozen):
     quantity: int = 1
     product_id: ProductId | None = None
     text: str | None = None
+    availability: str | None = None  # the store's feedback, e.g. INSUFFICIENT_STOCK
 
     @property
     def key(self) -> str:

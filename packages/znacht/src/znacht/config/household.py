@@ -20,6 +20,7 @@ from znacht.domain.household import (
     Pantry,
     PantryItem,
     Rules,
+    SlotTemplate,
     StoreLists,
     StorePolicy,
 )
@@ -61,9 +62,17 @@ class HealthConfig(_Cfg):
     rules: list[str] = Field(default_factory=list)
 
 
+class SlotTemplateConfig(_Cfg):
+    id: str
+    weekday: int
+    start: str
+    end: str
+
+
 class DeliveryConfig(_Cfg):
     postcode: str
     preferred_slot_id: str | None = None
+    slot_templates: list[SlotTemplateConfig] = Field(default_factory=list)
 
 
 class StoreListsConfig(_Cfg):
@@ -130,7 +139,12 @@ class HouseholdConfig(_Cfg):
                 )
             ),
             delivery=DeliveryPrefs(
-                postcode=self.delivery.postcode, preferred_slot_id=self.delivery.preferred_slot_id
+                postcode=self.delivery.postcode,
+                preferred_slot_id=self.delivery.preferred_slot_id,
+                slot_templates=tuple(
+                    SlotTemplate(id=t.id, weekday=t.weekday, start=t.start, end=t.end)
+                    for t in self.delivery.slot_templates
+                ),
             ),
             store_lists=(
                 StoreLists(online=self.store_lists.online, in_store=self.store_lists.in_store)

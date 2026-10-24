@@ -37,6 +37,8 @@ pantry:                      # name: quantity; checked before buying staples
 delivery:
   postcode: "8000"
   preferred_slot_id: mon-19-21
+  slot_templates:            # used when the store cannot list slots (Migros, for now)
+    - {id: mon-19-21, weekday: 0, start: "19:00", end: "21:00"}
 
 store_lists:                 # explicit IDs; the store's "active list" is never trusted
   online: list-online
