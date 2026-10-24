@@ -7,6 +7,8 @@
 #
 # Re-run to update: pulls the branch, re-syncs the venv, restarts the service.
 set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export LC_ALL=C.UTF-8 LANG=C.UTF-8 DEBIAN_FRONTEND=noninteractive
 BRANCH="${BRANCH:-main}"
 REPO="${REPO:-https://github.com/sbarkar/znacht}"
 APP=/opt/znacht
@@ -15,13 +17,21 @@ ENVFILE=/etc/znacht/env
 export UV_INSTALL_DIR=/usr/local/bin UV_NO_MODIFY_PATH=1 UV_PYTHON_INSTALL_DIR=/opt/uv/python
 
 apt-get update -qq
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git curl ca-certificates >/dev/null
+apt-get install -y -qq git curl ca-certificates >/dev/null
 
 id znacht >/dev/null 2>&1 || useradd --system --home-dir "$DATA" --shell /usr/sbin/nologin znacht
 install -d -m 750 -o znacht -g znacht "$DATA"
 install -d -m 750 -o root -g znacht /etc/znacht
 
-command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null
+UV=/usr/local/bin/uv
+if [ ! -x "$UV" ]; then
+  curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null
+  # Older installers ignore UV_INSTALL_DIR; pick the binary up from wherever it landed.
+  for c in "$HOME/.local/bin/uv" /root/.local/bin/uv "$HOME/.cargo/bin/uv"; do
+    if [ ! -x "$UV" ] && [ -x "$c" ]; then install -m 755 "$c" "$UV"; fi
+  done
+fi
+[ -x "$UV" ] || { echo "uv did not install into $UV" >&2; exit 1; }
 
 if [ -d "$APP/.git" ]; then
   git -C "$APP" fetch -q origin "$BRANCH"
@@ -32,8 +42,8 @@ else
 fi
 
 cd "$APP"
-uv python install 3.12 -q
-UV_COMPILE_BYTECODE=1 uv sync -q --all-packages --no-dev --frozen --python 3.12
+"$UV" python install 3.12 -q
+UV_COMPILE_BYTECODE=1 "$UV" sync -q --all-packages --no-dev --frozen --python 3.12
 chmod -R o+rX /opt/uv
 
 cat > /etc/systemd/system/znacht.service <<EOF

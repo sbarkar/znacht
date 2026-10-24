@@ -8,6 +8,7 @@
 # RESUME=1 skips creation when the container already exists and only (re)runs the install inside it,
 # for hosts where a pct guard (a pool restriction, say) interrupted the first run.
 set -euo pipefail
+export LC_ALL=C.UTF-8 LANG=C.UTF-8
 VMID="${VMID:-102}"
 STORAGE="${STORAGE:-local-lvm}"
 TEMPLATE_STORAGE="${TEMPLATE_STORAGE:-local}"
@@ -52,8 +53,8 @@ for _ in $(seq 1 30); do
   sleep 2
 done
 
-pct exec "$VMID" -- bash -c "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl git ca-certificates >/dev/null"
-pct exec "$VMID" -- bash -c "curl -fsSL https://raw.githubusercontent.com/sbarkar/znacht/$BRANCH/deploy/lxc/install.sh | BRANCH=$BRANCH bash"
+pct exec "$VMID" -- env LC_ALL=C.UTF-8 DEBIAN_FRONTEND=noninteractive bash -c "apt-get update -qq && apt-get install -y -qq curl git ca-certificates >/dev/null"
+pct exec "$VMID" -- env LC_ALL=C.UTF-8 BRANCH="$BRANCH" bash -c "curl -fsSL https://raw.githubusercontent.com/sbarkar/znacht/$BRANCH/deploy/lxc/install.sh | bash"
 
 IPADDR=$(pct exec "$VMID" -- hostname -I | awk '{print $1}')
 HOSTIP=$(hostname -I | awk '{print $1}')
