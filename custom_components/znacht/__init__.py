@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HassJob, HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -55,14 +55,15 @@ def _register_services(hass: HomeAssistant, coordinator: ZnachtCoordinator) -> N
             return HomeAssistantError("The Znacht engine rejected the API token.")
         return HomeAssistantError(f"Znacht engine error: {text[:200]}")
 
+    @callback
+    def _refresh_now(_now: object) -> None:
+        hass.async_create_task(coordinator.async_request_refresh())
+
     def _refresh_soon(delays: tuple[int, ...] = (30, 90, 180)) -> None:
         """Planning runs in the background on the engine: poll a few times so entities catch up."""
+        job = HassJob(_refresh_now, "znacht refresh after planning", cancel_on_shutdown=True)
         for delay in delays:
-            async_call_later(
-                hass,
-                delay,
-                lambda _now: hass.async_create_task(coordinator.async_request_refresh()),
-            )
+            async_call_later(hass, delay, job)
 
     async def plan_week(call: ServiceCall) -> None:
         try:
