@@ -19,10 +19,11 @@ test:
 
 check: lint typecheck test
 
-# Home Assistant tests need Python 3.13 and HA's own pins: they live in their own venv.
+# Home Assistant tests use HA's own pins, which do not mix with the engine's: they get their own venv.
+# HA 2025.1 is the last line with wheels for Python 3.12 everywhere; newer HA needs 3.13 plus a C toolchain.
 .venv-ha:
-	uv venv --python 3.13 .venv-ha
-	uv pip install --python .venv-ha pytest-homeassistant-custom-component pytest-asyncio
+	uv venv --python 3.12 .venv-ha
+	uv pip install --python .venv-ha "pytest-homeassistant-custom-component<0.13.210" "pycares<4.6"
 
 test-ha: .venv-ha
 	.venv-ha/bin/python -m pytest tests_ha -q -p no:cacheprovider

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 from custom_components.znacht.const import DOMAIN
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -14,10 +16,18 @@ async def setup(hass, engine):
     return entry
 
 
-async def test_config_flow_creates_entry(hass, engine):
-    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
-    assert result["type"] == "form"
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], ENTRY)
+async def test_config_flow_creates_entry(hass):
+    api = MagicMock()
+    api.health = AsyncMock(return_value={"status": "ok"})
+    api.status = AsyncMock(return_value={"plan_status": "idle"})
+    with (
+        patch("custom_components.znacht.config_flow.ZnachtApi", return_value=api),
+        patch("custom_components.znacht.async_setup_entry", return_value=True),
+    ):
+        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+        assert result["type"] == "form"
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], ENTRY)
+        await hass.async_block_till_done()
     assert result["type"] == "create_entry"
     assert result["data"] == ENTRY
 

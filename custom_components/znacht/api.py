@@ -23,9 +23,13 @@ class ZnachtApi:
         ) as resp:
             if resp.status >= 400:
                 raise ZnachtApiError(f"{method} {path} -> {resp.status}: {await resp.text()}")
-            if resp.content_type == "application/json":
-                return await resp.json()
-            return await resp.text()
+            text = await resp.text()
+            if not text:
+                return None
+            try:
+                return await resp.json(content_type=None)
+            except ValueError:
+                return text
 
     async def health(self) -> dict[str, Any]:
         return await self._call("GET", "/healthz")
