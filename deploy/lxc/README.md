@@ -26,6 +26,10 @@ Knobs via env: `VMID`, `STORAGE` (local-lvm), `BRIDGE` (vmbr0), `IP` (`dhcp` or 
 `TEMPLATE` (newest Debian 12 on `local` by default), `BRANCH`. It prints the container's address and the
 bundle line for step 2.
 
+If a `pct` guard on your host stops the run after the container exists (a pool restriction, for instance),
+fix the guard, then re-run with `RESUME=1`: it skips creation, installs inside, and restores a bundle that
+already arrived.
+
 ## 2. Move the secrets over
 
 From the repo checkout on the machine that has `~/.config/znacht` (the host address and VMID come from
