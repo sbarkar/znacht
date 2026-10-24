@@ -53,12 +53,16 @@ async def record(settings: CookidooSettings) -> str:
         assert client is not None
         with cassette("all"):
             result = await client.search_recipes(
-                SEARCH_QUERY, locale=settings.language, page_size=5
+                SEARCH_QUERY, locale=settings.language, languages=[settings.language], page_size=5
             )
             print(f"search: {len(result.recipes)} hits of {result.total}")
             first = result.recipes[0].id
             excluded = await client.search_recipes(
-                SEARCH_QUERY, locale=settings.language, exclude_ingredients=["cheese"], page_size=5
+                SEARCH_QUERY,
+                locale=settings.language,
+                languages=[settings.language],
+                exclude_ingredients=["cheese"],
+                page_size=5,
             )
             print(f"search excluding cheese: {len(excluded.recipes)} hits")
             details = await client.get_recipe_details(first)

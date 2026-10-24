@@ -19,7 +19,7 @@ from cookidoo_api.types import CookidooCalendarDay, CookidooCalendarDayRecipe
 from znacht.domain.plan import Meal, MealSlot
 from znacht.domain.quantity import Quantity, Unit
 from znacht.domain.recipe import Category, Ingredient, Recipe, RecipeId, Spiciness, Tag
-from znacht.services.categorise import categorise
+from znacht.services.categorise import categorise, looks_like_staple
 from znacht_cookidoo.client import CUSTOM_SOURCE, SOURCE
 
 _UNITS: Final[dict[str, Unit]] = {
@@ -240,7 +240,7 @@ def ingredient_from(name: str, description: str) -> Ingredient:
         name=name,
         quantity=quantity,
         category=categorise(lowered),
-        staple=lowered in _STAPLES,
+        staple=lowered in _STAPLES or looks_like_staple(lowered),
         raw=f"{description} {name}".strip() if description else name,
     )
 

@@ -74,6 +74,7 @@ class Brief:
     online: list[ProductChoice]
     aisles: list[Aisle]
     free_text: list[str]
+    pantry_check: list[str]
     swaps: list[SwapCard]
     online_subtotal: Money
     deposit: Money
@@ -178,6 +179,7 @@ def build_brief(
         online=sorted(s.online, key=lambda c: (c.product.category, c.product.name)),
         aisles=aisles,
         free_text=list(s.free_text),
+        pantry_check=list(s.pantry_check),
         swaps=swaps,
         online_subtotal=s.online_subtotal,
         deposit=s.deposit,

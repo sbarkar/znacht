@@ -51,7 +51,7 @@ def health_rank(product: Product) -> Decimal:
 
 def line_total(product: Product, need: IngredientNeed, channel: Channel) -> Money | None:
     price = product.price(channel)
-    if price is None or not product.pack.compatible(need.quantity):
+    if price is None:
         return None
     packs = packs_needed(need.quantity, product.pack)
     line = price * packs - total([c.discount for c in product.coupons], price.currency)

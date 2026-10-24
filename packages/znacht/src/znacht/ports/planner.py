@@ -42,3 +42,7 @@ class PlannerProvider(Protocol):
     async def propose(self, context: PlanningContext) -> PlanProposal: ...
 
     async def extract(self, document: Document, schema: type[T]) -> T: ...
+
+    # Optional: ``async def rank_products(self, shortlist: Mapping[str, Sequence[Product]])
+    # -> Mapping[str, ProductId | None]`` picks the product that *is* the ingredient for each
+    # need (or None). The pipeline uses it when present; the health/price optimiser still runs.

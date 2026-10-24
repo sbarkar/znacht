@@ -12,7 +12,7 @@ import vcr
 HERE = Path(__file__).resolve().parent
 CASSETTE_DIR = HERE / "cassettes"
 CASSETTE = str(CASSETTE_DIR / "cookidoo_readonly.yaml")
-KNOWN_RECIPE_ID = "r769256"  # first hit of the recorded "pasta" search
+KNOWN_RECIPE_ID = "r70569"  # first hit of the recorded "pasta" search (English only)
 SEARCH_QUERY = "pasta"
 FUTURE_WEEK = date(2027, 3, 1)  # a Monday far enough ahead to be empty
 

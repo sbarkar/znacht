@@ -108,6 +108,12 @@
     <ul class="clean">{% for t in b.free_text %}<li>{{ t }}</li>{% endfor %}</ul>
   {% endif %}
 
+  {% if b.pantry_check %}
+  <h2>Check the pantry</h2>
+  <p class="muted">The recipes assume you have these. Nothing is bought; set a quantity of 0 in the household file to have one bought.</p>
+  <p>{{ b.pantry_check | join(' · ') }}</p>
+  {% endif %}
+
   {% if b.notes %}
   <h2>Notes</h2>
   <ul class="clean">{% for n in b.notes %}<li class="muted">{{ n }}</li>{% endfor %}</ul>

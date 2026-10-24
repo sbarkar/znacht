@@ -6,6 +6,16 @@ from znacht.domain.recipe import Recipe, RecipeId
 from znacht.ports.recipes import RecipeQuery
 
 
+def _matches(recipe: Recipe, text: str) -> bool:
+    needle = text.lower()
+    haystack = [
+        recipe.title.lower(),
+        *(t.lower() for t in recipe.tags),
+        *(i.name for i in recipe.ingredients),
+    ]
+    return any(needle in h or h in needle for h in haystack)
+
+
 class MemoryRecipeSource:
     name = "memory"
 
@@ -15,7 +25,7 @@ class MemoryRecipeSource:
     async def search(self, query: RecipeQuery) -> Sequence[Recipe]:
         hits: list[Recipe] = []
         for r in self._recipes.values():
-            if query.text and query.text.lower() not in r.title.lower():
+            if query.text and not _matches(r, query.text):
                 continue
             if query.tags and not query.tags <= r.tags:
                 continue

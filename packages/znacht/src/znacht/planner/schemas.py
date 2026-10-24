@@ -72,3 +72,15 @@ class PantryItemGuess(BaseModel):
 class PantryPhotoSchema(BaseModel):
     items: list[PantryItemGuess]
     unsure: list[str] = Field(default_factory=list, description="things seen but not identified")
+
+
+class ProductMatch(BaseModel):
+    need: str
+    product_id: str | None = Field(
+        description="the candidate that IS this ingredient, or null if none is"
+    )
+    reason: str
+
+
+class ProductMatchSchema(BaseModel):
+    matches: list[ProductMatch]

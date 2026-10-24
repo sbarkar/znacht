@@ -6,6 +6,7 @@ health filter only ever compares products within the same category.
 
 from __future__ import annotations
 
+import re
 from typing import Final
 
 from znacht.domain.recipe import Category
@@ -282,3 +283,83 @@ WHOLEGRAIN_WORDS: Final = (
 def looks_wholegrain(name: str) -> bool:
     lowered = name.lower()
     return any(w in lowered for w in WHOLEGRAIN_WORDS)
+
+
+STAPLE_WORDS: Final = (
+    "salt",
+    "salz",
+    "pepper",
+    "pfeffer",
+    "water",
+    "wasser",
+    "sugar",
+    "zucker",
+    "flour",
+    "mehl",
+    "oil",
+    "öl",
+    "vinegar",
+    "essig",
+    "stock",
+    "bouillon",
+    "brühe",
+    "baking powder",
+    "backpulver",
+    "cornflour",
+    "cornstarch",
+    "maizena",
+    "soy sauce",
+    "sojasauce",
+    "honey",
+    "honig",
+    "mustard",
+    "senf",
+    "spice",
+    "gewürz",
+    "cumin",
+    "coriander",
+    "paprika",
+    "cinnamon",
+    "zimt",
+    "nutmeg",
+    "muskat",
+    "oregano",
+    "thyme",
+    "thymian",
+    "curry powder",
+    "curry paste",
+    "chilli flakes",
+    "chili flakes",
+    "turmeric",
+    "kurkuma",
+    "garam masala",
+    "cacao",
+    "cocoa",
+    "kakao",
+    "vanilla",
+    "vanille",
+    "ground ginger",
+    "dried oregano",
+    "dried thyme",
+    "dried chillies",
+    "dried chilli",
+    "bay leaves",
+)
+_WORD = re.compile(r"[a-zäöüéèàç]+")
+
+
+def looks_like_staple(name: str) -> bool:
+    """Things a kitchen keeps: seasonings, oils, flour, stock. Not fresh herbs, pulses, dairy."""
+    lowered = name.lower()
+    if any(
+        w in lowered for w in ("fresh", "frisch", "lentil", "linsen", "bean", "bohne", "potato")
+    ):
+        return False
+    words = set(_WORD.findall(lowered))
+    for staple in STAPLE_WORDS:
+        parts = staple.split()
+        if len(parts) == 1 and staple in words:
+            return True
+        if len(parts) > 1 and staple in lowered:
+            return True
+    return False

@@ -94,3 +94,17 @@ def planning_payload(context: PlanningContext) -> str:
             for m in context.previous.meals
         ]
     return json.dumps(payload, ensure_ascii=False, indent=1, default=str)
+
+
+MATCH_SYSTEM = """You match recipe ingredients to supermarket products.
+
+For each ingredient you get a shortlist of candidates with name, pack and price. Pick the
+candidate that *is* that ingredient in the form a home cook would buy for the recipe: fresh
+over processed, plain over flavoured, the normal pack over a snack or gadget. A product that
+merely contains the word (sweet potato *chips* for sweet potatoes, a hot-water *bottle* for hot
+water, couscous for chickpeas) is not a match: answer null. Do not judge price or health; a
+separate step does that. Answer only in the structured format."""
+
+
+def match_payload(shortlist: dict[str, list[dict[str, Any]]]) -> str:
+    return json.dumps({"ingredients": shortlist}, ensure_ascii=False, indent=1, default=str)

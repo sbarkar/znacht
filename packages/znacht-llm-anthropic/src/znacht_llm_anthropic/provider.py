@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import os
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol, TypeVar
 
@@ -11,14 +12,22 @@ from anthropic import AsyncAnthropic
 from pydantic import BaseModel
 
 from znacht.domain.plan import Meal, MealPlan, MealSlot
+from znacht.domain.product import Channel, Product, ProductId
 from znacht.domain.recipe import RecipeId
 from znacht.planner.prompts import (
     EXTRACT_LAB_SYSTEM,
     EXTRACT_PANTRY_SYSTEM,
+    MATCH_SYSTEM,
     PLANNER_SYSTEM,
+    match_payload,
     planning_payload,
 )
-from znacht.planner.schemas import LabReportSchema, PantryPhotoSchema, ProposalSchema
+from znacht.planner.schemas import (
+    LabReportSchema,
+    PantryPhotoSchema,
+    ProductMatchSchema,
+    ProposalSchema,
+)
 from znacht.ports.planner import Document, PlanningContext, PlanProposal
 
 T = TypeVar("T", bound=BaseModel)
@@ -132,6 +141,34 @@ class AnthropicPlanner:
         return PlanProposal(
             plan=MealPlan(week=context.week, meals=tuple(meals)), rationale=rationale
         )
+
+    async def rank_products(
+        self, shortlist: Mapping[str, Sequence[Product]]
+    ) -> Mapping[str, ProductId | None]:
+        """One call for the whole week: which candidate *is* each ingredient, or none."""
+        payload = {
+            need: [
+                {
+                    "product_id": str(p.id),
+                    "name": p.name,
+                    "pack": str(p.pack),
+                    "category": str(p.category),
+                    "price_online": str(p.price(Channel.ONLINE))
+                    if p.price(Channel.ONLINE)
+                    else None,
+                }
+                for p in candidates
+            ]
+            for need, candidates in shortlist.items()
+        }
+        result = await self._ask(MATCH_SYSTEM, match_payload(payload), ProductMatchSchema)
+        allowed = {need: {str(p.id) for p in candidates} for need, candidates in shortlist.items()}
+        out: dict[str, ProductId | None] = {}
+        for m in result.matches:
+            if m.need not in allowed:
+                continue
+            out[m.need] = ProductId(m.product_id) if m.product_id in allowed[m.need] else None
+        return out
 
     async def extract(self, document: Document, schema: type[T]) -> T:
         if schema is LabReportSchema:

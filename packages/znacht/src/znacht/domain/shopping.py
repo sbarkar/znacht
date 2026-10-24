@@ -39,6 +39,7 @@ class ShoppingPlan(Frozen):
     online: tuple[ProductChoice, ...] = ()
     in_store: tuple[ProductChoice, ...] = ()
     free_text: tuple[str, ...] = ()
+    pantry_check: tuple[str, ...] = ()  # staples the recipes assume you have; not bought
     minimum_order: Money = Money.zero()
     freezer_box_deposit: Money = Money.chf(20)
 

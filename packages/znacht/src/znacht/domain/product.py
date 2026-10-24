@@ -77,8 +77,13 @@ class Product(Frozen):
         return self.price_online if channel == Channel.ONLINE else self.price_store
 
     def price(self, channel: Channel) -> Money | None:
-        """Effective pack price in a channel: list price or best promotion, whichever is lower."""
+        """Effective pack price in a channel: list price or best promotion, whichever is lower.
+        A product with no offer in the asked channel is priced from the other one (an estimate:
+        the Migros online assortment is sold in its shops too, usually cheaper)."""
         base = self.list_price(channel)
+        if base is None:
+            other = Channel.STORE if channel == Channel.ONLINE else Channel.ONLINE
+            base = self.list_price(other)
         if base is None:
             return None
         promo = min((p.price for p in self.promotions), default=None)

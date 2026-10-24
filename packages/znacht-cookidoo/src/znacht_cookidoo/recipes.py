@@ -33,6 +33,7 @@ class CookidooRecipeSource:
             result = await self._client.search_recipes(
                 query.text,
                 locale=locale,
+                languages=[locale.split("-")[0]],
                 exclude_ingredients=exclude,
                 total_time=query.max_total_minutes * 60 if query.max_total_minutes else None,
                 page_size=query.limit,
