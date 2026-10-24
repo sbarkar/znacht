@@ -4,7 +4,7 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/sbarkar/znacht/main/deploy/lxc/create.sh | VMID=102 bash
 #
-# Knobs (env): VMID STORAGE TEMPLATE_STORAGE BRIDGE IP (dhcp or 192.168.4.12/24) GW TEMPLATE BRANCH
+# Knobs (env): VMID STORAGE TEMPLATE_STORAGE BRIDGE IP (dhcp or 192.168.4.12/24) GW TEMPLATE BRANCH REF
 # RESUME=1 skips creation when the container already exists and only (re)runs the install inside it,
 # for hosts where a pct guard (a pool restriction, say) interrupted the first run.
 set -euo pipefail
@@ -17,6 +17,7 @@ IP="${IP:-dhcp}"
 GW="${GW:-}"
 TEMPLATE="${TEMPLATE:-}"
 BRANCH="${BRANCH:-main}"
+REF="${REF:-$BRANCH}"   # where to fetch install.sh from; a commit sha sidesteps GitHub's raw CDN cache
 
 if pct status "$VMID" >/dev/null 2>&1; then
   if [ "${RESUME:-0}" = 1 ]; then
@@ -54,7 +55,7 @@ for _ in $(seq 1 30); do
 done
 
 pct exec "$VMID" -- env LC_ALL=C.UTF-8 DEBIAN_FRONTEND=noninteractive bash -c "apt-get update -qq && apt-get install -y -qq curl git ca-certificates >/dev/null"
-pct exec "$VMID" -- env LC_ALL=C.UTF-8 BRANCH="$BRANCH" bash -c "curl -fsSL https://raw.githubusercontent.com/sbarkar/znacht/$BRANCH/deploy/lxc/install.sh | bash"
+pct exec "$VMID" -- env LC_ALL=C.UTF-8 BRANCH="$BRANCH" bash -c "curl -fsSL https://raw.githubusercontent.com/sbarkar/znacht/$REF/deploy/lxc/install.sh | bash"
 
 IPADDR=$(pct exec "$VMID" -- hostname -I | awk '{print $1}')
 HOSTIP=$(hostname -I | awk '{print $1}')
