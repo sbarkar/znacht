@@ -35,8 +35,9 @@ Copy values and units exactly as printed. Do not interpret, do not round, do not
 marker that is not on the page. Flag only what the lab itself flagged. The household will
 confirm every line before it is used."""
 
-EXTRACT_PANTRY_SYSTEM = """You look at photos of a kitchen pantry, fridge or shelf and list what is there with
-your best estimate of the remaining quantity. Use cook's names in English. Prefer weight or
+EXTRACT_PANTRY_SYSTEM = """You look at photos of a kitchen pantry, fridge or shelf and list what
+is there
+with your best estimate of the remaining quantity. Use cook's names in English. Prefer weight or
 volume when the packaging shows it; otherwise count pieces. Be honest about confidence and
 list what you could not identify under 'unsure'."""
 

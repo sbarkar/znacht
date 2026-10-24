@@ -25,3 +25,4 @@ households/*.local.yaml
 .vscode/
 *.swp
 .DS_Store
+.venv-ha/

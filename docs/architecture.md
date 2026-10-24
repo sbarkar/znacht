@@ -185,7 +185,7 @@ class Notifier(Protocol):
 | 2 | `znacht-cookidoo` (RecipeSource + MealPlanSink) | **done 2026-10-24**: contract suites green on a fake client, replay tests green on a scrubbed read-only cassette, `make e2e-dry-run` reads My Week live |
 | 3 | `znacht-migros` (native) | **done 2026-10-24**: contract suite green on a respx mock with list state, replay tests green on a scrubbed read-only cassette, both channel prices mapped; delivery-slot endpoint still to capture (ADR-0008) |
 | 4 | `znacht-llm-anthropic`, prompt/schema, re-prompt loop, lab-PDF and pantry-photo extraction with confirmation | **done 2026-10-24**: provider on structured outputs with refusal fallback, prompts and schemas in core, marker-to-rules table, `znacht extract` writes a draft for confirmation; live run pending an API key |
-| 5 | engine API, HACS integration, notifications | entities and actions working on your HA |
-| 6 | Dockerfile, LXC runbook, Caddy snippet, HA add-on | one-command deploy on `teodor` |
+| 5 | engine API, HACS integration, notifications | **done 2026-10-24**: FastAPI engine with SQLite, the Znacht Brief, actionable HA notifications, HACS integration with two todo lists, a calendar, seven sensors and five services; engine tests green, HA tests in their own 3.13 env (ADR-0009) |
+| 6 | Dockerfile, LXC runbook, Caddy snippet, HA add-on | **artifacts done 2026-10-24**: `deploy/` (Dockerfile, compose, `.env.example`, Caddy snippet, `lxc/create.sh`), `addon/` for HAOS; provisioning on `teodor` is the evening's step |
 
 Each phase ends with all tests, a summary, and a stop for your go.

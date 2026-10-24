@@ -1,0 +1,37 @@
+plan_week:
+  name: Plan week
+  description: Ask the engine to plan a week. Nothing is written to Cookidoo or the store until apply_plan.
+  fields:
+    week:
+      name: Week
+      description: Monday of the week (YYYY-MM-DD). Defaults to next Monday.
+      example: "2026-10-26"
+      selector:
+        date:
+optimize_products:
+  name: Optimise products
+  description: Re-run the split and the health-first product optimisation.
+apply_plan:
+  name: Apply plan
+  description: Write the approved plan to My Week and the lists. The only service that writes to external systems.
+  fields:
+    run_id:
+      name: Run
+      description: The run to apply. Defaults to the latest.
+      selector:
+        number:
+          min: 1
+          mode: box
+update_pantry:
+  name: Update pantry
+  description: Set pantry quantities. Use "0" to remove an item.
+  fields:
+    items:
+      name: Items
+      description: Mapping of ingredient to quantity, e.g. {"rice": "1 kg", "olive oil": "0"}.
+      required: true
+      selector:
+        object:
+refresh:
+  name: Refresh
+  description: Re-read the store lists.

@@ -100,8 +100,10 @@ async def test_proposal_maps_to_a_plan_the_checker_accepts(context, household):
 async def test_unknown_recipe_ids_are_dropped_not_trusted(context):
     bad = good_proposal().model_copy(
         update={
-            "meals": good_proposal().meals[:6]
-            + [ProposedMeal(date=WEEK.end, recipe_id="memory:made-up", servings=3, why="x")]
+            "meals": [
+                *good_proposal().meals[:6],
+                ProposedMeal(date=WEEK.end, recipe_id="memory:made-up", servings=3, why="x"),
+            ]
         }
     )
     planner = AnthropicPlanner(parse_client=FakeParse(bad))

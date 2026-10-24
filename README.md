@@ -18,6 +18,10 @@ The core knows nothing about any store, recipe platform or appliance. Each one i
 | `PlannerProvider` | Anthropic API (+ a built-in deterministic planner) | OpenAI-compatible, Ollama |
 | `HealthProfileSource` | YAML, lab-report PDF with confirmation | |
 
+## The Znacht Brief
+
+Every plan ends in one page: the week's theme and the chef's note, a card per dinner with minutes and cost per person, the money (basket, minimum order, store run, savings this week and since the start), every swap and flag with its reason and the CHF difference, the online basket, the store run grouped in the order you walk the shop, and one button: **Approve**. Your phone gets an actionable notification; Review opens the Brief. After approval the page links to the store's own basket. Znacht never pays.
+
 ## Status
 
 Phase 1 done: core domain, ports, deterministic planner, constraint checker, grocery split, product optimiser, in-memory fakes, and the golden-week test, all green. Try it without any account:
@@ -36,7 +40,14 @@ Phase 3 done: the native Migros adapter (`znacht-migros`) with both channel pric
 
 Phase 4 done: Claude as the planner (`znacht-llm-anthropic`) with structured outputs, plus `znacht extract lab report.pdf` and `znacht extract pantry photo.jpg`, which write a draft you confirm before anything is used.
 
-Next: the engine and the Home Assistant integration (Phase 5). See [docs/architecture.md](docs/architecture.md) and the [decision log](docs/decisions/).
+Phase 5 done: the engine (`znacht-engine`, FastAPI + SQLite) with the Brief and a JSON API, and the Home Assistant integration (`custom_components/znacht`, HACS) with two todo lists, a meal-plan calendar, sensors and services.
+
+Phase 6: `deploy/` has the Docker image, compose file, Caddy snippet and a Proxmox LXC script; `addon/` packages the same image for HAOS.
+
+```bash
+ZNACHT_HOUSEHOLD=examples/household.example.yaml ZNACHT_DATA_DIR=/tmp/znacht uv run znacht-engine
+curl -X POST localhost:8787/api/plan_week && open http://localhost:8787/brief
+``` See [docs/architecture.md](docs/architecture.md) and the [decision log](docs/decisions/).
 
 ## Development
 

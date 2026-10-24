@@ -19,6 +19,14 @@ test:
 
 check: lint typecheck test
 
+# Home Assistant tests need Python 3.13 and HA's own pins: they live in their own venv.
+.venv-ha:
+	uv venv --python 3.13 .venv-ha
+	uv pip install --python .venv-ha pytest-homeassistant-custom-component pytest-asyncio
+
+test-ha: .venv-ha
+	.venv-ha/bin/python -m pytest tests_ha -q -p no:cacheprovider
+
 demo:
 	uv run znacht demo --household examples/household.example.yaml --week 2026-10-26
 

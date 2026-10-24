@@ -1,0 +1,10 @@
+DOMAIN = "znacht"
+CONF_URL = "url"
+CONF_TOKEN = "token"
+DEFAULT_SCAN_SECONDS = 300
+PLATFORMS = ["sensor", "todo", "calendar"]
+SERVICE_PLAN_WEEK = "plan_week"
+SERVICE_OPTIMIZE = "optimize_products"
+SERVICE_APPLY = "apply_plan"
+SERVICE_PANTRY = "update_pantry"
+SERVICE_REFRESH = "refresh"

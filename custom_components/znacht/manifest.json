@@ -1,0 +1,13 @@
+{
+  "domain": "znacht",
+  "name": "Znacht",
+  "codeowners": ["@sbarkar"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/sbarkar/znacht",
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/sbarkar/znacht/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

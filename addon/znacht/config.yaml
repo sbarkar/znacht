@@ -1,0 +1,51 @@
+name: Znacht
+version: "0.1.0"
+slug: znacht
+description: Weekly meal planning, grocery splitting and health-first product picks. Never checks out.
+url: https://github.com/sbarkar/znacht
+arch: [amd64, aarch64]
+startup: application
+boot: auto
+init: false
+ingress: true
+ingress_port: 8787
+panel_icon: mdi:silverware-fork-knife
+panel_title: Znacht
+homeassistant_api: true
+map:
+  - type: addon_config
+    read_only: false
+options:
+  recipe_source: cookidoo
+  sink: cookidoo
+  store: migros
+  planner: anthropic
+  api_token: ""
+  public_url: ""
+  cookidoo_email: ""
+  cookidoo_password: ""
+  cookidoo_country: ch
+  cookidoo_language: en
+  migros_email: ""
+  migros_password: ""
+  migros_totp_secret: ""
+  anthropic_api_key: ""
+  anthropic_model: claude-opus-5-5
+  ha_notify: ""
+schema:
+  recipe_source: list(memory|cookidoo)
+  sink: list(memory|cookidoo)
+  store: list(memory|migros)
+  planner: list(rule_based|anthropic)
+  api_token: password?
+  public_url: str?
+  cookidoo_email: str?
+  cookidoo_password: password?
+  cookidoo_country: str
+  cookidoo_language: str
+  migros_email: str?
+  migros_password: password?
+  migros_totp_secret: password?
+  anthropic_api_key: password?
+  anthropic_model: str
+  ha_notify: str?

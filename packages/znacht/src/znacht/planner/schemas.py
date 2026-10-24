@@ -36,7 +36,10 @@ class ProposalSchema(BaseModel):
 
 class LabMarkerGuess(BaseModel):
     name: str = Field(
-        description="canonical English name, e.g. 'triglycerides', 'ldl cholesterol', 'hba1c', 'ferritin', 'vitamin d'"
+        description=(
+            "canonical English name, e.g. 'triglycerides', 'ldl cholesterol', 'hba1c', "
+            "'ferritin', 'vitamin d'"
+        )
     )
     value: float
     unit: str | None = None
@@ -57,7 +60,9 @@ class LabReportSchema(BaseModel):
 
 class PantryItemGuess(BaseModel):
     name: str = Field(
-        description="lowercase ingredient name as a cook would say it, e.g. 'olive oil', 'red lentils'"
+        description=(
+            "lowercase ingredient name as a cook would say it, e.g. 'olive oil', 'red lentils'"
+        )
     )
     quantity: float
     unit: str = Field(description="g, kg, ml, l or piece")

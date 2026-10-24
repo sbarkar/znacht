@@ -1,0 +1,25 @@
+# Standalone deployment (Proxmox LXC with Docker, a NAS, any box). Put secrets in .env.
+services:
+  znacht:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: ghcr.io/sbarkar/znacht:latest
+    container_name: znacht
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    volumes:
+      - znacht-data:/data
+    env_file:
+      - .env
+    environment:
+      ZNACHT_HOUSEHOLD: /data/household.yaml
+      ZNACHT_RECIPE_SOURCE: ${ZNACHT_RECIPE_SOURCE:-cookidoo}
+      ZNACHT_SINK: ${ZNACHT_SINK:-cookidoo}
+      ZNACHT_STORE: ${ZNACHT_STORE:-migros}
+      ZNACHT_PLANNER: ${ZNACHT_PLANNER:-anthropic}
+      ZNACHT_COOKIDOO_TOKEN_FILE: /data/cookidoo-token.json
+      ZNACHT_MIGROS_SESSION_FILE: /data/migros-session.json
+volumes:
+  znacht-data:

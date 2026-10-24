@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Znacht Brief · {{ b.week_label }}</title>
+<style>
+  :root { --ink:#1d1b16; --paper:#fbf7ef; --accent:#b4471f; --soft:#efe6d6; --ok:#2f7d4f; --warn:#b07d16; --muted:#6c665b; }
+  @media (prefers-color-scheme: dark) { :root { --ink:#f3ede2; --paper:#15130f; --accent:#f08a5d; --soft:#242019; --muted:#a39b8c; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--ink); background:var(--paper); }
+  main { max-width: 820px; margin: 0 auto; padding: 24px 16px 96px; }
+  h1 { font-size: 2rem; margin: 0; letter-spacing: -0.02em; }
+  h1 small { display:block; font-size: .95rem; color: var(--muted); font-weight: 500; margin-top: 4px; }
+  h2 { font-size: 1.1rem; margin: 28px 0 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .theme { font-size: 1.35rem; margin: 18px 0 6px; font-weight: 700; color: var(--accent); }
+  .note { margin: 0 0 8px; }
+  .grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+  .card { background: var(--soft); border-radius: 14px; padding: 12px 14px; }
+  .card .day { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .card .title { font-weight: 700; margin: 2px 0 4px; }
+  .card .meta { font-size: .85rem; color: var(--muted); }
+  .pill { display:inline-block; font-size:.72rem; padding: 1px 8px; border-radius: 999px; background: var(--paper); margin-right: 4px; }
+  .pill.store { background: var(--accent); color: white; }
+  .totals { display:flex; flex-wrap: wrap; gap: 10px; }
+  .tot { flex: 1 1 150px; background: var(--soft); border-radius: 14px; padding: 12px 14px; }
+  .tot b { display:block; font-size: 1.4rem; }
+  .ok { color: var(--ok); } .warn { color: var(--warn); }
+  table { width:100%; border-collapse: collapse; font-size: .95rem; }
+  td { padding: 6px 4px; border-bottom: 1px solid var(--soft); vertical-align: top; }
+  td.n { text-align: right; white-space: nowrap; }
+  .aisle { margin-top: 12px; font-weight: 700; }
+  .swap { border-left: 4px solid var(--accent); padding: 8px 12px; margin: 8px 0; background: var(--soft); border-radius: 0 12px 12px 0; }
+  .swap.flag { border-color: var(--warn); }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--ink); color: var(--paper); padding: 12px 16px; display:flex; gap: 12px; align-items:center; justify-content: center; }
+  .bar form { margin:0; }
+  button, a.btn { font: inherit; font-weight: 700; padding: 10px 18px; border-radius: 999px; border: 0; cursor: pointer; text-decoration: none; }
+  button.go { background: var(--accent); color: white; }
+  a.btn { background: var(--paper); color: var(--ink); }
+  .muted { color: var(--muted); font-size: .9rem; }
+  ul.clean { padding-left: 18px; margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Znacht <small>{{ b.week_label }} · status: {{ b.status.replace('_', ' ') }}</small></h1>
+  <p class="theme">{{ b.theme }}</p>
+  <p class="note">{{ b.chef_note }}</p>
+  {% if b.slot_label %}<p class="muted">Delivery {{ b.slot_label }}. Anything before that is on the in-store list, marked <span class="pill store">store run</span>.</p>{% endif %}
+
+  {% if b.violations %}
+  <h2>Needs your input</h2>
+  <ul class="clean">{% for v in b.violations %}<li class="warn">{{ v }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  <h2>Dinners</h2>
+  <div class="grid">
+  {% for d in b.dinners %}
+    <div class="card">
+      <div class="day">{{ d.weekday }} {{ d.date[8:] }}.{{ d.date[5:7] }}</div>
+      <div class="title">{{ d.title }}</div>
+      <div class="meta">
+        {% if d.minutes %}{{ d.minutes }} min · {% endif %}{% if d.cost_per_person %}{{ d.cost_per_person }} per person{% endif %}
+      </div>
+      <div>{% if d.in_store_day %}<span class="pill store">store run</span>{% endif %}{% for t in d.tags %}<span class="pill">{{ t.replace('_',' ') }}</span>{% endfor %}</div>
+      {% if d.note %}<div class="muted" style="margin-top:6px">{{ d.note }}</div>{% endif %}
+    </div>
+  {% endfor %}
+  </div>
+
+  <h2>Money</h2>
+  <div class="totals">
+    <div class="tot"><span class="muted">Online basket</span><b>{{ b.online_total }}</b><span class="muted">{{ b.online_subtotal }} + {{ b.deposit }} deposit</span></div>
+    <div class="tot"><span class="muted">Minimum order</span><b class="{{ 'ok' if b.meets_minimum else 'warn' }}">{{ 'met' if b.meets_minimum else 'short ' ~ b.shortfall }}</b><span class="muted">{{ b.minimum_order }}</span></div>
+    <div class="tot"><span class="muted">Store run</span><b>{{ b.in_store_total }}</b><span class="muted">{{ b.aisles | map(attribute='lines') | map('length') | sum }} items</span></div>
+    <div class="tot"><span class="muted">Saved this week</span><b class="ok">{{ b.savings }}</b><span class="muted">{{ b.lifetime_savings }} since the start</span></div>
+  </div>
+
+  {% if b.swaps %}
+  <h2>Swaps and flags</h2>
+  {% for s in b.swaps %}
+    <div class="swap {{ s.kind }}">
+      <b>{{ s.need }}</b> → {{ s.chosen }}
+      {% if s.delta %}<span class="{{ 'ok' if s.kind == 'switch' else 'warn' }}">({{ '−' if s.delta.is_negative else '+' }}{{ s.delta.amount | abs }} CHF)</span>{% endif %}
+      <div class="muted">{{ s.reason }}</div>
+    </div>
+  {% endfor %}
+  {% endif %}
+
+  <h2>Online basket</h2>
+  <table>
+  {% for c in b.online %}
+    <tr><td>{{ c.packs }}×</td><td>{{ c.product.name }}<div class="muted">{{ c.need_name }} · {{ c.needed_on }}</div></td><td class="n">{{ c.line_total() }}</td></tr>
+  {% endfor %}
+  </table>
+
+  <h2>Store run, in walking order</h2>
+  {% for a in b.aisles %}
+    <div class="aisle">{{ a.name }}</div>
+    <table>
+    {% for c in a.lines %}
+      <tr><td>{{ c.packs }}×</td><td>{{ c.product.name }}<div class="muted">{{ c.need_name }}{% if c.deliverable is sameas false %} · not deliverable{% endif %}</div></td><td class="n">{{ c.line_total() }}</td></tr>
+    {% endfor %}
+    </table>
+  {% endfor %}
+  {% if b.free_text %}
+    <div class="aisle">Also</div>
+    <ul class="clean">{% for t in b.free_text %}<li>{{ t }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  {% if b.notes %}
+  <h2>Notes</h2>
+  <ul class="clean">{% for n in b.notes %}<li class="muted">{{ n }}</li>{% endfor %}</ul>
+  {% endif %}
+</main>
+
+<div class="bar">
+  {% if b.status == 'needs_approval' %}
+    <form method="post" action="/brief/{{ b.run_id }}/apply{% if token %}?token={{ token }}{% endif %}">
+      <button class="go" type="submit">Approve: send plan and lists</button>
+    </form>
+    <form method="post" action="/brief/{{ b.run_id }}/replan{% if token %}?token={{ token }}{% endif %}">
+      <button type="submit">Plan again</button>
+    </form>
+  {% elif b.status == 'applied' %}
+    <span>Applied. Znacht never pays: finish the order yourself.</span>
+    {% if b.checkout_url %}<a class="btn" href="{{ b.checkout_url }}" target="_blank" rel="noopener">Open the basket</a>{% endif %}
+  {% else %}
+    <span>{{ b.status.replace('_',' ') }}</span>
+  {% endif %}
+</div>
+</body>
+</html>

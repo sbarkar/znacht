@@ -1,0 +1,20 @@
+{
+  "config": {
+    "step": {"user": {"title": "Connect to the Znacht engine", "data": {"url": "Engine URL", "token": "API token"}}},
+    "error": {"cannot_connect": "Could not reach the engine.", "invalid_auth": "The token was rejected."},
+    "abort": {"already_configured": "This engine is already configured."}
+  },
+  "entity": {
+    "sensor": {
+      "plan_status": {"name": "Plan status"},
+      "basket_total": {"name": "Online basket total"},
+      "minimum_order": {"name": "Minimum order"},
+      "next_delivery": {"name": "Next delivery"},
+      "todays_dinner": {"name": "Tonight's dinner"},
+      "savings": {"name": "Savings this week"},
+      "lifetime_savings": {"name": "Savings since start"}
+    },
+    "todo": {"online_list": {"name": "Online basket"}, "in_store_list": {"name": "Store run"}},
+    "calendar": {"meal_plan": {"name": "Meal plan"}}
+  }
+}

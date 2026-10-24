@@ -44,28 +44,35 @@ def explode_needs(
                 entry.staple = entry.staple and ing.staple
             entry.recipes.append(recipe.id)
 
+    raw = [
+        IngredientNeed(
+            name=name,
+            quantity=entry.quantity,
+            needed_on=day,
+            category=entry.category,
+            staple=entry.staple,
+            recipes=tuple(entry.recipes),
+        )
+        for (name, day, _unit), entry in sorted(acc.items(), key=lambda kv: (kv[0][1], kv[0][0]))
+    ]
+    return deduct_pantry(apply_make_at_home(raw, household), household)
+
+
+def deduct_pantry(needs: list[IngredientNeed], household: Household) -> list[IngredientNeed]:
+    """Pantry covers the earliest needs first; fully covered needs disappear."""
     remaining = household.pantry.as_dict()
-    needs: list[IngredientNeed] = []
-    for (name, day, _unit), entry in sorted(acc.items(), key=lambda kv: (kv[0][1], kv[0][0])):
-        qty = entry.quantity
-        have = remaining.get(name)
+    out: list[IngredientNeed] = []
+    for need in sorted(needs, key=lambda n: (n.needed_on, n.name)):
+        qty = need.quantity
+        have = remaining.get(need.name)
         if have is not None and have.compatible(qty):
             covered = Quantity(value=min(have.base_value, qty.base_value), unit=qty.unit)
             qty = qty.minus(covered)
-            remaining[name] = have.minus(covered)
+            remaining[need.name] = have.minus(covered)
         if qty.is_zero:
             continue
-        needs.append(
-            IngredientNeed(
-                name=name,
-                quantity=qty,
-                needed_on=day,
-                category=entry.category,
-                staple=entry.staple,
-                recipes=tuple(entry.recipes),
-            )
-        )
-    return apply_make_at_home(needs, household)
+        out.append(need.model_copy(update={"quantity": qty}))
+    return out
 
 
 def merge_needs(needs: list[IngredientNeed]) -> list[IngredientNeed]:
