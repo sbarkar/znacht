@@ -186,6 +186,7 @@ class Notifier(Protocol):
 | 3 | `znacht-migros` (native) | **done 2026-10-24**: contract suite green on a respx mock with list state, replay tests green on a scrubbed read-only cassette, both channel prices mapped; delivery-slot endpoint still to capture (ADR-0008) |
 | 4 | `znacht-llm-anthropic`, prompt/schema, re-prompt loop, lab-PDF and pantry-photo extraction with confirmation | **done 2026-10-24**: provider on structured outputs with refusal fallback, prompts and schemas in core, marker-to-rules table, `znacht extract` writes a draft for confirmation; live run pending an API key |
 | 5 | engine API, HACS integration, notifications | **done 2026-10-24**: FastAPI engine with SQLite, the Znacht Brief, actionable HA notifications, HACS integration with two todo lists, a calendar, seven sensors and five services; engine tests green, HA tests in their own 3.13 env (ADR-0009) |
+| 7 | the Znacht app: Week, Groceries, Household, Connections, served by the engine, in the HA sidebar | **done 2026-10-24** (ADR-0010); swaps, locks, moves, household editing, pantry photo draft |
 | 6 | Dockerfile, LXC runbook, Caddy snippet, HA add-on | **artifacts done 2026-10-24**: `deploy/` (Dockerfile, compose, `.env.example`, Caddy snippet, `lxc/create.sh`), `addon/` for HAOS; provisioning on `teodor` is the evening's step |
 
 Each phase ends with all tests, a summary, and a stop for your go.

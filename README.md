@@ -18,6 +18,10 @@ The core knows nothing about any store, recipe platform or appliance. Each one i
 | `PlannerProvider` | Anthropic API (+ a built-in deterministic planner) | OpenAI-compatible, Ollama |
 | `HealthProfileSource` | YAML, lab-report PDF with confirmation | |
 
+## The app
+
+The engine serves the Znacht app at `/app`, and the Home Assistant integration puts it in the sidebar. Four screens, phone-first: **Week** (tap a dinner to swap it for a pre-checked alternative, lock it, plan again), **Groceries** (progress to the minimum order, online basket and store run with the store's own availability flags, move lines between them, tick off, add anything, approve, undo), **Household** (people, dislikes, allergies, weekly rules, health rules, pantry by photo; edits go back into your YAML with comments kept), **Connections** (every recipe source, store and planner as a card). No build step: vendored htm + preact.
+
 ## The Znacht Brief
 
 Every plan ends in one page: the week's theme and the chef's note, a card per dinner with minutes and cost per person, the money (basket, minimum order, store run, savings this week and since the start), every swap and flag with its reason and the CHF difference, the online basket, the store run grouped in the order you walk the shop, and one button: **Approve**. Your phone gets an actionable notification; Review opens the Brief. After approval the page links to the store's own basket. Znacht never pays.
