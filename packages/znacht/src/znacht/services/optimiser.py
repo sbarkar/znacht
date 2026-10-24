@@ -10,6 +10,7 @@ from znacht.domain.household import Household
 from znacht.domain.money import Money, total
 from znacht.domain.needs import IngredientNeed
 from znacht.domain.product import Channel, Product
+from znacht.domain.quantity import Quantity, Unit
 from znacht.domain.recipe import Category
 from znacht.domain.shopping import ProductChoice
 from znacht.services.packs import packs_needed
@@ -49,11 +50,38 @@ def health_rank(product: Product) -> Decimal:
     return value if value is not None else _WORST
 
 
+# A recipe counts some things in parts of what the shop sells: cloves of a garlic bulb,
+# sprigs of a herb bunch, slices of a loaf. Divide before counting packs.
+PARTS_PER_PIECE: Final[dict[str, int]] = {
+    "clove": 10,
+    "sprig": 8,
+    "slice": 12,
+    "leaf": 15,
+    "leaves": 15,
+}
+
+
+def shop_quantity(need: IngredientNeed) -> Quantity:
+    if need.quantity.unit != Unit.PIECE:
+        return need.quantity
+    name = f" {need.name.lower()} "
+    for part, per in PARTS_PER_PIECE.items():
+        if f" {part} " in name or f" {part}s " in name:
+            return Quantity(
+                value=max(
+                    Decimal(1),
+                    (need.quantity.value / per).to_integral_value(rounding="ROUND_CEILING"),
+                ),
+                unit=Unit.PIECE,
+            )
+    return need.quantity
+
+
 def line_total(product: Product, need: IngredientNeed, channel: Channel) -> Money | None:
     price = product.price(channel)
     if price is None:
         return None
-    packs = packs_needed(need.quantity, product.pack)
+    packs = packs_needed(shop_quantity(need), product.pack)
     line = price * packs - total([c.discount for c in product.coupons], price.currency)
     return line if not line.is_negative else Money.zero(price.currency)
 
@@ -107,7 +135,7 @@ def choose_product(
         return ProductChoice(
             need_name=need.name,
             product=p,
-            packs=packs_needed(need.quantity, p.pack),
+            packs=packs_needed(shop_quantity(need), p.pack),
             needed_on=need.needed_on,
             channel=channel,
             reason=reason,

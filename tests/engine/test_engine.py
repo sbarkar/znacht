@@ -170,3 +170,33 @@ async def test_app_verbs_view_alternatives_swap_lock_move(
     page = await client.get("/app")
     assert page.status_code == 200 and "app.js" in page.text
     assert (await client.get("/app/static/app.css")).status_code == 200
+
+
+async def test_household_patch_keeps_yaml_comments(client: httpx.AsyncClient, settings, tmp_path):
+    import shutil
+
+    target = tmp_path / "household.yaml"
+    shutil.copy(settings.household_path, target)
+    object.__setattr__(settings, "household_path", target)
+    before = target.read_text()
+    assert "# One household per file" in before
+    r = await client.patch(
+        "/api/household",
+        json={
+            "rules": {"min_per_week": {"fish": 3}},
+            "pantry": {"tahini": "250 g", "salt": "0"},
+            "members": [
+                {"name": "Sergej", "age_group": "adult", "dislikes": ["dill", "olives"]},
+                {"name": "Partner", "age_group": "adult"},
+                {"name": "Toddler", "age_group": "toddler"},
+            ],
+        },
+    )
+    assert r.status_code == 200, r.text
+    after = target.read_text()
+    assert "# One household per file" in after  # comments survive
+    assert "fish: 3" in after and "tahini: 250 g" in after and "salt:" not in after
+    h = r.json()
+    assert h["rules"]["min_tags"]["fish"] == 3 and "olives" in h["members"][0]["dislikes"]
+    bad = await client.patch("/api/household", json={"rules": {"dinners_per_week": "seven"}})
+    assert bad.status_code == 422

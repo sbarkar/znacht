@@ -9,7 +9,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -146,6 +146,47 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
     @app.get("/api/household", dependencies=[Depends(auth)])
     async def household(s: ZnachtService = Depends(svc)) -> dict[str, Any]:
         return s.household_view()
+
+    @app.patch("/api/household", dependencies=[Depends(auth)])
+    async def patch_household(
+        body: dict[str, Any], s: ZnachtService = Depends(svc)
+    ) -> dict[str, Any]:
+        from znacht_engine.household_edit import apply_patch
+
+        try:
+            apply_patch(settings.household_path, body)
+        except (ValueError, KeyError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return s.household_view()
+
+    @app.post("/api/pantry/photo", dependencies=[Depends(auth)])
+    async def pantry_photo(
+        file: UploadFile = File(...), s: ZnachtService = Depends(svc)
+    ) -> dict[str, Any]:
+        """Extract pantry items from a photo. Returns a draft; nothing is saved until confirmed."""
+        from znacht.planner.schemas import PantryPhotoSchema
+        from znacht.ports.planner import Document
+
+        extract = getattr(s.adapters.planner, "extract", None)
+        if extract is None:
+            raise HTTPException(status_code=501, detail="the configured planner cannot read photos")
+        content = await file.read()
+        doc = Document(
+            name=file.filename or "photo",
+            media_type=file.content_type or "image/jpeg",
+            content=content,
+        )
+        try:
+            result = await extract(doc, PantryPhotoSchema)
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
+        return {
+            "items": [
+                {"name": i.name, "quantity": f"{i.quantity:g} {i.unit}", "confidence": i.confidence}
+                for i in result.items
+            ],
+            "unsure": list(result.unsure),
+        }
 
     @app.get("/api/view", dependencies=[Depends(auth)])
     async def view_latest(s: ZnachtService = Depends(svc)) -> dict[str, Any]:

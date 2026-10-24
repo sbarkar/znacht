@@ -225,34 +225,83 @@ function Groceries({ view, reload, busy, toast }) {
     </div>`;
 }
 
-// ---------- Household (read-only for now; editing lands next) -------------------------
-function Household({ household, toast }) {
+// ---------- Household --------------------------------------------------------------------
+function Chips({ items, onRemove, onAdd, placeholder }) {
+  const [v, setV] = useState("");
+  const add = () => { if (v.trim()) { onAdd(v.trim().toLowerCase()); setV(""); } };
+  return html`<div class="chips">
+    ${items.map((it) => html`<span class="chip">${it} <button type="button" class="chip-x" aria-label=${"Remove " + it} onClick=${() => onRemove(it)}>×</button></span>`)}
+    <input class="chip-input" placeholder=${placeholder} value=${v} onInput=${(e) => setV(e.target.value)} onKeyDown=${(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} onBlur=${add} aria-label=${placeholder} />
+  </div>`;
+}
+
+function Household({ household, patch, toast, planner }) {
+  const [draft, setDraft] = useState(null);
+  const [busyPhoto, setBusyPhoto] = useState(false);
   if (!household) return html`<div class="screen"><div class="empty">Loading the household…</div></div>`;
   const colors = ["var(--accent)", "var(--ok)", "var(--lilac)", "#ffd166"];
+  const tags = ["fish", "legumes", "red_meat", "poultry", "vegetarian"];
+  const setRule = (tag, n) => patch({ rules: { min_per_week: { [tag]: n } } });
+  const setMax = (tag, n) => patch({ rules: { max_per_week: { [tag]: n } } });
+  const members = household.members;
+  const updateMember = (i, changes) => patch({ members: members.map((m, j) => (j === i ? { ...m, ...changes } : m)) });
+  const photo = async (file) => {
+    if (!file) return;
+    setBusyPhoto(true);
+    try {
+      const fd = new FormData(); fd.append("file", file);
+      const res = await fetch("/api/pantry/photo", { method: "POST", headers: { Authorization: `Bearer ${token()}` }, body: fd });
+      if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+      const d = await res.json();
+      setDraft(d.items.map((i) => ({ ...i, keep: i.confidence >= 0.5 })));
+      if (d.unsure.length) toast(`Not sure about: ${d.unsure.join(", ")}`);
+    } catch (e) { toast(e.message); } finally { setBusyPhoto(false); }
+  };
+  const confirmDraft = async () => {
+    const items = Object.fromEntries(draft.filter((i) => i.keep).map((i) => [i.name, i.quantity]));
+    await patch({ pantry: items }); setDraft(null); toast("Pantry updated.");
+  };
   return html`
     <div class="screen">
       <div class="top span"><span class="brand">Household</span><span class="pill quiet">${household.servings} servings</span></div>
       <div class="row span" style="align-items:stretch">
-        ${household.members.map((m, i) => html`<div class="member"><div class="avatar" style=${`background:${colors[i % colors.length]}`}>${m.name.slice(0, 1).toUpperCase()}</div><b style="font-size:13px">${m.name}</b><span class="muted" style="font-size:11px">${[m.age_group, ...(m.dislikes.map((d) => "no " + d)), ...(m.allergies.map((a) => "allergy: " + a)), m.needs_mild_food ? "mild food" : null].filter(Boolean).join(" · ")}</span></div>`)}
+        ${members.map((m, i) => html`<div class="member"><div class="avatar" style=${`background:${colors[i % colors.length]}`}>${m.name.slice(0, 1).toUpperCase()}</div><b style="font-size:13px">${m.name}</b>
+          <select class="select" value=${m.age_group} onChange=${(e) => updateMember(i, { age_group: e.target.value })} aria-label=${m.name + " age group"}><option value="adult">adult</option><option value="child">child</option><option value="toddler">toddler</option></select>
+          <span class="muted" style="font-size:11px">${m.needs_mild_food ? "mild food" : "any spice"}</span></div>`)}
+      </div>
+      <div class="card">
+        <h2>Dislikes and allergies</h2>
+        ${members.map((m, i) => html`<div style="display:flex;flex-direction:column;gap:6px"><b style="font-size:13px">${m.name}</b>
+          <${Chips} items=${m.dislikes} placeholder="dislikes…" onAdd=${(x) => updateMember(i, { dislikes: [...m.dislikes, x] })} onRemove=${(x) => updateMember(i, { dislikes: m.dislikes.filter((d) => d !== x) })} />
+          <${Chips} items=${m.allergies} placeholder="allergies…" onAdd=${(x) => updateMember(i, { allergies: [...m.allergies, x] })} onRemove=${(x) => updateMember(i, { allergies: m.allergies.filter((d) => d !== x) })} /></div>`)}
       </div>
       <div class="card">
         <h2>Every week</h2>
-        ${Object.entries(household.rules.min_tags).map(([k, v]) => html`<div class="stepper"><span style="flex:1 1 auto;font-weight:500">${k.replace("_", " ")}</span><span class="n">${v}×</span>${household.rules.max_tags[k] != null ? html`<span class="muted" style="font-size:12px">max ${household.rules.max_tags[k]}</span>` : null}</div>`)}
-        <div class="chips">${household.rules.banned_ingredients.map((b) => html`<span class="chip">no ${b}</span>`)}${household.needs_mild_food ? html`<span class="chip">toddler mild</span>` : null}${household.rules.max_total_minutes_weekday ? html`<span class="chip">weekdays ≤ ${household.rules.max_total_minutes_weekday} min</span>` : null}</div>
+        ${tags.map((t) => { const n = household.rules.min_tags[t] || 0; const mx = household.rules.max_tags[t]; return html`<div class="stepper"><span style="flex:1 1 auto;font-weight:500">${t.replace("_", " ")}</span>
+          <button type="button" class="check" aria-label=${"Fewer " + t} onClick=${() => setRule(t, n - 1)}>−</button><span class="n">${n}×</span><button type="button" class="check" aria-label=${"More " + t} onClick=${() => setRule(t, n + 1)}>+</button>
+          <button type="button" class=${"btn ghost" + (mx != null ? " on" : "")} style="padding:6px 10px;min-height:36px;font-size:12px" onClick=${() => setMax(t, mx != null ? 0 : Math.max(n, 1))}>${mx != null ? `max ${mx}` : "no max"}</button></div>`; })}
+        <div style="display:flex;flex-direction:column;gap:6px"><span class="muted" style="font-size:12px">Never in a recipe</span>
+          <${Chips} items=${household.rules.banned_ingredients} placeholder="banned…" onAdd=${(x) => patch({ rules: { banned_ingredients: [...household.rules.banned_ingredients, x] } })} onRemove=${(x) => patch({ rules: { banned_ingredients: household.rules.banned_ingredients.filter((d) => d !== x) } })} /></div>
+        <div class="stepper"><span style="flex:1 1 auto;font-weight:500">Weekday limit</span><button type="button" class="check" aria-label="Shorter weekday limit" onClick=${() => patch({ rules: { max_total_minutes_weekday: Math.max(15, (household.rules.max_total_minutes_weekday || 60) - 15) } })}>−</button><span class="n" style="width:auto">${household.rules.max_total_minutes_weekday || "—"} min</span><button type="button" class="check" aria-label="Longer weekday limit" onClick=${() => patch({ rules: { max_total_minutes_weekday: (household.rules.max_total_minutes_weekday || 45) + 15 } })}>+</button></div>
       </div>
       <div class="card">
         <h2>Health</h2>
-        ${household.health.rules.length ? household.health.rules.map((r) => html`<div>${r}</div>`) : html`<p class="muted" style="font-size:13px">No health rules yet. Upload a lab report with <code>znacht extract lab</code> and confirm the draft.</p>`}
+        ${household.health.rules.length ? html`<${Chips} items=${household.health.rules} placeholder="add a rule in words…" onAdd=${(x) => patch({ health: { rules: [...household.health.rules, x] } })} onRemove=${(x) => patch({ health: { rules: household.health.rules.filter((r) => r !== x) } })} />` : html`<p class="muted" style="font-size:13px">No health rules yet. Upload a lab report with <code>znacht extract lab</code>, confirm the draft, or type a rule.</p><${Chips} items=${[]} placeholder="e.g. limit added sugar" onAdd=${(x) => patch({ health: { rules: [x] } })} onRemove=${() => {}} />`}
       </div>
       <div class="card">
-        <h2>Pantry</h2>
-        <div class="chips">${household.pantry.map((p) => html`<span class="chip">${p.name} ${p.quantity}</span>`)}</div>
-        ${household.make_at_home.length ? html`<div style="font-size:13px">Make at home: <span class="muted">${household.make_at_home.join(", ")}</span></div>` : null}
+        <div class="top"><h2>Pantry</h2>
+          <label class="btn primary" style="flex:0 0 auto;padding:8px 14px;min-height:36px;font-size:12px;cursor:pointer">${busyPhoto ? "Reading photo…" : "Photo"}<input type="file" accept="image/*" capture="environment" style="display:none" onChange=${(e) => photo(e.target.files[0])} disabled=${busyPhoto || planner !== "anthropic"} /></label></div>
+        ${planner !== "anthropic" ? html`<p class="muted" style="font-size:12px">Photo reading needs the Claude planner.</p>` : null}
+        ${draft ? html`<div class="card dashed"><h2>From the photo: keep what is right</h2>
+          ${draft.map((i, k) => html`<div class="line"><button type="button" class=${"check" + (i.keep ? " on" : "")} aria-label="Keep" onClick=${() => setDraft(draft.map((d, j) => (j === k ? { ...d, keep: !d.keep } : d)))}><${Icon} name="check" /></button><div class="body"><span class="name">${i.name}</span><span class="note">${i.quantity} · ${Math.round(i.confidence * 100)}% sure</span></div></div>`)}
+          <div class="row"><button type="button" class="btn primary" onClick=${confirmDraft}>Save to pantry</button><button type="button" class="btn ghost" onClick=${() => setDraft(null)}>Discard</button></div></div>` : null}
+        <${Chips} items=${household.pantry.map((p) => `${p.name} ${p.quantity}`)} placeholder="add: rice 1 kg" onAdd=${(x) => { const m = x.match(/^(.+?)\s+(\d[\d.,]*\s*\S*)$/); if (m) patch({ pantry: { [m[1].trim()]: m[2].trim() } }); else toast("Write it as 'name quantity', e.g. rice 1 kg"); }} onRemove=${(x) => { const name = household.pantry.find((p) => `${p.name} ${p.quantity}` === x); if (name) patch({ pantry: { [name.name]: "0" } }); }} />
+        <div style="font-size:13px">Make at home: <span class="muted">${household.make_at_home.join(", ") || "nothing yet (edit in the YAML)"}</span></div>
       </div>
       <div class="card">
         <h2>Delivery and store</h2>
         <div style="font-size:13px">Postcode <b>${household.delivery.postcode}</b>${household.store_lists ? html` · online list <b>${household.store_lists.online}</b> · store list <b>${household.store_lists.in_store}</b>` : null}</div>
-        <p class="muted" style="font-size:12px">Editing lands in the next step; until then the household YAML is the place.</p>
+        <p class="muted" style="font-size:12px">Changes here are written into your household YAML, comments kept, and used by the next plan.</p>
       </div>
     </div>`;
 }
@@ -307,13 +356,14 @@ function App() {
 
   const busy = (status && status.busy) || null;
   const planNow = async () => { try { await api("POST", "/api/plan_week"); toast("Planning next week…"); await reload(); } catch (e) { toast(e.message); } };
+  const patchHousehold = useCallback(async (p) => { try { setHousehold(await api("PATCH", "/api/household", p)); } catch (e) { toast(e.message); } }, []);
 
   let body;
   if (error) body = html`<div class="screen"><div class="empty span"><b>Can't reach the engine</b><span>${error}</span><button type="button" class="btn" onClick=${reload}>Try again</button></div></div>`;
   else if (!view) body = html`<div class="screen"><div class="empty span">Loading…</div></div>`;
   else if (view.run_id == null && hash !== "#household" && hash !== "#connections") body = html`<div class="screen"><div class="empty span"><span class="brand">Znacht</span><span>No week planned yet.</span><button type="button" class="btn primary" onClick=${planNow} disabled=${!!busy}>${busy ? "Planning…" : "Plan next week"}</button></div></div>`;
   else if (hash === "#groceries") body = html`<${Groceries} view=${view} reload=${reload} busy=${busy} toast=${toast} />`;
-  else if (hash === "#household") body = html`<${Household} household=${household} toast=${toast} />`;
+  else if (hash === "#household") body = html`<${Household} household=${household} patch=${patchHousehold} toast=${toast} planner=${status && status.adapters && status.adapters.planner} />`;
   else if (hash === "#connections") body = html`<${Connections} status=${status} household=${household} />`;
   else body = html`<${Week} view=${view} reload=${reload} busy=${busy} toast=${toast} />`;
 

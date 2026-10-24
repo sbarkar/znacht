@@ -103,3 +103,9 @@ p { margin: 0; color: var(--soft); }
 .conn .ico { width: 40px; height: 40px; border-radius: 12px; background: #262a33; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
 .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--ok); flex: 0 0 auto; }
 .dot.off { background: var(--line); }
+
+.chip .chip-x { appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0 0 0 4px; line-height: 1; }
+.chip-input { border: 1px dashed var(--line); background: transparent; color: var(--ink); border-radius: 999px; padding: 5px 10px; font-size: 12px; min-width: 120px; }
+.select { appearance: none; border: 1px solid var(--line); background: var(--card-2); color: var(--ink); border-radius: 999px; padding: 4px 10px; font-size: 12px; }
+.btn.on { border-color: var(--accent); color: var(--accent); }
+code { font-size: 12px; background: var(--card-2); padding: 1px 6px; border-radius: 6px; }

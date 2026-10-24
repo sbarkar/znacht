@@ -223,9 +223,14 @@ class ZnachtService:
         current = next((m for m in result.plan.meals if m.date == day), None)
         in_plan = {m.recipe_id.key for m in result.plan.meals}
         out: list[dict[str, Any]] = []
+        seen_titles: set[str] = set()
         for recipe in result.candidates:
-            if recipe.id.key in in_plan:
+            # a swap must be a dinner, not a side or a basic: enough ingredients, unique title
+            if recipe.id.key in in_plan or len(recipe.ingredients) < 4:
                 continue
+            if recipe.title.lower() in seen_titles:
+                continue
+            seen_titles.add(recipe.title.lower())
             trial_meals = (
                 *(m for m in result.plan.meals if m.date != day),
                 Meal(

@@ -88,3 +88,21 @@ def test_judged_by_line_total_not_pack_count(household):
     assert choice is not None
     assert choice.packs == 2
     assert str(choice.line_total()) == "CHF 19.80"
+
+
+def test_cloves_are_counted_as_bulbs(household):
+    from znacht.domain.money import Money
+    from znacht.domain.product import Product, ProductId
+
+    garlic = Product(
+        id=ProductId("g"),
+        name="Migros Garlic",
+        store="memory",
+        category=Category.PRODUCE,
+        pack=Quantity.parse("1"),
+        price_online=Money.chf("0.50"),
+    )
+    choice = choose_product(
+        _need("garlic cloves", "12", Category.PRODUCE), [garlic], household, Channel.ONLINE
+    )
+    assert choice is not None and choice.packs == 2  # 12 cloves -> 2 bulbs, not 12
