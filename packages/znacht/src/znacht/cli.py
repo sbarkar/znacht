@@ -127,5 +127,81 @@ def cookidoo_dry_run(
     asyncio.run(run())
 
 
+@app.command()
+def extract(
+    kind: Annotated[
+        str, typer.Argument(help="'lab' for a lab-report PDF, 'pantry' for pantry photos")
+    ],
+    files: Annotated[list[Path], typer.Argument(help="PDF or image files")],
+    out: Annotated[
+        Path | None, typer.Option(help="write a YAML draft here for you to review")
+    ] = None,
+) -> None:
+    """Extract lab markers or pantry contents with the LLM, and write a draft for you to confirm.
+
+    Nothing is used by the planner until you copy the confirmed lines into the household YAML.
+    """
+    import mimetypes
+
+    import yaml
+
+    from znacht.domain.household import HealthMarker
+    from znacht.planner.schemas import LabReportSchema, PantryPhotoSchema
+    from znacht.ports.planner import Document
+    from znacht.services.health import rules_from_markers
+    from znacht_llm_anthropic import AnthropicPlanner
+
+    planner = AnthropicPlanner()
+    schema: type[LabReportSchema] | type[PantryPhotoSchema]
+    schema = LabReportSchema if kind == "lab" else PantryPhotoSchema
+
+    async def run() -> dict[str, object]:
+        draft: dict[str, object] = {}
+        for path in files:
+            media = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+            doc = Document(name=path.name, media_type=media, content=path.read_bytes())
+            result = await planner.extract(doc, schema)
+            if isinstance(result, LabReportSchema):
+                markers = {
+                    m.name: {
+                        "value": m.value,
+                        "unit": m.unit,
+                        "reference": m.reference_range,
+                        "flag": m.flag,
+                    }
+                    for m in result.markers
+                }
+                rules = rules_from_markers(
+                    HealthMarker(name=m.name, value=m.value, unit=m.unit, flag=m.flag)
+                    for m in result.markers
+                )
+                draft.setdefault("health", {"markers": {}, "rules": []})
+                health = draft["health"]
+                assert isinstance(health, dict)
+                health["markers"].update(markers)
+                health["rules"] = sorted({*health["rules"], *(r.text for r in rules)})
+                if result.notes:
+                    health["doctor_notes"] = result.notes
+            else:
+                pantry = draft.setdefault("pantry", {})
+                assert isinstance(pantry, dict)
+                for item in result.items:
+                    pantry[item.name] = f"{item.quantity:g} {item.unit}"
+                if result.unsure:
+                    draft["pantry_unsure"] = result.unsure
+        return draft
+
+    draft = asyncio.run(run())
+    text = yaml.safe_dump(draft, sort_keys=False, allow_unicode=True)
+    header = (
+        "# Draft from znacht extract. Review every line, then merge into your household YAML.\n"
+    )
+    if out is not None:
+        out.write_text(header + text, encoding="utf-8")
+        typer.echo(f"draft written to {out}; nothing is used until you merge it")
+    else:
+        typer.echo(header + text)
+
+
 if __name__ == "__main__":
     app()

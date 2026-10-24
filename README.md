@@ -34,7 +34,9 @@ ZNACHT_COOKIDOO_EMAIL=you@example.com ZNACHT_COOKIDOO_PASSWORD=... make e2e-dry-
 
 Phase 3 done: the native Migros adapter (`znacht-migros`) with both channel prices, nutrition, lists by ID and learned availability.
 
-Next: the LLM planner (Phase 4). See [docs/architecture.md](docs/architecture.md) and the [decision log](docs/decisions/).
+Phase 4 done: Claude as the planner (`znacht-llm-anthropic`) with structured outputs, plus `znacht extract lab report.pdf` and `znacht extract pantry photo.jpg`, which write a draft you confirm before anything is used.
+
+Next: the engine and the Home Assistant integration (Phase 5). See [docs/architecture.md](docs/architecture.md) and the [decision log](docs/decisions/).
 
 ## Development
 
