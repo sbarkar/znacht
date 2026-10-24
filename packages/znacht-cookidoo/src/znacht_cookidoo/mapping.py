@@ -152,6 +152,10 @@ _TAG_KEYWORDS: Final[tuple[tuple[Tag, tuple[str, ...]], ...]] = (
     ),
     (Tag.VEGETARIAN, ("vegetarian", "vegetarisch", "vegan", "végétarien", "vegetariano")),
     (Tag.FAMILY, ("family", "familie", "kids", "kinder", "famille", "famiglia")),
+    (
+        Tag.BREAKFAST,
+        ("breakfast", "frühstück", "zmorge", "brunch", "petit-déjeuner", "colazione"),
+    ),
 )
 
 _HOT_WORDS: Final = (

@@ -25,6 +25,11 @@ not a per-day answer.
      wants a different recipe; the day stays `planned`.
    - `empty`: nothing anywhere.
    - `past`: before today, whatever it holds, collapsed.
+   Cookidoo's calendar has no meal slots, so every recipe of a day arrives as a dinner. The
+   day's dinner is the first recipe that is not a breakfast (the `breakfast` tag, inferred from
+   Cookidoo's categories, or a title such as Bircher Müsli, porridge, granola); the other recipes
+   of the day are listed as `also`. A day with only breakfasts is `empty` and is not locked by
+   Plan the gaps.
    The run awaiting approval for a week is its newest run while that run's status is
    `needs_approval` or `needs_input`; an applied or reverted newest run means nothing is pending.
 3. **Groceries coverage per day, first heuristic.** In this order:

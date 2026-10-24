@@ -33,6 +33,8 @@ from znacht_engine.timeline import (
     WEEKDAYS,
     coverage,
     dinner_on,
+    is_breakfast,
+    pick_dinner,
     summary,
     week_label,
 )
@@ -550,21 +552,21 @@ class ZnachtService:
         out: list[dict[str, Any]] = []
         for day in tl["days"]:
             card = day["dinner"] or day["proposal"]
-            if card is None:
-                continue
-            out.append(
-                {
-                    "date": day["date"],
-                    "slot": "dinner",
-                    "summary": card["title"],
-                    "recipe_id": card["recipe_id"],
-                    "servings": card["servings"],
-                    "url": card["url"],
-                    "note": card["note"],
-                    "source": card["source"],
-                    "proposed": day["dinner"] is None,
-                }
-            )
+            cards = ([card] if card else []) + day["also"]
+            for c in cards:
+                out.append(
+                    {
+                        "date": day["date"],
+                        "slot": "breakfast" if c["breakfast"] else "dinner",
+                        "summary": c["title"],
+                        "recipe_id": c["recipe_id"],
+                        "servings": c["servings"],
+                        "url": c["url"],
+                        "note": c["note"],
+                        "source": c["source"],
+                        "proposed": c is card and day["dinner"] is None,
+                    }
+                )
         return out
 
     # -- the timeline (ADR-0011) --
@@ -594,8 +596,10 @@ class ZnachtService:
         except Exception as exc:  # the sink is live; a read failure must not block planning
             log.warning("could not read My Week for %s: %s", week, exc)
         else:
-            for m in current.dinners():
-                in_sink.setdefault(m.date, m)
+            for d in sorted(locks):
+                dinner, _ = await self._day_in_my_week(current, d)
+                if dinner is not None:
+                    in_sink[d] = dinner
         from_base = {m.date: m for m in (base.plan.dinners() if base else [])}
         return tuple(
             in_sink.get(d) or from_base[d] for d in sorted(locks) if d in in_sink or d in from_base
@@ -670,7 +674,14 @@ class ZnachtService:
             "tags": sorted(recipe.tags) if recipe else [],
             "url": recipe.url if recipe else None,
             "note": meal.note,
+            "breakfast": is_breakfast(meal, recipe),
         }
+
+    async def _day_in_my_week(self, mine: MealPlan, day: date) -> tuple[Meal | None, list[Meal]]:
+        """What My Week holds on ``day``: the dinner (breakfasts skipped) and the other recipes."""
+        meals = mine.on(day)
+        recipes = {m.recipe_id.key: await self._recipe(m.recipe_id) for m in meals}
+        return pick_dinner(meals, lambda m: recipes[m.recipe_id.key])
 
     async def timeline(self, from_: date | None = None, days: int = DEFAULT_DAYS) -> dict[str, Any]:
         """One record per day from ``from_`` (today) for ``days``: what My Week says, what a
@@ -704,7 +715,7 @@ class ZnachtService:
         for d in dates:
             w = weeks[Week.containing(d).start]
             applied, awaiting, mine = w["applied"], w["awaiting"], w["mine"]
-            in_sink = dinner_on(mine.meals, d)
+            in_sink, rest = await self._day_in_my_week(mine, d)
             in_applied = dinner_on(applied[1].plan.meals, d) if applied else None
             in_awaiting = dinner_on(awaiting[1].plan.meals, d) if awaiting else None
             dinner = proposal = None
@@ -748,6 +759,7 @@ class ZnachtService:
                     "week": w["week"].start.isoformat(),
                     "state": state,
                     "dinner": dinner,
+                    "also": [await self._card(m, "manual") for m in rest],
                     "proposal": proposal,
                     "groceries": coverage(
                         d,
@@ -779,7 +791,11 @@ class ZnachtService:
                     "awaiting_status": str(w["awaiting"][1].status) if w["awaiting"] else None,
                     "my_week_ok": w["ok"],
                     # what "Plan the gaps" locks: every date of the week with a dinner in My Week
-                    "locked_dates": sorted({m.date.isoformat() for m in w["mine"].dinners()}),
+                    "locked_dates": [
+                        d.isoformat()
+                        for d in w["week"].days()
+                        if (await self._day_in_my_week(w["mine"], d))[0] is not None
+                    ],
                     "summary": summary(mine_days, awaiting_run_id=awaiting_id),
                 }
             )

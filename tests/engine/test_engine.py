@@ -7,6 +7,8 @@ from datetime import date, timedelta
 
 import httpx
 
+from znacht.domain.plan import Meal, MealSlot
+from znacht.domain.recipe import RecipeId
 from znacht_engine.service import ZnachtService, next_monday
 from znacht_memory.fixtures import GOLDEN_WEEK_START
 
@@ -206,9 +208,6 @@ async def test_household_patch_keeps_yaml_comments(client: httpx.AsyncClient, se
 
 
 def _meal(day: date, recipe: str, servings: int = 3):
-    from znacht.domain.plan import Meal, MealSlot
-    from znacht.domain.recipe import RecipeId
-
     return Meal(
         date=day,
         slot=MealSlot.DINNER,
@@ -376,6 +375,86 @@ async def test_timeline_states_sources_and_coverage(
     by_cal = {c["date"]: c for c in cal}
     assert by_cal[wed["date"]]["source"] == "manual" and by_cal[wed["date"]]["proposed"] is False
     assert by_cal[mon.isoformat()]["source"] == run_id
+
+
+def test_breakfasts_are_told_apart_by_tag_or_title():
+    from znacht.domain.plan import MealSlot
+    from znacht.domain.recipe import Recipe, Tag
+    from znacht_engine.timeline import is_breakfast, pick_dinner
+
+    def recipe(key: str, title: str, tags: frozenset[str] = frozenset()) -> Recipe:
+        return Recipe(
+            id=RecipeId(source="cookidoo", external_id=key),
+            title=title,
+            servings=4,
+            ingredients=(),
+            tags=frozenset(tags),
+        )
+
+    muesli = recipe("r1", "Bircher Müsli")
+    eggs = recipe("r2", "Eggs royale", frozenset({Tag.BREAKFAST}))
+    curry = recipe("r3", "Creamy coconut chicken curry (TM6)")
+    by_key = {r.id.key: r for r in (muesli, eggs, curry)}
+    day = date(2026, 10, 27)
+    meals = [
+        Meal(date=day, slot=MealSlot.DINNER, recipe_id=r.id, servings=3)
+        for r in (muesli, eggs, curry)
+    ]
+    assert is_breakfast(meals[0], muesli) and is_breakfast(meals[1], eggs)
+    assert not is_breakfast(meals[2], curry)
+    assert is_breakfast(meals[2], None) is False  # unknown recipe, non-breakfast id
+    dinner, rest = pick_dinner(meals, lambda m: by_key[m.recipe_id.key])
+    assert dinner is meals[2] and rest == meals[:2]
+    dinner, rest = pick_dinner(meals[:2], lambda m: by_key[m.recipe_id.key])
+    assert dinner is None and rest == meals[:2]
+
+
+async def test_timeline_skips_breakfasts_and_lists_the_rest_of_the_day(
+    client: httpx.AsyncClient, service: ZnachtService
+):
+    from znacht.domain.recipe import Recipe, Tag
+
+    mon = GOLDEN_WEEK_START
+    muesli = Recipe(
+        id=RecipeId(source="memory", external_id="bircher"),
+        title="Bircher Müsli",
+        servings=4,
+        ingredients=(),
+        tags=frozenset({Tag.BREAKFAST}),
+    )
+    service._recipes[muesli.id.key] = muesli  # not in the fixture source: comes from the cache
+    tue, wed = mon + timedelta(days=1), mon + timedelta(days=2)
+    # Tuesday: breakfast first, then the dinner; Wednesday: a breakfast only
+    await _put_in_my_week(
+        service, _meal(tue, "bircher"), _meal(tue, "omelette"), _meal(wed, "bircher")
+    )
+    tl = (await client.get(f"/api/timeline?from={mon}&days=7")).json()
+    by_date = {d["date"]: d for d in tl["days"]}
+    t, w = by_date[tue.isoformat()], by_date[wed.isoformat()]
+    assert t["state"] == "planned" and t["dinner"]["title"].startswith("Omelette")
+    assert [a["title"] for a in t["also"]] == ["Bircher Müsli"] and t["also"][0]["breakfast"]
+    assert w["state"] == "empty" and w["dinner"] is None
+    assert [a["title"] for a in w["also"]] == ["Bircher Müsli"]
+    assert tl["weeks"][0]["locked_dates"] == [tue.isoformat()]  # Wednesday is still a gap
+    assert tl["empty_dates"] == [d for d in by_date if d != tue.isoformat()]
+
+    cal = (await client.get("/api/calendar")).json()
+    on_tue = sorted((c["slot"], c["summary"]) for c in cal if c["date"] == tue.isoformat())
+    assert on_tue[0] == ("breakfast", "Bircher Müsli") and on_tue[1][0] == "dinner"
+    assert any(c["date"] == wed.isoformat() and c["slot"] == "breakfast" for c in cal)
+
+    # Plan the gaps locks Tuesday's dinner, not its breakfast
+    r = await client.post(
+        "/api/plan_week", json={"week": mon.isoformat(), "locked_dates": [tue.isoformat()]}
+    )
+    assert r.status_code == 200
+    for _ in range(100):
+        await asyncio.sleep(0.05)
+        if service.repo.latest_run("example"):
+            break
+    _, result = service.repo.latest_run("example")
+    locked = [m for m in result.plan.meals if m.date == tue]
+    assert [m.recipe_id.external_id for m in locked] == ["omelette"]
 
 
 async def test_timeline_my_week_cache_and_bounds(client: httpx.AsyncClient, service: ZnachtService):

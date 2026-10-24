@@ -43,6 +43,7 @@ class Tag(StrEnum):
     LEGUMES = "legumes"
     VEGETARIAN = "vegetarian"
     FAMILY = "family"
+    BREAKFAST = "breakfast"  # not a dinner: the timeline skips it when picking a day's dinner
 
 
 def normalise_name(name: str) -> str:

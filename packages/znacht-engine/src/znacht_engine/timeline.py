@@ -6,11 +6,13 @@ adapters. ``ZnachtService.timeline`` does the reading and calls into these.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+import re
+from collections.abc import Callable, Iterable, Sequence
 from datetime import date, timedelta
 from typing import Any, Literal
 
 from znacht.domain.plan import Meal, MealSlot, Week
+from znacht.domain.recipe import Recipe, Tag
 from znacht.services.pipeline import WeekResult
 
 DayState = Literal["past", "planned", "proposed", "empty"]
@@ -27,12 +29,37 @@ COVERAGE_LABEL: dict[str, str] = {
 
 
 def dinner_on(meals: Iterable[Meal], day: date) -> Meal | None:
-    """The first dinner on ``day``; Cookidoo allows several recipes per day, the first is the
-    dinner and the rest are sides."""
+    """The first dinner on ``day`` in a run's plan (runs plan one dinner per day)."""
     for m in meals:
         if m.date == day and m.slot == MealSlot.DINNER:
             return m
     return None
+
+
+# Cookidoo's calendar has no meal slots: everything in My Week arrives as a dinner. Breakfasts
+# are told apart by tag (Cookidoo categories) or by title.
+_BREAKFAST_WORDS = re.compile(
+    r"(müsli|muesli|musli|porridge|granola|bircher|overnight oats|frühstück|zmorge|breakfast|brunch"
+    r"|smoothie)",
+    re.IGNORECASE,
+)
+
+
+def is_breakfast(meal: Meal, recipe: Recipe | None) -> bool:
+    if meal.slot == MealSlot.BREAKFAST:
+        return True
+    if recipe is None:
+        return bool(_BREAKFAST_WORDS.search(meal.recipe_id.external_id))
+    return Tag.BREAKFAST in recipe.tags or bool(_BREAKFAST_WORDS.search(recipe.title))
+
+
+def pick_dinner(
+    meals: Sequence[Meal], recipe_of: Callable[[Meal], Recipe | None]
+) -> tuple[Meal | None, list[Meal]]:
+    """(the day's dinner, the rest of the day's recipes). The dinner is the first recipe that is
+    not a breakfast; a day with only breakfasts has no dinner."""
+    dinner = next((m for m in meals if not is_breakfast(m, recipe_of(m))), None)
+    return dinner, [m for m in meals if m is not dinner]
 
 
 def week_label(week: Week, today: date) -> str:

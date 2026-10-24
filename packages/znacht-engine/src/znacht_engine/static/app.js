@@ -70,10 +70,11 @@ function DayRow({ d, today, onOpen, onApprove }) {
     <div class=${cls} role=${tappable ? "button" : null} tabindex=${tappable ? 0 : null} onClick=${open} onKeyDown=${(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }} aria-label=${`${d.weekday} ${dayNum(d.date)}: ${card ? card.title : "nothing planned"}`}>
       <div class="date"><small>${d.weekday.toUpperCase()}</small><b>${dayNum(d.date)}</b></div>
       <div class="body">
-        ${d.state === "empty" ? html`<span class="title muted">Nothing yet</span>` :
+        ${d.state === "empty" ? html`<span class="title muted">${d.also.length ? "No dinner yet" : "Nothing yet"}</span>${d.also.length ? html`<span class="meta">in My Week: ${d.also.map((a) => a.title).join(", ")}</span>` : null}` :
           d.state === "proposed" ? html`<span class="title">${card.title}</span><span class="meta">proposed by run ${d.proposal.source} · not in My Week yet</span>` :
           html`<span class="title">${card.title}</span>
                <span class="meta">${SOURCE(d.dinner)}${d.dinner.minutes ? ` · ${d.dinner.minutes} min` : ""}</span>
+               ${d.also.length ? html`<span class="meta">also ${d.also.map((a) => a.title).join(", ")}</span>` : null}
                ${d.proposal ? html`<span class="meta proposal">run ${d.proposal.source} proposes ${d.proposal.title}</span>` : null}`}
       </div>
       ${d.state !== "empty" && d.state !== "past" ? html`<span class=${"badge g-" + d.groceries.coverage}>${BADGE(d.groceries)}</span>` : null}
@@ -150,6 +151,7 @@ function Timeline({ tl, reload, busy, toast, selectRun }) {
             ${day.dinner ? html`<p class="muted" style="font-size:13px">${day.dinner.source === "manual" ? "This dinner is yours in My Week. Znacht keeps it when it plans the gaps; change it in Cookidoo or swap it below once a run proposes for this day." : `Sent to My Week by Znacht run ${day.dinner.source}.`}${day.dinner.note ? ` ${day.dinner.note}` : ""}</p>` : null}
             ${day.proposal ? html`<div class="swap"><b>Run ${day.proposal.source} proposes</b> ${day.proposal.title}<div class="meta">${day.dinner ? "replaces the dinner above when approved" : "not in My Week until approved"}</div></div>` : null}
             ${card && card.url ? html`<a href=${card.url} target="_blank" rel="noopener" style="font-size:13px">Open recipe</a>` : null}
+            ${day.also.length ? html`<div style="display:flex;flex-direction:column;gap:6px"><h2>Also in My Week that day</h2><div class="chips">${day.also.map((a) => html`<span class="chip quiet">${a.title}${a.breakfast ? " · breakfast" : ""}</span>`)}</div></div>` : null}
             ${day.run_id ? (alts == null ? html`<p class="muted">Finding alternatives…</p>` : alts.length === 0 ? html`<p class="muted">Nothing else in this run's pool fits here.</p>` : html`<h2>Swap for</h2>${alts.map((a, j) => html`
               <button type="button" class=${"alt" + (j === 0 ? " best" : "")} onClick=${() => swap(a.recipe_id)} disabled=${working}>
                 <span>${a.title}</span>
