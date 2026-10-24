@@ -73,7 +73,7 @@ The Proxmox API token the MCP uses may not create containers (403 on `VM.PowerMg
 curl -fsSL https://raw.githubusercontent.com/sbarkar/znacht/main/deploy/lxc/create.sh | VMID=102 bash
 ```
 
-Then inside the LXC: edit `/opt/znacht/deploy/.env`, `docker compose up -d --build`, copy `household.yaml` and `migros-session.json` into the `znacht-data` volume, and add the Caddy snippet with the LXC's IP. Point the HA integration at the Caddy hostname.
+That installs the engine as a systemd service (uv-managed Python 3.12, no Docker) and prints the one-liner that pipes `deploy/lxc/bundle.sh` from this workstation through ssh into the LXC: env, household, Cookidoo token, Migros session and the SQLite history move over, nothing stays on disk in between. Then Reconfigure the HA integration to the LXC's URL, stop the workstation engine and close port 8787 in firewalld. Caddy is optional while HA is on plain HTTP.
 
 ## Known gaps to capture tonight
 

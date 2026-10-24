@@ -1,7 +1,7 @@
-# Add to the Caddyfile on the caddy LXC. The engine listens on the znacht LXC, port 8787.
+# Add to the Caddyfile on the caddy LXC. The engine listens on the znacht LXC, port 8787 (put its address here).
 # Bearer tokens pass through unchanged; Caddy only terminates TLS.
 znacht.example.ch {
-    reverse_proxy 10.0.0.42:8787
+    reverse_proxy 192.168.4.12:8787
     encode zstd gzip
     header {
         -Server

@@ -83,3 +83,28 @@ async def test_todo_updates_write_back(hass, engine):
     calls = [(m, str(u)) for m, u, *_ in engine.mock_calls]
     assert ("POST", "http://engine.test:8787/api/lists/online/done") in calls
     assert ("POST", "http://engine.test:8787/api/lists/in_store/items") in calls
+
+
+async def test_reconfigure_moves_the_entry_to_a_new_engine(hass):
+    entry = MockConfigEntry(domain=DOMAIN, data=ENTRY, unique_id=ENTRY["url"])
+    entry.add_to_hass(hass)
+    api = MagicMock()
+    api.health = AsyncMock(return_value={"status": "ok"})
+    api.status = AsyncMock(return_value={"plan_status": "idle"})
+    new = {"url": "http://192.168.4.12:8787", "token": "t"}
+    with (
+        patch("custom_components.znacht.config_flow.ZnachtApi", return_value=api),
+        patch("custom_components.znacht.async_setup_entry", return_value=True),
+        patch("custom_components.znacht.async_unload_entry", return_value=True),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "reconfigure", "entry_id": entry.entry_id}
+        )
+        assert result["type"] == "form"
+        assert result["step_id"] == "reconfigure"
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], new)
+        await hass.async_block_till_done()
+    assert result["type"] == "abort"
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data == new
+    assert entry.unique_id == new["url"]

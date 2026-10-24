@@ -46,7 +46,7 @@ Phase 4 done: Claude as the planner (`znacht-llm-anthropic`) with structured out
 
 Phase 5 done: the engine (`znacht-engine`, FastAPI + SQLite) with the Brief and a JSON API, and the Home Assistant integration (`custom_components/znacht`, HACS) with two todo lists, a meal-plan calendar, sensors and services.
 
-Phase 6: `deploy/` has the Docker image, compose file, Caddy snippet and a Proxmox LXC script; `addon/` packages the same image for HAOS.
+Phase 6: `deploy/lxc/` installs the engine in a Proxmox LXC as a systemd service (create, install, bundle the secrets over, restore); `deploy/` also has a Docker image and compose file, the Caddy snippet, and `addon/` packages the image for HAOS.
 
 ```bash
 ZNACHT_HOUSEHOLD=examples/household.example.yaml ZNACHT_DATA_DIR=/tmp/znacht uv run znacht-engine

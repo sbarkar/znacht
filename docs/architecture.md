@@ -62,7 +62,7 @@ znacht/
 │  └─ znacht-engine/           # FastAPI app, job runner, state store (SQLite), auth
 ├─ custom_components/znacht/   # HACS integration (thin HTTP client, entities, actions)
 ├─ addon/                         # HA add-on manifest wrapping the engine image (Phase 6)
-├─ deploy/                        # Dockerfile, compose, LXC notes, Caddy snippet
+├─ deploy/                        # lxc/ scripts (systemd service), Dockerfile, compose, Caddy snippet
 ├─ tests/
 │  ├─ contract/                   # one suite per port, parametrised over adapters
 │  ├─ golden_week/                # the end-to-end fixture test
@@ -187,6 +187,6 @@ class Notifier(Protocol):
 | 4 | `znacht-llm-anthropic`, prompt/schema, re-prompt loop, lab-PDF and pantry-photo extraction with confirmation | **done 2026-10-24**: provider on structured outputs with refusal fallback, prompts and schemas in core, marker-to-rules table, `znacht extract` writes a draft for confirmation; live run pending an API key |
 | 5 | engine API, HACS integration, notifications | **done 2026-10-24**: FastAPI engine with SQLite, the Znacht Brief, actionable HA notifications, HACS integration with two todo lists, a calendar, seven sensors and five services; engine tests green, HA tests in their own 3.13 env (ADR-0009) |
 | 7 | the Znacht app: Week, Groceries, Household, Connections, served by the engine, in the HA sidebar | **done 2026-10-24** (ADR-0010); swaps, locks, moves, household editing, pantry photo draft |
-| 6 | Dockerfile, LXC runbook, Caddy snippet, HA add-on | **artifacts done 2026-10-24**: `deploy/` (Dockerfile, compose, `.env.example`, Caddy snippet, `lxc/create.sh`), `addon/` for HAOS; provisioning on `teodor` is the evening's step |
+| 6 | Dockerfile, LXC runbook, Caddy snippet, HA add-on | **artifacts done 2026-10-24**: `deploy/` (Dockerfile, compose, `.env.example`, Caddy snippet, `lxc/create.sh`), `addon/` for HAOS; LXC scripts rewritten 2026-10-24 to a plain systemd service with a secrets bundle piped over ssh (Docker-in-LXC was untestable from the workstation) |
 
 Each phase ends with all tests, a summary, and a stop for your go.

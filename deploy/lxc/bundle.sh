@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Pack the engine's secrets and state for the LXC and write a tar.gz to STDOUT. Nothing lands on disk here.
+# Run on the machine that has ~/.config/znacht, and pipe into ssh (deploy/lxc/create.sh prints the line).
+#
+#   deploy/lxc/bundle.sh | ssh root@<proxmox-host> "cat > /root/znacht-bundle.tgz && pct push <vmid> ... "
+#
+# Contents: env (minus the workstation paths; the service sets its own), household.yaml, the Cookidoo token,
+# the Migros session, and a consistent copy of the SQLite database so run history carries over.
+# PUBLIC_URL=https://znacht.example.ch sets ZNACHT_PUBLIC_URL; without it restore.sh uses the LXC's address.
+set -euo pipefail
+CFG="${ZNACHT_CONFIG_DIR:-$HOME/.config/znacht}"
+DATA="${ZNACHT_DATA_DIR:-$HOME/.local/share/znacht}"
+PUBLIC_URL="${PUBLIC_URL:-}"
+
+if [ -t 1 ]; then
+  echo "bundle.sh writes a tarball to stdout; pipe it into ssh (see deploy/lxc/README.md)" >&2
+  exit 2
+fi
+[ -f "$CFG/env" ] || { echo "no $CFG/env" >&2; exit 1; }
+[ -f "$CFG/household.yaml" ] || { echo "no $CFG/household.yaml" >&2; exit 1; }
+
+T=$(mktemp -d)
+chmod 700 "$T"
+trap 'rm -rf "$T"' EXIT
+
+grep -vE '^(ZNACHT_DATA_DIR|ZNACHT_HOUSEHOLD|ZNACHT_COOKIDOO_TOKEN_FILE|ZNACHT_MIGROS_SESSION_FILE|ZNACHT_PUBLIC_URL)=' "$CFG/env" > "$T/env"
+[ -n "$PUBLIC_URL" ] && echo "ZNACHT_PUBLIC_URL=\"$PUBLIC_URL\"" >> "$T/env"
+# Adapter choice: whatever the env file says, else the current shell, else the live defaults.
+for pair in ZNACHT_RECIPE_SOURCE=cookidoo ZNACHT_SINK=cookidoo ZNACHT_STORE=migros ZNACHT_PLANNER=anthropic; do
+  k="${pair%%=*}"
+  grep -q "^$k=" "$T/env" || echo "$k=\"${!k:-${pair#*=}}\"" >> "$T/env"
+done
+cp "$CFG/household.yaml" "$T/"
+for f in cookidoo-token.json migros-session.json; do
+  [ -f "$CFG/$f" ] && cp "$CFG/$f" "$T/"
+done
+if [ -f "$DATA/znacht.sqlite" ]; then
+  python3 - "$DATA/znacht.sqlite" "$T/znacht.sqlite" <<'PY' || cp "$DATA/znacht.sqlite" "$T/"
+import sqlite3, sys
+src, dst = sqlite3.connect(sys.argv[1]), sqlite3.connect(sys.argv[2])
+src.backup(dst)
+dst.close(); src.close()
+PY
+fi
+
+tar czf - -C "$T" .
+echo "bundled: $(ls "$T" | tr '\n' ' ')" >&2
