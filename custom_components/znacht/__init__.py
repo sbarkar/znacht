@@ -5,10 +5,12 @@ from __future__ import annotations
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_call_later
 
-from .api import ZnachtApi
+from .api import ZnachtApi, ZnachtApiError
 from .const import (
     CONF_TOKEN,
     CONF_URL,
@@ -43,23 +45,59 @@ def _register_services(hass: HomeAssistant, coordinator: ZnachtCoordinator) -> N
     if hass.services.has_service(DOMAIN, SERVICE_PLAN_WEEK):
         return
 
+    def _friendly(exc: ZnachtApiError) -> HomeAssistantError:
+        text = str(exc)
+        if "409" in text:
+            return HomeAssistantError(
+                "Znacht is busy with the previous request; try again in a minute."
+            )
+        if "401" in text:
+            return HomeAssistantError("The Znacht engine rejected the API token.")
+        return HomeAssistantError(f"Znacht engine error: {text[:200]}")
+
+    def _refresh_soon(delays: tuple[int, ...] = (30, 90, 180)) -> None:
+        """Planning runs in the background on the engine: poll a few times so entities catch up."""
+        for delay in delays:
+            async_call_later(
+                hass,
+                delay,
+                lambda _now: hass.async_create_task(coordinator.async_request_refresh()),
+            )
+
     async def plan_week(call: ServiceCall) -> None:
-        await coordinator.api.plan_week(call.data.get("week"))
+        try:
+            await coordinator.api.plan_week(call.data.get("week"))
+        except ZnachtApiError as exc:
+            raise _friendly(exc) from exc
         await coordinator.async_request_refresh()
+        _refresh_soon()
 
     async def optimize(call: ServiceCall) -> None:
-        await coordinator.api.optimize()
+        try:
+            await coordinator.api.optimize()
+        except ZnachtApiError as exc:
+            raise _friendly(exc) from exc
         await coordinator.async_request_refresh()
+        _refresh_soon()
 
     async def apply(call: ServiceCall) -> None:
-        await coordinator.api.apply(call.data.get("run_id"))
+        try:
+            await coordinator.api.apply(call.data.get("run_id"))
+        except ZnachtApiError as exc:
+            raise _friendly(exc) from exc
         await coordinator.async_request_refresh()
 
     async def pantry(call: ServiceCall) -> None:
-        await coordinator.api.pantry(dict(call.data["items"]))
+        try:
+            await coordinator.api.pantry(dict(call.data["items"]))
+        except ZnachtApiError as exc:
+            raise _friendly(exc) from exc
 
     async def refresh(call: ServiceCall) -> None:
-        await coordinator.api.refresh()
+        try:
+            await coordinator.api.refresh()
+        except ZnachtApiError as exc:
+            raise _friendly(exc) from exc
         await coordinator.async_request_refresh()
 
     hass.services.async_register(
