@@ -5,6 +5,12 @@ OPTS=/data/options.json
 opt() { jq -r --arg k "$1" '.[$k] // empty' "$OPTS"; }
 supervisor() { curl -fsS --max-time 10 -H "Authorization: Bearer ${SUPERVISOR_TOKEN:-}" "$@"; }
 
+# A bundle from the LXC (deploy/lxc/bundle.sh) restores household, tokens, sessions and database, and sets
+# the options from its env; it is shredded either way (ADR-0014).
+if [ -f /config/znacht-bundle.tgz ]; then
+  python3 /import_bundle.py /config/znacht-bundle.tgz || echo "[znacht] import: incomplete, see above"
+fi
+
 export ZNACHT_RECIPE_SOURCE="$(opt recipe_source)" ZNACHT_SINK="$(opt sink)" ZNACHT_STORE="$(opt store)" ZNACHT_PLANNER="$(opt planner)"
 export ZNACHT_COOKIDOO_EMAIL="$(opt cookidoo_email)" ZNACHT_COOKIDOO_PASSWORD="$(opt cookidoo_password)"
 export ZNACHT_COOKIDOO_COUNTRY="$(opt cookidoo_country)" ZNACHT_COOKIDOO_LANGUAGE="$(opt cookidoo_language)"
@@ -13,6 +19,14 @@ export ZNACHT_MIGROS_EMAIL="$(opt migros_email)" ZNACHT_MIGROS_PASSWORD="$(opt m
 export ANTHROPIC_API_KEY="$(opt anthropic_api_key)" ZNACHT_ANTHROPIC_MODEL="$(opt anthropic_model)"
 # Inside an add-on, the Supervisor proxy is Home Assistant.
 export ZNACHT_HA_URL="http://supervisor/core" ZNACHT_HA_TOKEN="${SUPERVISOR_TOKEN:-}" ZNACHT_HA_NOTIFY="$(opt ha_notify)"
+# Engine settings without an add-on option, from an imported bundle.
+if [ -f /config/engine.env ]; then
+  while IFS='=' read -r key value; do
+    case "$key" in
+      ZNACHT_MIGROS_LANGUAGE|ZNACHT_MIGROS_MINIMUM_ORDER|ZNACHT_ANTHROPIC_EFFORT|ZNACHT_ANTHROPIC_FALLBACKS) export "$key=$value" ;;
+    esac
+  done < /config/engine.env
+fi
 # Trust Home Assistant's ingress gateway and serve the app under its path (ADR-0012).
 export ZNACHT_INGRESS=1
 

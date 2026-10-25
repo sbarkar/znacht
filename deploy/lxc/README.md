@@ -11,7 +11,7 @@ Four scripts, each does one thing:
 |---|---|---|
 | `create.sh` | Proxmox host | creates the LXC and runs `install.sh` inside it |
 | `install.sh` | inside the LXC | git checkout in `/opt/znacht`, uv-managed Python 3.12 venv, `znacht.service`; re-run to update |
-| `bundle.sh` | the machine with `~/.config/znacht` | tars the env, household, Cookidoo token, Migros session and database to stdout |
+| `bundle.sh` | the machine with `~/.config/znacht`, or the LXC | tars the env, household, Cookidoo token, Migros session and database to stdout |
 | `restore.sh` | inside the LXC | unpacks the bundle into `/etc/znacht/env` and `/var/lib/znacht`, starts the service |
 
 ## 1. Create
@@ -69,6 +69,12 @@ after the integration reloads. Then stop the old engine and close its firewall p
 ```bash
 pct exec 102 -- /opt/znacht/deploy/lxc/install.sh
 ```
+
+## Moving to the Home Assistant add-on
+
+Stop the engine here, make a bundle in the LXC with `bundle.sh`, and let the add-on import it: the steps are
+in the add-on's documentation (`addon/znacht/DOCS.md`, "Moving from the LXC"). Keep the LXC stopped rather
+than deleting it; starting `znacht.service` again is the way back.
 
 ## Logs
 
