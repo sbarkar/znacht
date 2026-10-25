@@ -1,13 +1,6 @@
 {
   "config": {
     "step": {
-      "user": {
-        "title": "Connect to the Znacht engine",
-        "data": {
-          "url": "Engine URL",
-          "token": "API token"
-        }
-      },
       "reconfigure": {
         "title": "Move Znacht to another engine",
         "description": "Entities, history and the sidebar panel follow the new address.",
@@ -19,15 +12,61 @@
       "hassio_confirm": {
         "title": "Znacht add-on found",
         "description": "Set up Znacht with the {addon} add-on? The Znacht app is the add-on's own entry in the sidebar."
+      },
+      "user": {
+        "title": "Set up Znacht",
+        "description": "Znacht plans your week's dinners, fills your shopping lists and never orders or pays.",
+        "menu_options": {
+          "addon": "Run Znacht here in Home Assistant (recommended)",
+          "manual": "I already run the Znacht engine on another machine"
+        }
+      },
+      "manual": {
+        "title": "Connect to your Znacht engine",
+        "data": {
+          "url": "Engine URL",
+          "token": "API token"
+        },
+        "data_description": {
+          "url": "For example http://192.168.1.50:8787",
+          "token": "ZNACHT_API_TOKEN from the engine's settings"
+        }
+      },
+      "addon": {
+        "title": "Your accounts",
+        "description": "Znacht signs in to these to plan and to fill your lists. Everything stays on this Home Assistant. {details}",
+        "data": {
+          "cookidoo_email": "Cookidoo email",
+          "cookidoo_password": "Cookidoo password",
+          "migros_email": "Migros email",
+          "migros_password": "Migros password",
+          "migros_totp_secret": "Migros two-factor secret",
+          "anthropic_api_key": "Claude API key"
+        },
+        "data_description": {
+          "cookidoo_email": "Recipes and My Week on your Thermomix. Leave empty to try Znacht with sample recipes.",
+          "cookidoo_password": "Used once to sign in; Znacht keeps a token, not the password.",
+          "migros_email": "Your Migros Online account, for the two shopping lists. Leave empty for a sample shop.",
+          "migros_password": "Used to sign in and when Migros asks to sign in again.",
+          "migros_totp_secret": "Only if your Migros account uses an authenticator app: the setup key, not the 6-digit code.",
+          "anthropic_api_key": "Optional. Claude plans more varied weeks and reads the pantry from a photo. Without a key, the built-in planner is used."
+        }
       }
     },
     "error": {
       "cannot_connect": "Could not reach the engine.",
-      "invalid_auth": "The token was rejected."
+      "invalid_auth": "The token was rejected.",
+      "cookidoo_failed": "Cookidoo did not accept this. Check the email and password.",
+      "migros_failed": "Migros did not accept this. Check the email and password (and the two-factor secret).",
+      "anthropic_failed": "Claude did not accept this key."
     },
     "abort": {
       "already_configured": "This engine is already configured.",
-      "reconfigure_successful": "Znacht now talks to the new engine."
+      "reconfigure_successful": "Znacht now talks to the new engine.",
+      "addon_failed": "The Znacht add-on could not be set up: {error}"
+    },
+    "progress": {
+      "install": "Installing and starting the Znacht add-on. The first time, Home Assistant builds it, which can take a few minutes."
     }
   },
   "entity": {
@@ -69,6 +108,39 @@
       "meal_plan": {
         "name": "Meal plan"
       }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Your accounts",
+        "description": "Change the accounts Znacht uses. Leave a password empty to keep the current one; clear an email to use sample data for it. {details}",
+        "data": {
+          "cookidoo_email": "Cookidoo email",
+          "cookidoo_password": "Cookidoo password",
+          "migros_email": "Migros email",
+          "migros_password": "Migros password",
+          "migros_totp_secret": "Migros two-factor secret",
+          "anthropic_api_key": "Claude API key"
+        },
+        "data_description": {
+          "cookidoo_email": "Recipes and My Week on your Thermomix. Leave empty to try Znacht with sample recipes.",
+          "cookidoo_password": "Used once to sign in; Znacht keeps a token, not the password.",
+          "migros_email": "Your Migros Online account, for the two shopping lists. Leave empty for a sample shop.",
+          "migros_password": "Used to sign in and when Migros asks to sign in again.",
+          "migros_totp_secret": "Only if your Migros account uses an authenticator app: the setup key, not the 6-digit code.",
+          "anthropic_api_key": "Optional. Claude plans more varied weeks and reads the pantry from a photo. Without a key, the built-in planner is used."
+        }
+      }
+    },
+    "error": {
+      "cookidoo_failed": "Cookidoo did not accept this. Check the email and password.",
+      "migros_failed": "Migros did not accept this. Check the email and password (and the two-factor secret).",
+      "anthropic_failed": "Claude did not accept this key.",
+      "addon_failed": "The add-on could not be updated."
+    },
+    "abort": {
+      "not_addon": "This Znacht engine runs outside Home Assistant. Change its accounts where it runs."
     }
   }
 }

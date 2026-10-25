@@ -49,6 +49,7 @@ Everything except `/healthz` and `/` (a redirect to the app) takes the bearer to
 | Approving | `POST /api/apply?run_id=` · `POST /api/runs/{id}/revert` · `POST /brief/{id}/apply` · `POST /brief/{id}/replan` |
 | Lists | `GET /api/lists` · `POST /api/lists/{kind}/done` · `POST /api/lists/{kind}/items` · `POST /api/refresh` |
 | Household | `GET /api/household` · `PATCH /api/household` · `POST /api/pantry {items}` · `POST /api/pantry/photo` |
+| First setup (ADR-0013) | `GET /api/setup` (is the household still the example?) · `POST /api/setup` (the Welcome's answers) · `GET /api/store/lists` · `GET /api/connections` (each account: works, or why not) |
 | Pages | `GET /app` · `GET /brief[/{run_id}]` |
 
 Writes to Cookidoo and Migros happen only in `apply`. There is no checkout endpoint and never will be; the Brief links to the store's basket page for you to finish.

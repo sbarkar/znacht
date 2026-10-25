@@ -230,3 +230,135 @@ async def test_reconfigure_keeps_the_addon_flag_only_for_the_same_engine(hass):
     lxc = {"url": "http://192.168.1.50:8787", "token": "t"}
     await _reconfigure(hass, entry, lxc)
     assert entry.data == lxc
+
+
+# -- one install: the integration sets up the add-on itself (ADR-0013) -----------------------
+
+ACCOUNTS = {"cookidoo_email": "a@b.ch", "cookidoo_password": "pw", "migros_email": "a@b.ch"}
+ALL_OK = {r: {"name": r, "ok": True, "detail": None} for r in ("recipes", "store", "planner")}
+
+
+def _engine_api(connections):
+    api = MagicMock()
+    api.health = AsyncMock(return_value={"status": "ok"})
+    api.status = AsyncMock(return_value={"plan_status": "idle"})
+    api.connections = AsyncMock(side_effect=connections)
+    return api
+
+
+async def _past_progress(hass, result):
+    """The install runs as a progress step; a finished task moves on by itself."""
+    if result["type"] == "progress":
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+    return result
+
+
+async def _run_addon_flow(hass, connections):
+    from custom_components.znacht.addon import AddonEngine
+
+    engine = AddonEngine(slug="abc123_znacht", url="http://abc123-znacht:8787", token="tok")
+    install = AsyncMock(return_value=engine)
+    with (
+        patch("custom_components.znacht.config_flow.is_hassio", return_value=True),
+        patch("custom_components.znacht.config_flow.addon.install_and_start", install),
+        patch(
+            "custom_components.znacht.config_flow.ZnachtApi",
+            return_value=_engine_api(connections),
+        ),
+        patch("custom_components.znacht.async_setup_entry", return_value=True),
+    ):
+        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+        assert result["type"] == "menu" and result["menu_options"] == ["addon", "manual"]
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "addon"}
+        )
+        assert result["type"] == "form" and result["step_id"] == "addon"
+        result = await _past_progress(
+            hass, await hass.config_entries.flow.async_configure(result["flow_id"], ACCOUNTS)
+        )
+        results = [result]
+        if result["type"] == "form":  # an account failed: fix it and go round again
+            result = await _past_progress(
+                hass,
+                await hass.config_entries.flow.async_configure(
+                    result["flow_id"], {**ACCOUNTS, "cookidoo_password": "right"}
+                ),
+            )
+            results.append(result)
+        await hass.async_block_till_done()
+    return install, results
+
+
+async def test_run_here_installs_the_addon_and_creates_the_entry(hass):
+    install, [result] = await _run_addon_flow(hass, [ALL_OK])
+    assert install.await_args.args[1] == ACCOUNTS
+    assert result["type"] == "create_entry"
+    assert result["data"] == {
+        "url": "http://abc123-znacht:8787",
+        "token": "tok",
+        "addon": True,
+        "addon_slug": "abc123_znacht",
+    }
+
+
+async def test_a_rejected_account_goes_back_to_its_field(hass):
+    bad = {
+        **ALL_OK,
+        "recipes": {"name": "cookidoo", "ok": False, "detail": "Cookidoo login failed: 401"},
+    }
+    install, [first, second] = await _run_addon_flow(hass, [bad, ALL_OK])
+    assert first["type"] == "form" and first["step_id"] == "addon"
+    assert first["errors"] == {"cookidoo_password": "cookidoo_failed"}
+    assert "401" in first["description_placeholders"]["details"]
+    assert install.await_count == 2 and install.await_args.args[1]["cookidoo_password"] == "right"
+    assert second["type"] == "create_entry"
+
+
+async def test_without_a_supervisor_setup_asks_for_the_engine(hass):
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    assert result["type"] == "form" and result["step_id"] == "manual"
+
+
+def test_accounts_become_addon_options_and_pick_the_adapters():
+    from custom_components.znacht.addon import accounts_to_options
+
+    current = {"cookidoo_password": "old", "api_token": "keep", "planner": "anthropic"}
+    options = accounts_to_options(current, {"cookidoo_email": "a@b.ch", "cookidoo_password": ""})
+    assert options["cookidoo_password"] == "old"  # an empty secret keeps the stored one
+    assert options["api_token"] == "keep"
+    assert (options["recipe_source"], options["sink"]) == ("cookidoo", "cookidoo")
+    assert (options["store"], options["planner"]) == ("memory", "rule_based")
+
+
+async def test_configure_changes_the_addon_accounts(hass):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={**ENTRY, "addon": True, "addon_slug": "abc123_znacht"},
+        unique_id=ENTRY["url"],
+    )
+    entry.add_to_hass(hass)
+    update = AsyncMock()
+    with (
+        patch("custom_components.znacht.config_flow.addon.update_accounts", update),
+        patch(
+            "custom_components.znacht.config_flow.addon.addon_options",
+            AsyncMock(return_value={"cookidoo_email": "a@b.ch"}),
+        ),
+        patch("custom_components.znacht.config_flow.asyncio.sleep", AsyncMock()),
+        patch("custom_components.znacht.config_flow.ZnachtApi", return_value=_engine_api([ALL_OK])),
+    ):
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        assert result["type"] == "form" and result["step_id"] == "init"
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"migros_email": "c@d.ch"}
+        )
+    assert result["type"] == "create_entry"
+    assert update.await_args.args[1:] == ("abc123_znacht", {"migros_email": "c@d.ch"})
+
+
+async def test_configure_on_a_separate_engine_explains_itself(hass):
+    entry = MockConfigEntry(domain=DOMAIN, data=ENTRY, unique_id=ENTRY["url"])
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == "abort" and result["reason"] == "not_addon"

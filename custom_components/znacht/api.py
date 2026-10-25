@@ -34,6 +34,9 @@ class ZnachtApi:
     async def health(self) -> dict[str, Any]:
         return await self._call("GET", "/healthz")
 
+    async def connections(self) -> dict[str, dict[str, Any]]:
+        return await self._call("GET", "/api/connections")
+
     async def status(self) -> dict[str, Any]:
         return await self._call("GET", "/api/status")
 

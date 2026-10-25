@@ -169,6 +169,31 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return {"run_id": rid, "status": str(result.status), "notes": list(result.notes)}
 
+    @app.get("/api/setup", dependencies=[Depends(auth)])
+    async def setup_state(s: ZnachtService = Depends(svc)) -> dict[str, Any]:
+        """Whether the Welcome wizard should run (ADR-0013)."""
+        return {"needed": s.setup_needed(), "adapters": s.adapter_names()}
+
+    @app.post("/api/setup", dependencies=[Depends(auth)])
+    async def setup(body: dict[str, Any], s: ZnachtService = Depends(svc)) -> dict[str, Any]:
+        try:
+            return s.setup(body)
+        except (ValueError, KeyError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.get("/api/connections", dependencies=[Depends(auth)])
+    async def connections(s: ZnachtService = Depends(svc)) -> dict[str, Any]:
+        return await s.connections()
+
+    @app.get("/api/store/lists", dependencies=[Depends(auth)])
+    async def store_lists(s: ZnachtService = Depends(svc)) -> list[dict[str, str]]:
+        try:
+            return await s.store_lists()
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:  # the account could not be reached: say why
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
     @app.get("/api/household", dependencies=[Depends(auth)])
     async def household(s: ZnachtService = Depends(svc)) -> dict[str, Any]:
         return s.household_view()

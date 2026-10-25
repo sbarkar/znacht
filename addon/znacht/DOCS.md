@@ -6,16 +6,19 @@ add-on options (ADR-0012).
 
 ## Install
 
+The easiest way is not to install the add-on by hand at all: install the **Znacht** integration from
+HACS and choose **Run Znacht here in Home Assistant**. It adds this repository, installs and starts the
+add-on, asks for your accounts and connects to it. The steps below are the same thing by hand.
+
 1. Settings → Add-ons → Add-on store → ⋮ → Repositories, add `https://github.com/sbarkar/znacht`.
 2. Install **Znacht**, fill in the options (below) and start it. Leave `api_token` empty: the add-on makes
    one and keeps it.
-3. On first start it writes an example `household.yaml` to the add-on's config folder
-   (`/addon_configs/<hostname>/household.yaml`, reachable with the File editor or Samba add-on). Edit it
-   for your household and restart the add-on. The example explains every option.
+3. On first start it writes an example `household.yaml` to the add-on's config folder. You don't need to
+   edit it: the app's Welcome replaces it with your household the first time you open Znacht.
 4. Install the **Znacht** integration from HACS and restart Home Assistant. Settings → Devices & services
    then shows **Znacht** as discovered: press Configure and Submit. No URL, no token.
-5. Open **Znacht** from the sidebar. That entry is the app: Week, Review, Groceries, Household and
-   Connections.
+5. Open **Znacht** from the sidebar. That entry is the app; the first time, it walks you through your
+   household.
 
 If the integration is not offered as discovered, add it by hand with `http://<hostname>:8787` (the
 hostname is on the add-on's Info page) and the token from `.api_token` in the add-on's config folder.

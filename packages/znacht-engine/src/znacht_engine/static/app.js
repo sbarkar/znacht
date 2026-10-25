@@ -477,7 +477,27 @@ function Chips({ items, onRemove, onAdd, placeholder }) {
   </div>`;
 }
 
-function Household({ household, patch, toast, planner }) {
+function DeliveryCard({ household, patch, store }) {
+  const d = household.delivery;
+  const slot = (d.slots || []).find((t) => t.id === d.preferred_slot_id) || (d.slots || [])[0];
+  const [postcode, setPostcode] = useState(d.postcode);
+  const [picking, setPicking] = useState(false);
+  const setSlot = (v) => {
+    if (v.weekday == null) { patch({ delivery: { preferred_slot_id: null, slot_templates: [] } }); return; }
+    const id = `${["mon", "tue", "wed", "thu", "fri", "sat", "sun"][v.weekday]}-${v.start.slice(0, 2)}-${v.end.slice(0, 2)}`;
+    patch({ delivery: { preferred_slot_id: id, slot_templates: [{ id, weekday: v.weekday, start: v.start, end: v.end }] } });
+  };
+  return html`<div class="card">
+    <h2>Delivery and store</h2>
+    <label class="field"><span>Postcode</span><input class="input" inputmode="numeric" value=${postcode} onInput=${(e) => setPostcode(e.target.value)} onBlur=${() => { if (/^\d{4}$/.test(postcode.trim()) && postcode.trim() !== d.postcode) patch({ delivery: { postcode: postcode.trim() } }); }} /></label>
+    <div class="field"><span>Usual delivery slot</span><${SlotPicker} value=${slot ? { weekday: slot.weekday, start: slot.start, end: slot.end } : { weekday: null, start: "18:00", end: "20:00" }} onChange=${setSlot} /></div>
+    ${store === "migros" ? (picking
+      ? html`<${ListPicker} value=${household.store_lists || { online: "", in_store: "" }} onChange=${(v) => { if (v.online && v.in_store && v.online !== v.in_store) { patch({ store_lists: v }); setPicking(false); } }} />`
+      : html`<div class="row between"><span class="small">${household.store_lists ? "Your two Migros lists are set." : "No Migros lists chosen yet."}</span><button type="button" class="btn" onClick=${() => setPicking(true)}>${household.store_lists ? "Change lists" : "Choose lists"}</button></div>`) : null}
+  </div>`;
+}
+
+function Household({ household, patch, toast, planner, store }) {
   const [draft, setDraft] = useState(null);
   const [busyPhoto, setBusyPhoto] = useState(false);
   if (!household) return html`<div class="screen"><div class="empty span">Loading the household…</div></div>`;
@@ -550,22 +570,122 @@ function Household({ household, patch, toast, planner }) {
         ${planner !== "anthropic" ? html`<p class="muted" style="font-size:12px">Reading the pantry from a photo needs the Claude planner.</p>` : null}
         <div style="font-size:13px">Made at home, never bought: <span class="muted">${household.make_at_home.join(", ") || "nothing yet (edit in the YAML)"}</span></div>
       </div>
-      <div class="card">
-        <h2>Delivery and store</h2>
-        <div style="font-size:13px">Postcode <b>${household.delivery.postcode}</b>${household.store_lists ? html` · online list <b>${household.store_lists.online}</b> · store list <b>${household.store_lists.in_store}</b>` : null}</div>
-      </div>
+      <${DeliveryCard} household=${household} patch=${patch} store=${store} />
     </div>`;
+}
+
+// ---------- Setup pieces (ADR-0013) -----------------------------------------------------
+const WEEKDAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const HOURS = Array.from({ length: 16 }, (_, i) => `${String(i + 7).padStart(2, "0")}:00`);
+
+// pick the two Migros lists from the account instead of typing IDs
+function ListPicker({ value, onChange }) {
+  const [lists, setLists] = useState(null);
+  const [err, setErr] = useState(null);
+  const load = () => { setErr(null); setLists(null); api("GET", "/api/store/lists").then(setLists).catch((e) => setErr(e.message)); };
+  useEffect(load, []);
+  if (err) return html`<div class="banner span"><span><b>Can't read your Migros lists.</b><br /><span class="small">${err}</span></span><button type="button" class="btn" onClick=${load}>Try again</button></div>`;
+  if (!lists) return html`<p class="muted small">Reading your Migros lists…</p>`;
+  if (lists.length < 2) return html`<div class="banner span"><span><b>Znacht needs two Migros lists.</b><br /><span class="small">In the Migros app, make one for delivery (e.g. "Znacht online") and one for the shop (e.g. "Znacht store"), then come back.</span></span><button type="button" class="btn" onClick=${load}>I made them</button></div>`;
+  const pick = (kind, label, hint) => html`<label class="field"><span>${label}</span><select class="select" value=${value[kind] || ""} onChange=${(e) => onChange({ ...value, [kind]: e.target.value })} aria-label=${label}><option value="">Choose a list…</option>${lists.map((l) => html`<option value=${l.id}>${l.name}</option>`)}</select><span class="muted small">${hint}</span></label>`;
+  return html`<div style="display:flex;flex-direction:column;gap:12px">
+    ${pick("online", "Delivery list", "what Migros delivers; you finish the order in Migros")}
+    ${pick("in_store", "Store-run list", "what you pick up in the shop yourself")}
+    ${value.online && value.online === value.in_store ? html`<p class="small" style="color:var(--accent)">Choose two different lists.</p>` : null}
+  </div>`;
+}
+
+function SlotPicker({ value, onChange }) {
+  return html`<div class="row" style="flex-wrap:wrap">
+    <select class="select" value=${value.weekday == null ? "" : String(value.weekday)} onChange=${(e) => onChange({ ...value, weekday: e.target.value === "" ? null : Number(e.target.value) })} aria-label="Delivery day"><option value="">No usual day</option>${WEEKDAY_NAMES.map((d, i) => html`<option value=${String(i)}>${d}</option>`)}</select>
+    ${value.weekday != null ? html`<select class="select" value=${value.start} onChange=${(e) => onChange({ ...value, start: e.target.value })} aria-label="From">${HOURS.map((h) => html`<option value=${h}>${h}</option>`)}</select><span class="muted">to</span><select class="select" value=${value.end} onChange=${(e) => onChange({ ...value, end: e.target.value })} aria-label="To">${HOURS.map((h) => html`<option value=${h}>${h}</option>`)}</select>` : null}
+  </div>`;
+}
+
+function Stepper({ label, value, min, max, step = 1, unit = "", onChange }) {
+  return html`<div class="stepper"><span style="flex:1 1 auto;font-weight:500">${label}</span>
+    <button type="button" class="check" aria-label=${"Less " + label} onClick=${() => onChange(Math.max(min, value - step))} disabled=${value <= min}>−</button>
+    <span class="n" style="width:auto;min-width:3ch">${value}${unit}</span>
+    <button type="button" class="check" aria-label=${"More " + label} onClick=${() => onChange(Math.min(max, value + step))} disabled=${value >= max}>+</button></div>`;
+}
+
+// ---------- Welcome: the first setup, no file editor ------------------------------------
+function Welcome({ adapters, onDone, toast }) {
+  const [step, setStep] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState("");
+  const [members, setMembers] = useState([{ name: "", age_group: "adult", dislikes: [], allergies: [] }]);
+  const [rules, setRules] = useState({ dinners_per_week: 7, minutes: 45, fish: 1, legumes: 1, red_meat_max: 1 });
+  const [delivery, setDelivery] = useState({ postcode: "", weekday: null, start: "18:00", end: "20:00" });
+  const [lists, setLists] = useState({ online: "", in_store: "" });
+  const migros = adapters && adapters.store === "migros";
+  const people = members.filter((m) => m.name.trim());
+  const setMember = (i, change) => setMembers(members.map((m, j) => (j === i ? { ...m, ...change } : m)));
+  const steps = ["Who eats", "How you cook", "Delivery", migros ? "Your Migros lists" : null].filter(Boolean);
+  const canNext = [people.length > 0, true, /^\d{4}$/.test(delivery.postcode.trim()), !migros || (lists.online && lists.in_store && lists.online !== lists.in_store)];
+  const finish = async () => {
+    setSaving(true);
+    try {
+      await api("POST", "/api/setup", {
+        name: name.trim(),
+        members: people,
+        rules: { dinners_per_week: rules.dinners_per_week, max_total_minutes_weekday: rules.minutes, min_per_week: { fish: rules.fish, legumes: rules.legumes }, max_per_week: { red_meat: rules.red_meat_max } },
+        delivery: { postcode: delivery.postcode.trim(), ...(delivery.weekday != null ? { weekday: delivery.weekday, start: delivery.start, end: delivery.end } : {}) },
+        store_lists: migros ? lists : null,
+      });
+      toast("All set. Plan your first week.");
+      onDone();
+    } catch (e) { toast(e.message); } finally { setSaving(false); }
+  };
+  let content;
+  if (step === 0) content = html`
+    <label class="field"><span>Your household's name</span><input class="input" placeholder="The Müllers" value=${name} onInput=${(e) => setName(e.target.value)} /></label>
+    ${members.map((m, i) => html`<div class="card" style="gap:8px">
+      <div class="row"><input class="input" placeholder=${i === 0 ? "Your name" : "Name"} value=${m.name} onInput=${(e) => setMember(i, { name: e.target.value })} aria-label=${"Person " + (i + 1)} />
+        <select class="select" value=${m.age_group} onChange=${(e) => setMember(i, { age_group: e.target.value })} aria-label="Age group"><option value="adult">adult</option><option value="child">child</option><option value="toddler">toddler</option></select>
+        ${members.length > 1 ? html`<button type="button" class="btn ghost" aria-label=${"Remove " + (m.name || "person")} onClick=${() => setMembers(members.filter((_, j) => j !== i))}>×</button>` : null}</div>
+      <${Chips} items=${m.dislikes} placeholder="doesn't like… (type, Enter)" onAdd=${(x) => setMember(i, { dislikes: m.dislikes.includes(x) ? m.dislikes : [...m.dislikes, x] })} onRemove=${(x) => setMember(i, { dislikes: m.dislikes.filter((d) => d !== x) })} />
+      <${Chips} items=${m.allergies} placeholder="allergies… (type, Enter)" onAdd=${(x) => setMember(i, { allergies: m.allergies.includes(x) ? m.allergies : [...m.allergies, x] })} onRemove=${(x) => setMember(i, { allergies: m.allergies.filter((d) => d !== x) })} />
+    </div>`)}
+    <button type="button" class="btn" onClick=${() => setMembers([...members, { name: "", age_group: "adult", dislikes: [], allergies: [] }])}>Add a person</button>
+    <p class="muted small">A toddler gets mild food. You can change all of this later under Household.</p>`;
+  else if (step === 1) content = html`<div class="card">
+    <${Stepper} label="Dinners per week" value=${rules.dinners_per_week} min=${1} max=${7} onChange=${(v) => setRules({ ...rules, dinners_per_week: v })} />
+    <${Stepper} label="Weekday cooking time" value=${rules.minutes} min=${15} max=${120} step=${15} unit=" min" onChange=${(v) => setRules({ ...rules, minutes: v })} />
+    <${Stepper} label="Fish, at least" value=${rules.fish} min=${0} max=${4} unit="×" onChange=${(v) => setRules({ ...rules, fish: v })} />
+    <${Stepper} label="Legumes, at least" value=${rules.legumes} min=${0} max=${4} unit="×" onChange=${(v) => setRules({ ...rules, legumes: v })} />
+    <${Stepper} label="Red meat, at most" value=${rules.red_meat_max} min=${0} max=${7} unit="×" onChange=${(v) => setRules({ ...rules, red_meat_max: v })} />
+  </div><p class="muted small">Per week. Znacht checks every plan against these.</p>`;
+  else if (step === 2) content = html`<div class="card">
+    <label class="field"><span>Delivery postcode</span><input class="input" inputmode="numeric" placeholder="8000" value=${delivery.postcode} onInput=${(e) => setDelivery({ ...delivery, postcode: e.target.value })} /></label>
+    <div class="field"><span>Your usual delivery slot</span><${SlotPicker} value=${delivery} onChange=${setDelivery} /></div>
+  </div><p class="muted small">The slot decides which days the delivery covers. Znacht never books it: you pick the slot when you finish the order in Migros.</p>`;
+  else content = html`<div class="card"><${ListPicker} value=${lists} onChange=${setLists} /></div><p class="muted small">Znacht fills these two lists after you approve a week. It never orders or pays.</p>`;
+  const last = step === steps.length - 1;
+  return html`<div class="screen">
+    <div class="top span"><span class="brand">Welcome to Znacht</span><span class="pill quiet">${step + 1} of ${steps.length}</span></div>
+    <h2 class="span">${steps[step]}</h2>
+    <div class="span" style="display:flex;flex-direction:column;gap:12px">${content}</div>
+    <div class="row span" style="justify-content:space-between">
+      ${step > 0 ? html`<button type="button" class="btn ghost" onClick=${() => setStep(step - 1)}>Back</button>` : html`<span></span>`}
+      ${last ? html`<button type="button" class="btn primary" onClick=${finish} disabled=${!canNext[step] || saving}>${saving ? "Saving…" : "Finish"}</button>` : html`<button type="button" class="btn primary" onClick=${() => setStep(step + 1)} disabled=${!canNext[step]}>Next</button>`}
+    </div>
+  </div>`;
 }
 
 // ---------- Connections -----------------------------------------------------------------
 function Connections({ status, household }) {
   const adapters = (status && status.adapters) || {};
+  const [checks, setChecks] = useState(null);
+  useEffect(() => { api("GET", "/api/connections").then(setChecks).catch(() => {}); }, []);
+  const problems = checks ? Object.values(checks).filter((c) => !c.ok && c.detail).map((c) => c.detail) : [];
   const card = (icon, title, sub, on) => html`<div class="conn"><div class="ico"><${Icon} name=${icon} /></div><div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px"><b style="font-size:15px">${title}</b><span class="muted" style="font-size:12px">${sub}</span></div><span class=${"dot" + (on ? "" : " off")} role="img" aria-label=${on ? "Connected" : "Not connected"}></span></div>`;
   const min = status && status.minimum_order;
   return html`
     <div class="screen">
       <div class="top span"><span class="brand">Connections</span></div>
       <p class="span">Where recipes come from, where the plan goes, where the food is bought. Each is a plug-in; the week does not care which.</p>
+      ${[...new Set(problems)].map((p) => html`<div class="banner bad span" role="alert"><span><b>${p}</b><br /><span class="small">Fix the account in Home Assistant: Settings, Devices & services, Znacht, Configure.</span></span></div>`)}
       <div style="display:flex;flex-direction:column;gap:8px"><h2>Cooking</h2>
         ${card("robot", "Thermomix · Cookidoo", adapters.recipes === "cookidoo" ? "recipes and My Week" : "not connected: recipes from the sample catalogue", adapters.recipes === "cookidoo")}
         ${card("week", "Home Assistant", "calendar, lists, tonight's dinner, this app", true)}
@@ -601,7 +721,10 @@ function App() {
       setStatus(s); setTl(t); setRuns(r); setError(null); setTick((n) => n + 1);
     } catch (e) { setError(e.message); }
   }, []);
-  useEffect(() => { api("GET", "/api/household").then(setHousehold).catch(() => {}); }, []);
+  const [setup, setSetup] = useState(null);
+  const loadHousehold = useCallback(() => { api("GET", "/api/household").then(setHousehold).catch(() => {}); }, []);
+  useEffect(loadHousehold, []);
+  useEffect(() => { api("GET", "/api/setup").then(setSetup).catch(() => setSetup({ needed: false })); }, []);
   useEffect(() => { reload(); }, [reload]);
 
   // while the engine works, poll; when it stops, say what came of it
@@ -634,11 +757,13 @@ function App() {
   }, []);
 
   let body;
+  // the first setup comes before anything that needs a household
+  if (setup && setup.needed) return html`<div class="shell"><${Welcome} adapters=${setup.adapters} toast=${toast} onDone=${() => { setSetup({ ...setup, needed: false }); loadHousehold(); reload(); go("#week"); }} />${msg ? html`<div class="toast" role="status">${msg}</div>` : null}</div>`;
   if (error && !tl) body = html`<div class="screen"><div class="empty span"><b>Can't reach the engine</b><span>${error}</span><button type="button" class="btn" onClick=${reload}>Try again</button></div></div>`;
-  else if (!tl || !status) body = html`<div class="screen"><div class="empty span">Loading…</div></div>`;
+  else if (!tl || !status || !setup) body = html`<div class="screen"><div class="empty span">Loading…</div></div>`;
   else if (route.name === "review" && route.id) body = html`<${Review} runId=${route.id} tick=${tick} reload=${reload} busy=${busy} toast=${toast} runs=${runs} />`;
   else if (route.name === "groceries") body = html`<${Groceries} runId=${route.id || status.shopping_run_id} tick=${tick} reload=${reload} busy=${busy} toast=${toast} runs=${runs} today=${tl.today} />`;
-  else if (route.name === "household") body = html`<${Household} household=${household} patch=${patchHousehold} toast=${toast} planner=${status.adapters && status.adapters.planner} />`;
+  else if (route.name === "household") body = html`<${Household} household=${household} patch=${patchHousehold} toast=${toast} planner=${status.adapters && status.adapters.planner} store=${status.adapters && status.adapters.store} />`;
   else if (route.name === "connections") body = html`<${Connections} status=${status} household=${household} />`;
   else body = html`<${Week} tl=${tl} status=${status} reload=${reload} busy=${busy} toast=${toast} />`;
 

@@ -1,6 +1,7 @@
 {
   "domain": "znacht",
   "name": "Znacht",
+  "after_dependencies": ["hassio"],
   "codeowners": ["@sbarkar"],
   "config_flow": true,
   "dependencies": [],

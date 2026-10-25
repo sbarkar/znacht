@@ -26,6 +26,7 @@ from znacht.services.pipeline import (
 )
 from znacht_engine.brief import WALK_ORDER, Brief, build_brief, lifetime, price_rows
 from znacht_engine.config import EngineSettings
+from znacht_engine.household_edit import EXAMPLE_HOUSEHOLD_ID, write_new_household
 from znacht_engine.repo import Repo
 from znacht_engine.timeline import (
     DEFAULT_DAYS,
@@ -192,6 +193,57 @@ class ZnachtService:
             "planner": getattr(self.adapters.planner, "name", "?"),
         }
 
+    # -- first setup and connections (ADR-0013) -----------------------------------------------
+    def setup_needed(self) -> bool:
+        """True while the household is still the shipped example (or missing)."""
+        path = self.settings.household_path
+        if not path.exists():
+            return True
+        try:
+            return load_household(path).id == EXAMPLE_HOUSEHOLD_ID
+        except ValueError:
+            return False  # a hand-written file with a mistake: the household fixes it, not a wizard
+
+    async def connections(self) -> dict[str, dict[str, Any]]:
+        """Each connection, whether it works now and why not. Cheap: no planning, no LLM call."""
+        names = self.adapter_names()
+        problems = self.adapters.problems
+        out: dict[str, dict[str, Any]] = {}
+        for role, key in (("recipes", "cookidoo"), ("store", "migros"), ("planner", "anthropic")):
+            name = names[role]
+            entry: dict[str, Any] = {"name": name, "ok": True, "detail": None}
+            if key in problems and name == key:
+                entry.update(ok=False, detail=problems[key])
+            elif role == "store" and name == "migros":
+                try:
+                    await self.adapters.store.lists()
+                except Exception as exc:
+                    entry.update(ok=False, detail=f"Migros login failed: {exc}")
+            out[role] = entry
+        out["sink"] = {
+            "name": names["sink"],
+            "ok": "cookidoo" not in problems or names["sink"] != "cookidoo",
+            "detail": problems.get("cookidoo") if names["sink"] == "cookidoo" else None,
+        }
+        return out
+
+    async def store_lists(self) -> list[dict[str, str]]:
+        """The store account's shopping lists, for picking the online and in-store list."""
+        lists = getattr(self.adapters.store, "lists", None)
+        if lists is None:
+            raise LookupError("this store has no lists")
+        return [{"id": ref.id, "name": ref.name} for ref in await lists()]
+
+    def setup(self, answers: dict[str, Any]) -> dict[str, Any]:
+        """Write a fresh household from the Welcome wizard; keep the example next to it."""
+        path = self.settings.household_path
+        previous = path.read_text(encoding="utf-8") if path.exists() else None
+        was_example = self.setup_needed()
+        write_new_household(path, answers)  # validates first; the old file stays on failure
+        if previous is not None and was_example:
+            path.with_name("household.example.yaml").write_text(previous, encoding="utf-8")
+        return self.household_view()
+
     def household_view(self) -> dict[str, Any]:
         h = self.household()
         return {
@@ -226,6 +278,10 @@ class ZnachtService:
             "delivery": {
                 "postcode": h.delivery.postcode,
                 "preferred_slot_id": h.delivery.preferred_slot_id,
+                "slots": [
+                    {"id": t.id, "weekday": t.weekday, "start": t.start, "end": t.end}
+                    for t in h.delivery.slot_templates
+                ],
             },
             "store_lists": {"online": h.store_lists.online, "in_store": h.store_lists.in_store}
             if h.store_lists

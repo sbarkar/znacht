@@ -99,23 +99,38 @@ order and payment paths before they leave the machine.
 
 ## Setup
 
-You need Home Assistant 2025.6 or newer and somewhere to run the engine.
+You need Home Assistant 2025.6 or newer. On Home Assistant OS everything happens in Home Assistant,
+with forms and taps; no file editor, no command line.
 
-### 1. Run the engine
+### 1. Install Znacht from HACS
 
-Pick one. All three run the same engine and keep everything in one data folder.
+1. HACS → ⋮ → Custom repositories → add `https://github.com/sbarkar/znacht` as type **Integration**.
+2. Find **Znacht** in HACS, download it, restart Home Assistant.
+3. Settings → Devices & services → Add integration → **Znacht** → **Run Znacht here in Home Assistant**.
+4. Enter your accounts. Each one is optional; leave it empty and that part runs on sample data, so you
+   can try Znacht first and add the accounts later under **Configure**.
+   - **Cookidoo**: email and password. The password is used once; after that a token is kept.
+   - **Migros**: email and password. Only if your account uses an authenticator app, also its setup
+     key (not the 6-digit code).
+   - **Claude**: an Anthropic API key, for more varied weeks and pantry by photo. Without one, the
+     built-in planner is used.
+5. Znacht installs and starts its add-on (the first time takes a few minutes) and checks each account.
+   A password that does not work comes back on its own field.
 
-- **Home Assistant OS add-on** (no other hardware, the simplest). In Home Assistant: Settings → Add-ons
-  → Add-on store → ⋮ → Repositories, add `https://github.com/sbarkar/znacht`, install **Znacht**, fill
-  in your accounts and start it. On first start it writes an example `household.yaml` to the add-on's
-  config folder: edit it and restart. The add-on makes its own API token and announces itself to Home
-  Assistant, and its sidebar entry is the app. Details in
-  [the add-on docs](https://github.com/sbarkar/znacht/blob/main/addon/znacht/DOCS.md).
-- **Proxmox LXC** (what the household that built it runs). One script creates a Debian container and installs the engine as
-  a systemd service: [deploy/lxc/README.md](https://github.com/sbarkar/znacht/blob/main/deploy/lxc/README.md).
+Then open **Znacht** in the sidebar. A short Welcome walks you through your household: who eats, how
+you cook, your delivery postcode and slot, and the two Migros lists to fill, picked from your account.
+
+### Already running the engine elsewhere?
+
+Choose **I already run the Znacht engine on another machine** in step 3 and enter its URL and API
+token. That is also the only choice on Home Assistant Container or Core, which have no add-ons. To run
+the engine yourself:
+
+- **Proxmox LXC** (what the household that built it runs). One script creates a Debian container and
+  installs the engine as a systemd service: [deploy/lxc/README.md](https://github.com/sbarkar/znacht/blob/main/deploy/lxc/README.md).
 - **Docker / Compose** (a NAS, any box). Copy [`deploy/.env.example`](https://github.com/sbarkar/znacht/blob/main/deploy/.env.example) to
   `deploy/.env` and fill it in. Seed the data volume with the example household once, then start the
-  engine; adjust the household afterwards in the app's Household screen:
+  engine:
 
   ```bash
   docker compose -f deploy/compose.yaml run --rm --no-deps znacht cp /app/household.example.yaml /data/household.yaml
@@ -124,35 +139,16 @@ Pick one. All three run the same engine and keep everything in one data folder.
 
   The image is `ghcr.io/sbarkar/znacht`.
 
-For the LXC or a container, check it is up: `curl http://<engine>:8787/healthz` answers
-`{"status":"ok",...}`.
+Check it is up with `curl http://<engine>:8787/healthz`. The app's Welcome then sets up the household the
+same way. The add-on on its own (without HACS) is described in
+[the add-on docs](https://github.com/sbarkar/znacht/blob/main/addon/znacht/DOCS.md).
 
-What the engine needs from you:
+> With an engine outside Home Assistant: if you open Home Assistant over HTTPS (Nabu Casa, a reverse
+> proxy), the sidebar app can only load an engine that is also on HTTPS: put the engine behind your proxy
+> (a Caddy snippet is in [`deploy/caddy/`](https://github.com/sbarkar/znacht/blob/main/deploy/caddy/Caddyfile.snippet))
+> and use that URL in the integration.
 
-- **An API token** (`ZNACHT_API_TOKEN`): any long random string. Home Assistant and the app present it
-  on every request. Without one the API is open to your whole LAN. The add-on makes one for you.
-- **Cookidoo**: email and password. The password is used once; after that a token file is kept.
-- **Migros**: email, password and the TOTP secret of your two-factor setup, used for the first login and
-  whenever the single sign-on expires. Only the session is stored.
-- **Anthropic API key** for the Claude planner (optional: `planner: rule_based` works without one, with
-  plainer weeks and no pantry-by-photo).
-- **Your household** in `household.yaml`: see [Your household](#your-household).
-
-### 2. Install the integration with HACS
-
-1. HACS → ⋮ → Custom repositories → add `https://github.com/sbarkar/znacht` as type **Integration**.
-2. Find **Znacht** in HACS, download it, restart Home Assistant.
-3. With the add-on: Settings → Devices & services shows **Znacht** as discovered; press Configure and
-   Submit. With the LXC or a container: Add integration → **Znacht**, then enter the engine URL
-   (`http://<engine>:8787`) and the API token.
-
-The entities appear, and **Znacht** shows up in the sidebar (with the add-on, as the add-on's entry).
-
-> With the LXC or a container: if you open Home Assistant over HTTPS (Nabu Casa, a reverse proxy), the
-> sidebar app can only load an engine that is also on HTTPS: put the engine behind your proxy (a Caddy snippet is in
-> [`deploy/caddy/`](https://github.com/sbarkar/znacht/blob/main/deploy/caddy/Caddyfile.snippet)) and use that URL in the integration.
-
-### 3. Notifications (optional)
+### Notifications (optional)
 
 Give the engine a Home Assistant long-lived access token (`ZNACHT_HA_URL`, `ZNACHT_HA_TOKEN`) and your
 phone's notify service without the `notify.` prefix (`ZNACHT_HA_NOTIFY=mobile_app_<your_phone>`). The
@@ -164,7 +160,7 @@ completed. Review opens the Brief. The Approve button fires a `mobile_app_notifi
 with action `ZNACHT_APPROVE` and does nothing by itself; Znacht fires `znacht_plan_ready` and
 `znacht_needs_input` events (with `run_id` and `url`) for your own automations.
 
-### 4. Plan your first week
+### Plan your first week
 
 Open Znacht from the sidebar and press **Plan the gaps** on the week you want, or call
 `znacht.plan_week`. When the plan is ready, Review, change what you like, Approve.
@@ -189,8 +185,9 @@ And show tonight's dinner on a dashboard with an entity card on `sensor.znacht_t
 
 ## Your household
 
-One YAML file describes who eats and how. The engine validates it on load; the app's Household
-screen edits it for you and keeps your comments. A full example with every option explained:
+One YAML file describes who eats and how. You never have to open it: the app's Welcome writes it the
+first time, and the Household screen edits it afterwards (people, rules, pantry, delivery slot, the
+Migros lists) and keeps your comments. For those who like files, the engine validates it on load. A full example with every option explained:
 [examples/household.example.yaml](https://github.com/sbarkar/znacht/blob/main/examples/household.example.yaml).
 
 ```yaml
