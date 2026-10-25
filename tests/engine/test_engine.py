@@ -282,7 +282,7 @@ def test_timeline_helpers_span_and_summary():
     ]
     assert summary(days, awaiting_run_id=13) == (
         "4 of 7 planned · 1 proposed (run 13 awaits approval) · online order Mon 19:00 covers "
-        "Tue–Wed · store run Mon · Thu–Fri no groceries · Sat–Sun nothing yet"
+        "Tue–Wed · store run Mon · Fri no groceries · Sat–Sun nothing yet"
     )
 
 
@@ -341,7 +341,8 @@ async def test_timeline_states_sources_and_coverage(
     # the golden week delivers Monday 19:00–21:00: Monday is a store run, Tue–Sun arrive
     assert by_date[mon.isoformat()]["groceries"]["coverage"] == "store_run"
     tue = by_date[(mon + timedelta(days=1)).isoformat()]["groceries"]
-    assert tue["coverage"] == "arriving" and tue["label"] == "arriving Mon 19:00"
+    # "arriving" until the slot has passed, "delivered" after (the label follows the real date)
+    assert tue["coverage"] == "arriving" and tue["label"].endswith(" Mon 19:00")
     assert tue["slot"].startswith(mon.isoformat())
     week = tl["weeks"][0]
     assert week["applied_run_id"] == run_id and week["awaiting_run_id"] is None
@@ -521,3 +522,124 @@ async def test_plan_the_gaps_locks_my_week_dinners(
     assert tue["groceries"]["coverage"] == "arriving" and fri["groceries"]["coverage"] == "arriving"
     assert by_date[mon.isoformat()]["dinner"]["source"] == run_id
     assert tue["run_id"] == run_id  # the swap sheet still acts on the run that covers it
+
+
+async def test_shopping_run_is_the_applied_week_not_the_newest_proposal(
+    client: httpx.AsyncClient, service: ZnachtService
+):
+    """Planning next week must not take away the list the household is shopping with."""
+    this, _ = await service.plan_week(GOLDEN_WEEK_START)
+    assert service.shopping_run_id(today=GOLDEN_WEEK_START) == this  # nothing applied: latest
+    await service.apply(this)
+    nxt, _ = await service.plan_week(GOLDEN_WEEK_START + timedelta(days=7))
+    assert service.shopping_run_id(today=GOLDEN_WEEK_START) == this
+    # a week later the applied week is behind us and the newest run is what's left
+    assert service.shopping_run_id(today=GOLDEN_WEEK_START + timedelta(days=7)) == nxt
+    assert "shopping_run_id" in (await client.get("/api/status")).json()
+
+
+async def test_ticks_and_free_text_follow_the_run_on_screen(
+    client: httpx.AsyncClient, service: ZnachtService
+):
+    first, result = await service.plan_week(GOLDEN_WEEK_START)
+    await service.plan_week(GOLDEN_WEEK_START + timedelta(days=7))  # now the latest run
+    uid = f"online:{result.shopping.online[0].product.id}"
+    r = await client.post(f"/api/lists/online/done?run_id={first}", json={"uid": uid, "done": True})
+    assert r.status_code == 200
+    r = await client.post(
+        f"/api/lists/in_store/items?run_id={first}", json={"summary": " cat food "}
+    )
+    assert r.status_code == 200
+    todo = (await client.get(f"/api/runs/{first}/view")).json()["todo"]
+    assert any(i["uid"] == uid and i["done"] for i in todo["online"])
+    assert any(i["uid"] == "text:cat food" for i in todo["in_store"])
+    assert (
+        await client.post("/api/lists/in_store/items", json={"summary": "  "})
+    ).status_code == 422
+    missing = await client.post(
+        "/api/lists/online/done?run_id=999", json={"uid": uid, "done": True}
+    )
+    assert missing.status_code == 404
+
+    # a move derives a new run; the shopping state comes along
+    need = result.shopping.online[0].need_name
+    moved = (
+        await client.post(f"/api/runs/{first}/move", json={"need": need, "to": "store"})
+    ).json()
+    todo = moved["todo"]
+    assert any(i["uid"] == "text:cat food" for i in todo["in_store"])
+
+
+async def test_store_lines_carry_their_aisle_and_failures_surface(
+    client: httpx.AsyncClient, service: ZnachtService
+):
+    run_id, _ = await service.plan_week(GOLDEN_WEEK_START)
+    view = (await client.get(f"/api/runs/{run_id}/view")).json()
+    assert view["in_store"] and all(line["aisle"] for line in view["in_store"])
+    service.repo.set("last_error", "Cookidoo said no")
+    assert (await client.get("/api/status")).json()["last_error"] == "Cookidoo said no"
+    await service.plan_week(GOLDEN_WEEK_START)
+    assert (await client.get("/api/status")).json()["last_error"] is None
+
+
+async def test_a_later_week_does_not_take_this_weeks_delivery_slot(service: ZnachtService):
+    """The fake store lists one slot, on the golden Monday; a plan for the week after must not
+    have its groceries delivered a week early."""
+    _, now = await service.plan_week(GOLDEN_WEEK_START)
+    assert now.shopping.slot is not None
+    later = GOLDEN_WEEK_START + timedelta(days=7)
+    _, result = await service.plan_week(later)
+    slot = result.shopping.slot
+    assert slot is None or slot.delivery_day >= later - timedelta(days=3)
+
+
+async def test_plan_week_takes_any_day_of_the_week(
+    client: httpx.AsyncClient, service: ZnachtService
+):
+    wednesday = GOLDEN_WEEK_START + timedelta(days=2)
+    r = await client.post("/api/plan_week", json={"week": wednesday.isoformat()})
+    assert r.status_code == 200
+    for _ in range(100):
+        await asyncio.sleep(0.02)
+        if not service.busy and service.repo.latest_run(service.household().id):
+            break
+    _, result = service.repo.latest_run(service.household().id) or (None, None)
+    assert result is not None and result.week.start == GOLDEN_WEEK_START
+    assert service.repo.get("last_error") is None
+
+
+async def test_app_edits_keep_spice_settings_and_remove_overlaid_pantry_items(
+    client: httpx.AsyncClient, settings, tmp_path
+):
+    """The app sends members back as it got them; a written mild_food must survive that, and
+    removing a pantry chip must remove it even when Home Assistant put it there."""
+    import shutil
+
+    target = tmp_path / "household.yaml"
+    shutil.copy(settings.household_path, target)
+    object.__setattr__(settings, "household_path", target)
+    members = (await client.get("/api/household")).json()["members"]
+    members[0]["mild_food"] = True
+    r = await client.patch("/api/household", json={"members": members})
+    members = r.json()["members"]
+    assert members[0]["mild_food"] is True
+    members[1]["dislikes"] = ["capers"]  # an unrelated edit, round-tripping the list
+    r = await client.patch("/api/household", json={"members": members})
+    assert r.json()["members"][0]["mild_food"] is True
+
+    await client.post("/api/pantry", json={"items": {"tahini": "250 g"}})
+    names = [p["name"] for p in (await client.get("/api/household")).json()["pantry"]]
+    assert "tahini" in names
+    r = await client.patch("/api/household", json={"pantry": {"tahini": "0"}})
+    assert "tahini" not in [p["name"] for p in r.json()["pantry"]]
+
+
+async def test_a_delivery_in_the_past_reads_delivered(service: ZnachtService):
+    from znacht_engine.timeline import coverage
+
+    _, result = await service.plan_week(GOLDEN_WEEK_START)
+    wed = GOLDEN_WEEK_START + timedelta(days=2)
+    kw = {"applied": result, "from_applied": True, "proposal": None, "list_members": {}}
+    assert coverage(wed, today=GOLDEN_WEEK_START, **kw)["label"] == "arriving Mon 19:00"
+    late = coverage(wed, today=wed, **kw)
+    assert late["coverage"] == "arriving" and late["label"] == "delivered Mon 19:00"

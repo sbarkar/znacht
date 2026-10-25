@@ -183,3 +183,5 @@ rejected); seasonal search terms for Migros; toddler-portion logic in needs expl
 - 2026-10-24: phases 1–7; live end-to-end; the app; LXC deployment and cut-over; HA reconfigure step;
   UniFi reservation. Details in `docs/evening-checklist.md` and the ADRs.
 - 2026-10-24, late: P0-1, the Week screen as a timeline (ADR-0011).
+- 2026-10-24, night: the app reviewed against the household's journeys (`docs/ux-journey-review.md`):
+  Tonight card, one proposal per week, a Review screen, Groceries for the week you shop.

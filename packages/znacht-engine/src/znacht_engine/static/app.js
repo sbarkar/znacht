@@ -1,5 +1,7 @@
-// Znacht app: one page, four screens, no build step. Preact + htm, vendored.
-import { html, render, useState, useEffect, useCallback } from "/app/static/vendor/htm-preact-standalone.module.js?v=1";
+// Znacht app: one page, four screens and a review, no build step. Preact + htm, vendored.
+// The screens follow the household's journeys (docs/ux-journey-review.md): glance at tonight,
+// plan the gaps, review and approve one proposal, shop the week you are in, adjust the house.
+import { html, render, useState, useEffect, useCallback, useRef } from "/app/static/vendor/htm-preact-standalone.module.js?v=1";
 
 // ---------- token and API --------------------------------------------------------------
 const params = new URLSearchParams(location.search);
@@ -25,13 +27,35 @@ async function api(method, path, body) {
 
 // ---------- small helpers --------------------------------------------------------------
 const chf = (v) => (v == null ? "" : `CHF ${Number(v).toFixed(2)}`);
-const shortDay = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase();
 const dayNum = (iso) => String(Number(iso.slice(8, 10)));
-const useHash = () => {
-  const [hash, setHash] = useState(location.hash || "#week");
-  useEffect(() => { const f = () => setHash(location.hash || "#week"); addEventListener("hashchange", f); return () => removeEventListener("hashchange", f); }, []);
-  return hash;
+const WD = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const parse = (iso) => new Date(iso.slice(0, 10) + "T12:00:00");
+const weekday = (iso) => WD[(parse(iso).getDay() + 6) % 7];
+const mondayOf = (iso) => { const d = parse(iso); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return isoDate(d); };
+const addDays = (iso, n) => { const d = parse(iso); d.setDate(d.getDate() + n); return isoDate(d); };
+function weekName(week, today) {
+  const t = mondayOf(today);
+  if (week === t) return "This week";
+  if (week === addDays(t, 7)) return "Next week";
+  if (week === addDays(t, -7)) return "Last week";
+  return `Week of ${parse(week).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`;
+}
+const dateRange = (week) => { const f = (iso) => parse(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" }); return `${f(week)} – ${f(addDays(week, 6))}`; };
+const STATUS_WORD = { needs_approval: "proposal", needs_input: "needs input", applied: "sent", reverted: "undone" };
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many || one + "s"}`;
+
+// routes: #week, #groceries, #groceries/12, #review/12, #household, #connections
+const useRoute = () => {
+  const read = () => {
+    const [name, arg] = (location.hash || "#week").slice(1).split("/");
+    return { name: name || "week", id: arg ? Number(arg) : null };
+  };
+  const [route, setRoute] = useState(read);
+  useEffect(() => { const f = () => { setRoute(read()); window.scrollTo(0, 0); }; addEventListener("hashchange", f); return () => removeEventListener("hashchange", f); }, []);
+  return route;
 };
+const go = (hash) => { if (location.hash !== hash) location.hash = hash; };
 
 const Icon = ({ name }) => {
   const paths = {
@@ -43,73 +67,141 @@ const Icon = ({ name }) => {
     move: html`<path d="M7 7h11M14 3l4 4-4 4M17 17H6M10 13l-4 4 4 4" />`,
     check: html`<path d="M5 12l5 5L20 7" />`,
     close: html`<path d="M6 6l12 12M18 6L6 18" />`,
+    back: html`<path d="M15 5l-7 7 7 7" />`,
     robot: html`<path d="M7 4h10l1 5H6z" /><rect x="5" y="9" width="14" height="11" rx="2" /><path d="M12 13v3" />`,
     spark: html`<path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z" />`,
   };
   return html`<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths[name]}</svg>`;
 };
 
-const Nav = ({ hash }) => html`
+const Nav = ({ route }) => {
+  const section = route.name === "review" ? "week" : route.name;
+  return html`
   <nav class="nav">
-    ${[["#week", "week", "Week"], ["#groceries", "groceries", "Groceries"], ["#household", "household", "Household"], ["#connections", "connections", "Connect"]].map(
-      ([href, icon, label]) => html`<a href=${href} class=${hash === href ? "on" : ""} aria-label=${label}><${Icon} name=${icon} />${label}</a>`
+    ${[["week", "week", "Week"], ["groceries", "groceries", "Groceries"], ["household", "household", "Household"], ["connections", "connections", "Connect"]].map(
+      ([name, icon, label]) => html`<a href=${"#" + name} class=${section === name ? "on" : ""} aria-current=${section === name ? "page" : null}><${Icon} name=${icon} />${label}</a>`
     )}
   </nav>`;
+};
 
-// ---------- Week: a rolling timeline. My Week is the truth, runs are proposals (ADR-0011) ----
-const DAYS = 14;
-const SOURCE = (card) => (card.source === "manual" ? "yours" : `Znacht run ${card.source}`);
-const BADGE = (g) => (g.coverage === "none" ? "no groceries" : g.label);
+const Back = ({ href, label }) => html`<a class="back" href=${href}><${Icon} name="back" />${label}</a>`;
+const Badge = ({ g }) => html`<span class=${"badge g-" + g.coverage}>${g.coverage === "none" ? "no groceries yet" : g.label}</span>`;
 
-function DayRow({ d, today, onOpen, onApprove }) {
-  const card = d.dinner || d.proposal;
-  const cls = `day st-${d.state}${d.date === today ? " today" : ""}${d.dinner && d.dinner.source === "manual" ? " manual" : ""}`;
-  const tappable = d.state !== "empty";
-  const open = () => tappable && onOpen(d);
-  return html`
-    <div class=${cls} role=${tappable ? "button" : null} tabindex=${tappable ? 0 : null} onClick=${open} onKeyDown=${(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }} aria-label=${`${d.weekday} ${dayNum(d.date)}: ${card ? card.title : "nothing planned"}`}>
-      <div class="date"><small>${d.weekday.toUpperCase()}</small><b>${dayNum(d.date)}</b></div>
-      <div class="body">
-        ${d.state === "empty" ? html`<span class="title muted">${d.also.length ? "No dinner yet" : "Nothing yet"}</span>${d.also.length ? html`<span class="meta">in My Week: ${d.also.map((a) => a.title).join(", ")}</span>` : null}` :
-          d.state === "proposed" ? html`<span class="title">${card.title}</span><span class="meta">proposed by run ${d.proposal.source} · not in My Week yet</span>` :
-          html`<span class="title">${card.title}</span>
-               <span class="meta">${SOURCE(d.dinner)}${d.dinner.minutes ? ` · ${d.dinner.minutes} min` : ""}</span>
-               ${d.also.length ? html`<span class="meta">also ${d.also.map((a) => a.title).join(", ")}</span>` : null}
-               ${d.proposal ? html`<span class="meta proposal">run ${d.proposal.source} proposes ${d.proposal.title}</span>` : null}`}
-      </div>
-      ${d.state !== "empty" && d.state !== "past" ? html`<span class=${"badge g-" + d.groceries.coverage}>${BADGE(d.groceries)}</span>` : null}
-      ${d.locked ? html`<span class="lock" title="Locked"><${Icon} name="lock" /></span>` : null}
-      ${d.proposal && d.state !== "past" ? html`<button type="button" class="approve" onClick=${(e) => { e.stopPropagation(); onApprove(d.proposal.source); }}>Approve</button>` : null}
-    </div>`;
-}
-
-function Timeline({ tl, reload, busy, toast, selectRun }) {
-  const [open, setOpen] = useState(null);
+// ---------- the day sheet: one dinner, its alternatives, lock ------------------------------
+// Used by the Week timeline and the Review. `runId` is the run the swap acts on; a swap
+// always makes a new run (a proposal) and hands its id to onSwapped.
+function DaySheet({ date, title, runId, locked, children, onClose, onSwapped, onLocked, toast, badge, busy }) {
+  // a swap re-plans; the engine refuses it while busy, so the buttons say so first
   const [alts, setAlts] = useState(null);
   const [working, setWorking] = useState(false);
-  const day = open ? tl.days.find((d) => d.date === open) || null : null;
-  const card = day ? (day.dinner || day.proposal) : null;
-
+  const closeBtn = useRef(null);
+  useEffect(() => {
+    // focus moves into the sheet and back to where it came from when it closes
+    const before = document.activeElement;
+    if (closeBtn.current) closeBtn.current.focus();
+    return () => { if (before && before.focus) before.focus(); };
+  }, []);
   useEffect(() => {
     setAlts(null);
-    if (!day || !day.run_id) return;
-    api("GET", `/api/runs/${day.run_id}/alternatives?day=${day.date}`).then(setAlts).catch((e) => toast(e.message));
-  }, [open, day && day.run_id]);
+    if (!runId) return;
+    let live = true;
+    api("GET", `/api/runs/${runId}/alternatives?day=${date}`).then((a) => live && setAlts(a)).catch((e) => { if (live) { setAlts([]); toast(e.message); } });
+    return () => { live = false; };
+  }, [runId, date]);
+  useEffect(() => {
+    const esc = (e) => { if (e.key === "Escape") onClose(); };
+    addEventListener("keydown", esc); return () => removeEventListener("keydown", esc);
+  }, [onClose]);
 
   const swap = async (recipe_id) => {
     setWorking(true);
-    try { await api("POST", `/api/runs/${day.run_id}/swap`, { date: day.date, recipe_id }); toast("Swapped as a proposal. Approve it to change My Week."); setOpen(null); await reload(); }
+    try { const v = await api("POST", `/api/runs/${runId}/swap`, { date, recipe_id }); onSwapped(v.run_id); }
     catch (e) { toast(e.message); } finally { setWorking(false); }
   };
   const toggleLock = async () => {
-    try { await api("POST", `/api/runs/${day.run_id}/lock`, { date: day.date, locked: !day.locked }); await reload(); } catch (e) { toast(e.message); }
+    setWorking(true);
+    try { await api("POST", `/api/runs/${runId}/lock`, { date, locked: !locked }); toast(locked ? "Unlocked: plan again may change it." : "Locked: plan again keeps it."); onLocked(); }
+    catch (e) { toast(e.message); } finally { setWorking(false); }
   };
-  const approve = (runId) => { selectRun(runId); setOpen(null); location.hash = "#groceries"; };
+  return html`
+    <div class="sheet-back" onClick=${(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div class="sheet" role="dialog" aria-modal="true" aria-label=${`${weekday(date)} ${dayNum(date)}`}>
+        <div class="handle"></div>
+        <div class="sheet-head">
+          <div class="sheet-title"><small>${weekday(date)} ${dayNum(date)}</small><b>${title || "Nothing yet"}</b></div>
+          <button type="button" class="btn icon" aria-label="Close" ref=${closeBtn} onClick=${onClose}><${Icon} name="close" /></button>
+        </div>
+        ${badge ? html`<div>${badge}</div>` : null}
+        ${children}
+        ${runId ? (alts == null ? html`<p class="muted">Finding alternatives…</p>` : alts.length === 0 ? html`<p class="muted">Nothing else in this plan's pool fits here.</p>` : html`
+          <div class="row between"><h2>Swap for</h2><button type="button" class="link" onClick=${() => swap(alts[Math.floor(Math.random() * alts.length)].recipe_id)} disabled=${working || !!busy}>Surprise me</button></div>
+          ${alts.map((a, j) => html`
+            <button type="button" class=${"alt" + (j === 0 ? " best" : "")} onClick=${() => swap(a.recipe_id)} disabled=${working || !!busy}>
+              <span>${a.title}</span>
+              <span class="meta">${a.minutes ? `${a.minutes} min · ` : ""}${a.tags.map((t) => t.replace("_", " ")).join(", ")}${a.keeps_rules ? "" : html` · <span class="warn-text">bends a weekly rule</span>`}</span>
+            </button>`)}
+          <p class="muted small">A swap is a proposal: My Week changes only when you approve it.</p>`) : null}
+        ${runId ? html`<div class="row"><button type="button" class=${"btn" + (locked ? " on" : "")} onClick=${toggleLock} disabled=${working}><${Icon} name="lock" />${locked ? "Locked · unlock" : "Lock this dinner"}</button></div>` : null}
+      </div>
+    </div>`;
+}
+
+// ---------- Week: tonight first, then a rolling timeline (ADR-0011) -----------------------
+const DAYS = 14;
+const SOURCE = (card) => (card.source === "manual" ? "yours in My Week" : `sent by Znacht`);
+
+function DayRow({ d, today, onOpen }) {
+  const card = d.dinner || d.proposal;
+  const also = d.also || [];
+  const cls = `day st-${d.state}${d.date === today ? " today" : ""}${d.dinner && d.dinner.source === "manual" ? " manual" : ""}`;
+  const tappable = d.state !== "empty";
+  const open = () => tappable && onOpen(d);
+  const label = `${d.weekday} ${dayNum(d.date)}: ${card ? card.title : "nothing planned"}${d.state === "proposed" ? ", proposed" : ""}`;
+  return html`
+    <div class=${cls} role=${tappable ? "button" : null} tabindex=${tappable ? 0 : null} onClick=${open} onKeyDown=${(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }} aria-label=${label}>
+      <div class="date"><small>${d.weekday.toUpperCase()}</small><b>${dayNum(d.date)}</b></div>
+      <div class="body">
+        ${d.state === "empty" ? html`<span class="title muted">${also.length ? "No dinner yet" : "Nothing yet"}</span>${also.length ? html`<span class="meta">in My Week: ${also.map((a) => a.title).join(", ")}</span>` : null}` :
+          d.state === "proposed" ? html`<span class="title">${card.title}</span><span class="meta">proposal · not in My Week yet</span>` :
+          html`<span class="title">${card.title}</span>
+               <span class="meta">${d.dinner.minutes ? `${d.dinner.minutes} min · ` : ""}${SOURCE(d.dinner)}</span>
+               ${also.length ? html`<span class="meta">also ${also.map((a) => a.title).join(", ")}</span>` : null}
+               ${d.proposal ? html`<span class="meta proposal">proposal: ${d.proposal.title}</span>` : null}
+               ${d.state !== "past" ? html`<span><${Badge} g=${d.groceries} /></span>` : null}`}
+      </div>
+      ${d.locked ? html`<span class="lock" title="Locked"><${Icon} name="lock" /></span>` : null}
+    </div>`;
+}
+
+function Tonight({ tl, onOpen }) {
+  const d = tl.days.find((x) => x.date === tl.today);
+  if (!d) return null;
+  const next = tl.days.find((x) => x.date === addDays(tl.today, 1));
+  const card = d.dinner || d.proposal;
+  const nextCard = next && (next.dinner || next.proposal);
+  return html`
+    <button type="button" class=${"tonight span st-" + d.state} onClick=${() => card && onOpen(d)} disabled=${!card} aria-label=${`Tonight: ${card ? card.title : "nothing planned"}`}>
+      <span class="eyebrow">Tonight · ${d.weekday} ${dayNum(d.date)}</span>
+      <span class="dish">${card ? card.title : "Nothing planned"}</span>
+      <span class="meta">
+        ${d.dinner ? html`${d.dinner.minutes ? `${d.dinner.minutes} min · ` : ""}${SOURCE(d.dinner)} <${Badge} g=${d.groceries} />` :
+          d.proposal ? "proposal · not in My Week yet" : "Cook from the pantry, or plan the gaps below."}
+      </span>
+      ${next ? html`<span class="tomorrow">Tomorrow: <b>${nextCard ? nextCard.title : "nothing yet"}</b>${next.state === "proposed" ? " (proposal)" : ""}</span>` : null}
+    </button>`;
+}
+
+function Week({ tl, status, reload, busy, toast }) {
+  const [open, setOpen] = useState(null);
+  const [hideErr, setHideErr] = useState(null);
+  const day = open ? tl.days.find((d) => d.date === open) || null : null;
+  const card = day ? (day.dinner || day.proposal) : null;
+
   const planGaps = async (w) => {
     const kept = w.locked_dates.length;
     try {
       await api("POST", "/api/plan_week", { week: w.week, locked_dates: w.locked_dates });
-      toast(`Planning the gaps for ${w.label.toLowerCase()}${kept ? `, keeping ${kept} dinner${kept === 1 ? "" : "s"} in My Week` : ""}…`);
+      toast(`Planning the gaps for ${w.label.toLowerCase()}${kept ? `, keeping your ${plural(kept, "dinner")}` : ""}…`);
       await reload();
     } catch (e) { toast(e.message); }
   };
@@ -117,144 +209,259 @@ function Timeline({ tl, reload, busy, toast, selectRun }) {
   const upcoming = tl.days.filter((d) => d.state !== "past");
   const planned = upcoming.filter((d) => d.dinner).length;
   const empty = upcoming.filter((d) => d.state === "empty").length;
-  const proposed = upcoming.filter((d) => d.state === "proposed").length;
   const weeks = tl.weeks.map((w) => ({ ...w, days: tl.days.filter((d) => d.week === w.week) }));
+  const firstGap = weeks.find((w) => w.days.some((d) => d.state === "empty") && !w.awaiting_run_id);
+  const err = status && status.last_error && !busy && hideErr !== status.last_error ? status.last_error : null;
+  const errLine = err ? err.split("\n")[0].slice(0, 160) : null;
 
   return html`
     <div class="screen">
       <div class="top span">
         <span class="brand">Znacht</span>
-        <span class="pill quiet">next ${tl.horizon} days</span>
+        <span class="pills">
+          <span class=${"pill" + (planned === upcoming.length ? " ok" : "")}>${planned}/${upcoming.length} planned</span>
+          ${empty ? html`<span class="pill warn">${empty} empty</span>` : null}
+        </span>
       </div>
-      <div class="pills span">
-        <span class=${"pill" + (planned === upcoming.length ? " ok" : "")}>${planned} of ${upcoming.length} days planned</span>
-        ${empty ? html`<span class="pill warn">${empty} empty</span>` : html`<span class="pill ok">no gaps</span>`}
-        ${proposed ? html`<span class="pill">${proposed} proposed</span>` : null}
-        ${busy ? html`<span class="pill quiet">${busy}…</span>` : null}
-      </div>
-      ${weeks.map((w) => html`
+      ${busy ? html`<div class="banner span" role="status"><span class="spinner" aria-hidden="true"></span><span><b>Znacht is ${busy}…</b><br /><span class="muted small">This takes up to a minute. The proposal appears here when it is ready.</span></span></div>` : null}
+      ${err ? html`<div class="banner bad span" role="alert"><span><b>The last plan did not finish.</b><br /><span class="small">${errLine}</span></span><button type="button" class="btn icon" aria-label="Dismiss" onClick=${() => setHideErr(err)}><${Icon} name="close" /></button></div>` : null}
+      <${Tonight} tl=${tl} onOpen=${(x) => setOpen(x.date)} />
+      ${weeks.map((w) => {
+        const proposedHere = w.days.filter((d) => d.proposal && d.state !== "past").length;
+        const gaps = w.days.some((d) => d.state === "empty");
+        return html`
         <section class="wk span" aria-label=${w.label}>
-          <div class="wk-head"><h2>${w.label}</h2><span class="sum">${w.summary}</span></div>
+          <div class="wk-head"><div class="row between"><h2>${w.label}</h2>${w.applied_run_id ? html`<a class="small" href=${`#review/${w.applied_run_id}`}>Sent plan ›</a>` : null}</div><span class="sum">${w.summary}</span></div>
           ${w.my_week_ok ? null : html`<div class="card dashed"><span class="warn-text">My Week could not be read just now; showing what Znacht last sent.</span></div>`}
-          ${w.days.map((d) => html`<${DayRow} key=${d.date} d=${d} today=${tl.today} onOpen=${(x) => setOpen(x.date)} onApprove=${approve} />`)}
-          <div class="row">
-            ${w.days.some((d) => d.state === "empty") ? html`<button type="button" class="btn primary" onClick=${() => planGaps(w)} disabled=${!!busy}>Plan the gaps${w.locked_dates.length ? ` · keeps ${w.locked_dates.length} in My Week` : ""}</button>` : null}
-            ${w.awaiting_run_id ? html`<button type="button" class="btn" onClick=${() => approve(w.awaiting_run_id)}>${w.awaiting_status === "needs_input" ? `Run ${w.awaiting_run_id} needs input` : `Review run ${w.awaiting_run_id}`}</button>` : null}
-          </div>
-        </section>`)}
-      <p class="span muted" style="font-size:12px">Dinners come from Cookidoo My Week. Znacht only proposes; nothing changes there until you approve, and every approval shows what it removes first.</p>
+          ${w.awaiting_run_id ? html`
+            <div class="proposal-banner">
+              <div><b>${w.awaiting_status === "needs_input" ? "A plan needs your input" : `Znacht proposes ${plural(proposedHere, "dinner")}`}</b>
+                <span class="muted small">${w.awaiting_status === "needs_input" ? "It could not keep every rule. Have a look." : "Nothing changes in My Week or Migros until you approve."}</span></div>
+              <a class="btn primary" href=${`#review/${w.awaiting_run_id}`}>${w.awaiting_status === "needs_input" ? "Have a look" : "Review"}</a>
+            </div>` : null}
+          ${w.days.map((d) => html`<${DayRow} key=${d.date} d=${d} today=${tl.today} onOpen=${(x) => setOpen(x.date)} />`)}
+          ${gaps ? html`<button type="button" class=${"btn wide" + (w === firstGap ? " primary" : "")} onClick=${() => planGaps(w)} disabled=${!!busy}>
+            ${w.awaiting_run_id ? "Plan the gaps again" : "Plan the gaps"}${w.locked_dates.length ? html` <span class="sub">keeps your ${plural(w.locked_dates.length, "dinner")}</span>` : null}</button>` : null}
+        </section>`;
+      })}
+      <p class="span muted small">Dinners come from Cookidoo My Week. Znacht only proposes; nothing changes there until you approve, and every approval shows what it removes first.</p>
       ${day ? html`
-        <div class="sheet-back" onClick=${(e) => { if (e.target === e.currentTarget) setOpen(null); }}>
-          <div class="sheet" role="dialog" aria-label=${`${day.weekday} ${dayNum(day.date)}`}>
-            <div class="handle"></div>
-            <div class="sheet-head"><b>${day.weekday} ${dayNum(day.date)} · ${card ? card.title : "nothing yet"}</b><span class=${"badge g-" + day.groceries.coverage}>${BADGE(day.groceries)}</span></div>
-            ${day.dinner ? html`<p class="muted" style="font-size:13px">${day.dinner.source === "manual" ? "This dinner is yours in My Week. Znacht keeps it when it plans the gaps; change it in Cookidoo or swap it below once a run proposes for this day." : `Sent to My Week by Znacht run ${day.dinner.source}.`}${day.dinner.note ? ` ${day.dinner.note}` : ""}</p>` : null}
-            ${day.proposal ? html`<div class="swap"><b>Run ${day.proposal.source} proposes</b> ${day.proposal.title}<div class="meta">${day.dinner ? "replaces the dinner above when approved" : "not in My Week until approved"}</div></div>` : null}
-            ${card && card.url ? html`<a href=${card.url} target="_blank" rel="noopener" style="font-size:13px">Open recipe</a>` : null}
-            ${day.also.length ? html`<div style="display:flex;flex-direction:column;gap:6px"><h2>Also in My Week that day</h2><div class="chips">${day.also.map((a) => html`<span class="chip quiet">${a.title}${a.breakfast ? " · breakfast" : ""}</span>`)}</div></div>` : null}
-            ${day.run_id ? (alts == null ? html`<p class="muted">Finding alternatives…</p>` : alts.length === 0 ? html`<p class="muted">Nothing else in this run's pool fits here.</p>` : html`<h2>Swap for</h2>${alts.map((a, j) => html`
-              <button type="button" class=${"alt" + (j === 0 ? " best" : "")} onClick=${() => swap(a.recipe_id)} disabled=${working}>
-                <span>${a.title}</span>
-                <span class="meta">${a.minutes ? `${a.minutes} min · ` : ""}${a.tags.map((t) => t.replace("_", " ")).join(", ")}${a.keeps_rules ? "" : " · bends a weekly count"}</span>
-              </button>`)}`) : null}
-            <div class="row">
-              ${day.proposal || day.state === "proposed" ? html`<button type="button" class="btn primary" onClick=${() => approve((day.proposal || day.dinner).source)}>Review and approve</button>` : null}
-              ${day.run_id && alts && alts.length ? html`<button type="button" class="btn" onClick=${() => swap(alts[Math.floor(Math.random() * alts.length)].recipe_id)} disabled=${working}>Surprise me</button>` : null}
-              ${day.run_id ? html`<button type="button" class="btn" onClick=${toggleLock}>${day.locked ? "Unlock" : "Lock"}</button>` : null}
-              <button type="button" class="btn icon" aria-label="Close" onClick=${() => setOpen(null)}><${Icon} name="close" /></button>
-            </div>
-          </div>
-        </div>` : null}
+        <${DaySheet} date=${day.date} title=${card && card.title} runId=${day.run_id} locked=${day.locked} toast=${toast} busy=${busy}
+          badge=${day.dinner && day.state !== "past" ? html`<${Badge} g=${day.groceries} />` : null}
+          onClose=${() => setOpen(null)}
+          onSwapped=${async () => { setOpen(null); toast("Swapped. It is a proposal until you approve it."); await reload(); }}
+          onLocked=${reload}>
+          ${day.dinner ? html`<p class="muted small">${day.dinner.source === "manual" ? "You put this in My Week. Znacht keeps it when it plans the gaps." : "Znacht put this in My Week."}${day.dinner.note ? ` ${day.dinner.note}` : ""}</p>` : null}
+          ${day.proposal ? html`<div class="swap"><b>Proposal</b> ${day.proposal.title}<div class="meta">${day.dinner ? "replaces the dinner above when approved" : "not in My Week until approved"}</div></div>` : null}
+          ${card && card.url ? html`<a href=${card.url} target="_blank" rel="noopener" class="small">Open the recipe</a>` : null}
+          ${(day.also || []).length ? html`<div class="stack"><h2>Also in My Week that day</h2><div class="chips">${day.also.map((a) => html`<span class="chip quiet">${a.title}${a.breakfast ? " · breakfast" : ""}</span>`)}</div></div>` : null}
+          ${day.proposal ? html`<a class="btn primary" href=${`#review/${day.proposal.source}`}>Review the proposal</a>` : null}
+          ${!day.run_id && day.dinner ? html`<p class="muted small">To change it, edit My Week in Cookidoo or plan this week again.</p>` : null}
+        </${DaySheet}>` : null}
     </div>`;
 }
 
-// ---------- Groceries -------------------------------------------------------------------
-function Groceries({ view, reload, busy, toast, pinned, selectRun }) {
-  const [tab, setTab] = useState("online");
-  const [text, setText] = useState("");
-  const m = view.money;
+// ---------- Review: one run, its dinners, its money, one Approve ---------------------------
+function useRunView(runId, tick) {
+  const [view, setView] = useState(null);
+  const [err, setErr] = useState(null);
+  useEffect(() => {
+    if (!runId) { setView(null); return; }
+    let live = true;
+    setErr(null);
+    api("GET", `/api/runs/${runId}/view`).then((v) => { if (live) { setView(v); setErr(null); } }).catch((e) => live && setErr(e.message));
+    return () => { live = false; };
+  }, [runId, tick]);
+  return [view && view.run_id === runId ? view : null, err];
+}
+
+function Basket({ m }) {
   const total = Number(m.online_subtotal), min = Number(m.minimum_order);
   const pct = min > 0 ? Math.min(100, Math.round((total / min) * 100)) : 100;
+  return html`
+    <div class="card span">
+      <div class="row between small"><span class="muted">Online basket</span><b>${chf(total)} <span class="muted" style="font-weight:400">of ${chf(min)} minimum</span></b></div>
+      <div class="bar" role="progressbar" aria-valuenow=${pct} aria-valuemin="0" aria-valuemax="100" aria-label="Online basket towards the minimum"><div style=${`width:${pct}%;background:${m.meets_minimum ? "var(--ok)" : "var(--accent)"}`}></div></div>
+      <span class=${(m.meets_minimum ? "ok-text" : "warn-text") + " small"} style="font-weight:600">${m.meets_minimum ? `Minimum met${Number(m.deposit) > 0 ? ` · plus ${chf(m.deposit)} box deposit for frozen items` : ""}` : `${chf(m.shortfall)} short: move something from the store run, or add what you need`}</span>
+    </div>`;
+}
+
+function Review({ runId, tick, reload, busy, toast, runs }) {
+  const [view, err] = useRunView(runId, tick);
+  const [open, setOpen] = useState(null);
+  const [working, setWorking] = useState(false);
+  if (err && !view) return html`<div class="screen"><${Back} href="#week" label="Week" /><div class="empty span"><b>Can't open this plan</b><span>${err}</span></div></div>`;
+  if (!view) return html`<div class="screen"><${Back} href="#week" label="Week" /><div class="empty span">Loading the plan…</div></div>`;
+
+  const newer = (runs || []).find((r) => r.week === view.week && r.id > view.run_id);
+  const d = open ? view.dinners.find((x) => x.date === open) : null;
+  const m = view.money;
+  const proposal = view.status === "needs_approval" || view.status === "needs_input";
+
+  const approve = async () => {
+    if (!confirm(`Send ${plural(view.dinners.length, "dinner")} to My Week and the groceries to your Migros lists?${view.plan_removes.length ? `\n\nThis removes ${plural(view.plan_removes.length, "dinner")} already in My Week.` : ""}\n\nNothing is ordered or paid.`)) return;
+    setWorking(true);
+    try { await api("POST", `/api/apply?run_id=${view.run_id}`); toast("Sent to My Week and Migros. Finish the order when you're ready."); await reload(); }
+    catch (e) { toast(e.message); } finally { setWorking(false); }
+  };
+  const revert = async () => {
+    if (!confirm("Undo this plan? Its dinners leave My Week and its items leave both Migros lists.")) return;
+    setWorking(true);
+    try { await api("POST", `/api/runs/${view.run_id}/revert`); toast("Undone."); await reload(); }
+    catch (e) { toast(e.message); } finally { setWorking(false); }
+  };
+  const replan = async () => {
+    setWorking(true);
+    try { await api("POST", `/api/runs/${view.run_id}/replan`); toast("Planning again, keeping the locked dinners…"); go("#week"); await reload(); }
+    catch (e) { toast(e.message); } finally { setWorking(false); }
+  };
+
+  return html`
+    <div class="screen with-bar">
+      <div class="span"><${Back} href="#week" label="Week" /></div>
+      <div class="top span">
+        <div class="stack"><span class="brand">${weekName(view.week, isoDate(new Date()))}</span><span class="muted small">${dateRange(view.week)}${view.slot ? ` · delivery ${view.slot}` : ""}</span></div>
+        <span class=${"pill" + (view.status === "applied" ? " ok" : view.status === "needs_input" ? " warn" : "")}>${STATUS_WORD[view.status] || view.status}</span>
+      </div>
+      ${newer && proposal ? html`<div class="banner span"><span>There is a newer plan for this week.</span><a class="btn" href=${`#review/${newer.id}`}>Open it</a></div>` : null}
+      ${view.chef_note && view.theme !== "rule-based" ? html`<div class="span stack"><b>${view.theme}</b><p class="small">${view.chef_note}</p></div>` : null}
+      ${view.violations.length ? html`<div class="card dashed span"><h2>Needs your input</h2>${view.violations.map((v) => html`<div class="warn-text small">${v.replace(/^\[[^\]]+\]\s*/, "")}</div>`)}<p class="muted small">Swap a dinner below, change a rule on Household, or plan again.</p></div>` : null}
+      ${view.plan_removes.length && proposal ? html`
+        <div class="card dashed span">
+          <h2>Approving removes from My Week</h2>
+          ${view.plan_removes.map((r) => html`<div class="warn-text small">${r}</div>`)}
+        </div>` : null}
+      <div class="card span">
+        <div class="row between"><h2>${plural(view.dinners.length, "dinner")}</h2>${proposal ? html`<span class="muted small">tap one to swap or lock it</span>` : null}</div>
+        ${view.dinners.map((x) => html`
+          <button type="button" class="dish-row" onClick=${() => setOpen(x.date)} disabled=${!proposal} aria-label=${`${x.weekday} ${dayNum(x.date)}: ${x.title}`}>
+            <span class="date"><small>${x.weekday.slice(0, 3).toUpperCase()}</small><b>${dayNum(x.date)}</b></span>
+            <span class="body"><span class="title">${x.title}</span>
+              <span class="meta">${[x.minutes ? `${x.minutes} min` : null, x.cost_per_person ? `${chf(x.cost_per_person)} p.p.` : null, x.in_store_day ? "before the delivery: store run" : null].filter(Boolean).join(" · ")}</span></span>
+            ${x.locked ? html`<span class="lock" title="Locked"><${Icon} name="lock" /></span>` : null}
+          </button>`)}
+      </div>
+      ${view.status !== "needs_input" ? html`<${Basket} m=${m} />
+      <a class="card span link-card" href=${`#groceries/${view.run_id}`}>
+        <span><b>Groceries</b><br /><span class="muted small">${view.online.length} online · ${view.in_store.length + view.free_text.length} on the store run (${chf(m.in_store_total)})${Number(m.savings) > 0 ? ` · saves ${chf(m.savings)}` : ""}</span></span>
+        <span aria-hidden="true" class="chev">›</span>
+      </a>` : null}
+      ${view.swaps.length ? html`<div class="card span"><h2>Product swaps and flags</h2>${view.swaps.map((s) => html`<div class=${"swap " + s.kind}><b>${s.need}</b> → ${s.chosen}${Number(s.delta) ? html` <span class=${s.kind === "switch" ? "ok-text" : "warn-text"}>(${Number(s.delta) < 0 ? "−" : "+"}${Math.abs(Number(s.delta)).toFixed(2)})</span>` : null}<div class="meta">${s.reason}</div></div>`)}</div>` : null}
+      ${view.pantry_check.length ? html`<div class="card span"><h2>Check the pantry</h2><p class="small">The recipes assume you have these; nothing is bought.</p><div class="chips">${view.pantry_check.map((p) => html`<span class="chip quiet">${p}</span>`)}</div></div>` : null}
+      <div class="actionbar">
+        ${view.status === "needs_approval" ? html`<button type="button" class="btn primary" onClick=${approve} disabled=${working || !!busy}>${working ? "Sending…" : "Approve and send"}</button>` : null}
+        ${view.status === "needs_input" ? html`<button type="button" class="btn primary" onClick=${replan} disabled=${working || !!busy}>Plan again</button>` : null}
+        ${view.status === "applied" ? html`
+          ${view.checkout_url ? html`<a class="btn primary" href=${view.checkout_url} target="_blank" rel="noopener">Finish the order in Migros</a>` : html`<a class="btn primary" href=${`#groceries/${view.run_id}`}>Shopping list</a>`}
+          <button type="button" class="btn ghost" onClick=${revert} disabled=${working || !!busy}>Undo</button>` : null}
+        ${view.status === "reverted" ? html`<span class="muted small">This plan was undone. Plan the gaps on Week to start again.</span>` : null}
+      </div>
+      ${d ? html`
+        <${DaySheet} date=${d.date} title=${d.title} runId=${view.run_id} locked=${d.locked} toast=${toast} busy=${busy}
+          onClose=${() => setOpen(null)}
+          onSwapped=${(id) => { setOpen(null); toast("Swapped. Review the new plan."); location.replace(`#review/${id}`); reload(); }}
+          onLocked=${reload}>
+          ${d.note ? html`<p class="muted small">${d.note}</p>` : null}
+          ${d.url ? html`<a href=${d.url} target="_blank" rel="noopener" class="small">Open the recipe</a>` : null}
+        </${DaySheet}>` : null}
+    </div>`;
+}
+
+// ---------- Groceries: the list for the week you are shopping ------------------------------
+function Groceries({ runId, tick, reload, busy, toast, runs, today }) {
+  const [tab, setTab] = useState("online");
+  const [text, setText] = useState("");
+  const [view, err] = useRunView(runId, tick);
+  if (!runId) return html`<div class="screen"><div class="empty span"><span class="brand">Groceries</span><span>No plan yet. Plan the gaps on the Week screen and the lists appear here.</span><a class="btn" href="#week">Go to Week</a></div></div>`;
+  if (err && !view) return html`<div class="screen"><div class="empty span"><b>Can't open these groceries</b><span>${err}</span><a class="btn" href="#groceries">Back</a></div></div>`;
+  if (!view) return html`<div class="screen"><div class="empty span">Loading the lists…</div></div>`;
+
+  const applied = view.status === "applied";
   const todo = view.todo || { online: [], in_store: [] };
   const done = new Set([...(todo.online || []), ...(todo.in_store || [])].filter((i) => i.done).map((i) => i.uid));
+  // the runs worth switching between, from this week on: per week the list that was sent
+  // (what you shop with) and a newer proposal if there is one
+  const thisWeek = mondayOf(today);
+  const choices = [];
+  for (const r of runs || []) {
+    if (r.week < thisWeek) continue;
+    const same = choices.filter((c) => c.week === r.week);
+    if (r.status === "applied" ? !same.some((c) => c.status === "applied") : same.length === 0) choices.push(r);
+  }
+  if (!choices.some((c) => c.id === view.run_id)) choices.push({ id: view.run_id, week: view.week, status: view.status });
+  choices.sort((a, b) => (a.week < b.week ? -1 : a.week > b.week ? 1 : Number(b.status === "applied") - Number(a.status === "applied") || b.id - a.id));
 
   const move = async (need, to) => {
-    try { await api("POST", `/api/runs/${view.run_id}/move`, { need, to }); toast(`Moved ${need} ${to === "online" ? "online" : "to the store run"}.`); await reload(); } catch (e) { toast(e.message); }
+    try {
+      const v = await api("POST", `/api/runs/${view.run_id}/move`, { need, to });
+      toast(`Moved ${need} ${to === "online" ? "online" : "to the store run"}. ${applied ? "That makes a new proposal; approve it to update the lists." : ""}`);
+      location.replace(`#groceries/${v.run_id}`); reload();
+    } catch (e) { toast(e.message); }
   };
-  const tick = async (kind, uid, isDone) => {
-    try { await api("POST", `/api/lists/${kind}/done`, { uid, done: !isDone }); await reload(); } catch (e) { toast(e.message); }
+  const tick_ = async (kind, uid, isDone) => {
+    try { await api("POST", `/api/lists/${kind}/done?run_id=${view.run_id}`, { uid, done: !isDone }); reload(); } catch (e) { toast(e.message); }
   };
   const add = async () => {
     if (!text.trim()) return;
-    try { await api("POST", `/api/lists/in_store/items`, { summary: text.trim() }); setText(""); toast("Added to the store run."); await reload(); } catch (e) { toast(e.message); }
-  };
-  const approve = async () => {
-    if (!confirm(`Write this plan to My Week and both store lists?${view.plan_removes.length ? `\n\nThis removes ${view.plan_removes.length} dinner(s) already in My Week.` : ""}`)) return;
-    try { await api("POST", `/api/apply?run_id=${view.run_id}`); toast("Applied. Znacht never pays: finish the order yourself."); await reload(); } catch (e) { toast(e.message); }
-  };
-  const revert = async () => {
-    if (!confirm("Undo this apply on My Week and both lists?")) return;
-    try { await api("POST", `/api/runs/${view.run_id}/revert`); toast("Reverted."); await reload(); } catch (e) { toast(e.message); }
+    try { await api("POST", `/api/lists/in_store/items?run_id=${view.run_id}`, { summary: text.trim() }); setText(""); toast("Added to the store run."); setTab("store"); reload(); } catch (e) { toast(e.message); }
   };
 
-  const lines = tab === "online" ? view.online : view.in_store;
-  const kind = tab === "online" ? "online" : "in_store";
+  // a render function, not a component: a component defined here would remount every line on
+  // each reload and drop keyboard focus from the tick you just pressed
+  const line = (it, kind) => {
+    const uid = `${kind}:${it.product_id}`; const isDone = done.has(uid);
+    return html`
+      <div key=${kind + it.product_id + it.needed_on} class=${"line" + (isDone ? " done" : "")}>
+        ${applied ? html`<button type="button" class=${"check" + (isDone ? " on" : "")} aria-pressed=${isDone} aria-label=${`${it.name}: ${isDone ? "bought" : "not bought"}`} onClick=${() => tick_(kind, uid, isDone)}><${Icon} name="check" /></button>` : null}
+        <div class="body">
+          <span class="name">${it.packs > 1 ? html`<span class="muted">${it.packs}× </span>` : null}${it.name}</span>
+          <span class=${"note" + (it.deliverable === false || it.flagged ? " flag" : "")}>${it.need} · ${it.pack}${it.deliverable === false ? " · not deliverable" : ""}${it.switched ? " · swapped" : ""}${it.flagged ? " · healthier option costs more" : ""}</span>
+        </div>
+        <span class="price">${chf(it.price)}</span>
+        ${kind === "online" ? html`<button type="button" class="mv" aria-label=${`Move ${it.need} to the store run`} onClick=${() => move(it.need, "store")} disabled=${!!busy}><${Icon} name="move" />store</button>` :
+          it.movable ? html`<button type="button" class="mv" aria-label=${`Move ${it.need} online`} onClick=${() => move(it.need, "online")} disabled=${!!busy}><${Icon} name="move" />online</button>` : null}
+      </div>`;
+  };
+  const sinkDone = (kind) => (a, b) => Number(done.has(`${kind}:${a.product_id}`)) - Number(done.has(`${kind}:${b.product_id}`));
+  const aisles = [];
+  for (const it of view.in_store) { let g = aisles.find((a) => a.name === it.aisle); if (!g) aisles.push((g = { name: it.aisle, lines: [] })); g.lines.push(it); }
+  const extras = (todo.in_store || []).filter((i) => i.uid.startsWith("text:"));
+  const left = (lines, kind) => lines.filter((it) => !done.has(`${kind}:${it.product_id}`)).length;
+  const storeLeft = left(view.in_store, "in_store") + extras.filter((i) => !i.done).length;
+
   return html`
     <div class="screen">
-      <div class="top span"><span class="brand">Groceries</span><span class="pills">${view.slot ? html`<span class="pill quiet">Delivery ${view.slot}</span>` : null}<span class="pill quiet">run ${view.run_id} · ${view.week_label}</span></span></div>
-      ${pinned ? html`<div class="row span"><button type="button" class="btn ghost" style="min-height:36px;padding:6px 12px;font-size:12px" onClick=${() => selectRun(null)}>Back to the latest run</button></div>` : null}
-      ${view.plan_removes.length && view.status === "needs_approval" ? html`
-        <div class="card dashed span">
-          <h2>Already in My Week, removed on approve</h2>
-          ${view.plan_removes.map((r) => html`<div class="warn-text">${r}</div>`)}
-        </div>` : null}
-      ${view.violations.length ? html`<div class="card span"><h2>Needs your input</h2>${view.violations.map((v) => html`<div class="warn-text">${v}</div>`)}</div>` : null}
-      <div class="card span">
-        <div style="display:flex;justify-content:space-between;font-size:13px"><span class="muted">Online basket</span><b>${chf(total)} <span class="muted" style="font-weight:400">/ ${chf(min)} minimum</span></b></div>
-        <div class="bar"><div style=${`width:${pct}%;background:${m.meets_minimum ? "var(--ok)" : "var(--accent)"}`}></div></div>
-        <span class=${m.meets_minimum ? "ok-text" : "warn-text"} style="font-size:12px;font-weight:600">${m.meets_minimum ? `Minimum met${Number(m.deposit) > 0 ? ` · ${chf(m.deposit)} box deposit for frozen items` : ""}` : `${chf(m.shortfall)} short: move something from the store run or add what you need`}</span>
+      <div class="top span"><span class="brand">Groceries</span>${view.slot ? html`<span class="pill quiet">Delivery ${view.slot}</span>` : null}</div>
+      ${choices.length > 1 ? html`<div class="chips span" role="tablist" aria-label="Which week">${choices.map((c) => html`
+        <a role="tab" aria-selected=${c.id === view.run_id} class=${"chip big" + (c.id === view.run_id ? " on" : "")} href=${`#groceries/${c.id}`}>${weekName(c.week, today)} · ${STATUS_WORD[c.status] || c.status}</a>`)}</div>` : null}
+      ${applied ? html`
+        <div class="banner ok span"><span><b>On your Migros lists.</b><br /><span class="small">Znacht never orders or pays: finish the order in Migros. <a href=${`#review/${view.run_id}`}>See the plan or undo it</a></span></span>${view.checkout_url ? html`<a class="btn" href=${view.checkout_url} target="_blank" rel="noopener">Open Migros</a>` : null}</div>` :
+        view.status === "reverted" ? html`<div class="banner span"><span>This plan was undone; nothing of it is on your lists.</span></div>` : html`
+        <div class="banner span"><span><b>Proposal, not sent yet.</b><br /><span class="small muted">Nothing is on your Migros lists until you approve.</span></span><a class="btn primary" href=${`#review/${view.run_id}`}>Review</a></div>`}
+      <${Basket} m=${view.money} />
+      <div class="tabs span" role="tablist">
+        <button type="button" role="tab" aria-selected=${tab === "online"} class=${"tab" + (tab === "online" ? " on" : "")} onClick=${() => setTab("online")}>Online · ${applied ? left(view.online, "online") : view.online.length}</button>
+        <button type="button" role="tab" aria-selected=${tab === "store"} class=${"tab" + (tab === "store" ? " on" : "")} onClick=${() => setTab("store")}>Store run · ${applied ? storeLeft : view.in_store.length + extras.length}</button>
       </div>
-      <div class="tabs span">
-        <button type="button" class=${"tab" + (tab === "online" ? " on" : "")} onClick=${() => setTab("online")}>Online · ${view.online.length}</button>
-        <button type="button" class=${"tab" + (tab === "store" ? " on" : "")} onClick=${() => setTab("store")}>Store run · ${view.in_store.length + view.free_text.length}</button>
+      <div class="list span">
+        ${tab === "online" ? [...view.online].sort(sinkDone("online")).map((it) => line(it, "online")) : html`
+          ${aisles.map((a) => html`<h2 class="aisle">${a.name}</h2>${[...a.lines].sort(sinkDone("in_store")).map((it) => line(it, "in_store"))}`)}
+          ${extras.length ? html`<h2 class="aisle">Also</h2>${extras.map((i) => html`
+            <div class=${"line" + (i.done ? " done" : "")}>
+              <button type="button" class=${"check" + (i.done ? " on" : "")} aria-pressed=${i.done} aria-label=${`${i.summary}: ${i.done ? "bought" : "not bought"}`} onClick=${() => tick_("in_store", i.uid, i.done)}><${Icon} name="check" /></button>
+              <div class="body"><span class="name">${i.summary}</span><span class="note">your own item</span></div>
+            </div>`)}` : null}
+          ${!view.in_store.length && !extras.length ? html`<p class="muted small">Nothing for the store run.</p>` : null}`}
+        ${tab === "online" && !view.online.length ? html`<p class="muted small">Nothing online this week.</p>` : null}
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px" class="span">
-        ${lines.map((it) => {
-          const uid = `${kind}:${it.product_id}`; const isDone = done.has(uid);
-          return html`
-            <div class=${"line" + (isDone ? " done" : "")}>
-              <button type="button" class=${"check" + (isDone ? " on" : "")} aria-label=${isDone ? "Mark not bought" : "Mark bought"} onClick=${() => tick(kind, uid, isDone)}><${Icon} name="check" /></button>
-              <div class="qty">${it.packs}×</div>
-              <div class="body">
-                <span class="name">${it.name}</span>
-                <span class=${"note" + (it.deliverable === false || it.flagged ? " flag" : "")}>${it.need} · ${it.pack}${it.deliverable === false ? " · not deliverable" : ""}${it.switched ? " · swapped" : ""}${it.flagged ? " · healthier option costs more" : ""}</span>
-              </div>
-              <span class="price">${chf(it.price)}</span>
-              ${tab === "online" ? html`<button type="button" class="check" aria-label="Move to store run" onClick=${() => move(it.need, "store")} disabled=${!!busy}><${Icon} name="move" /></button>` :
-                it.movable ? html`<button type="button" class="check" aria-label="Move to online basket" onClick=${() => move(it.need, "online")} disabled=${!!busy}><${Icon} name="move" /></button>` : null}
-            </div>`;
-        })}
-        ${tab === "store" ? (todo.in_store || []).filter((i) => i.uid.startsWith("text:")).map((i) => html`
-          <div class=${"line" + (i.done ? " done" : "")}>
-            <button type="button" class=${"check" + (i.done ? " on" : "")} aria-label="Mark bought" onClick=${() => tick("in_store", i.uid, i.done)}><${Icon} name="check" /></button>
-            <div class="body"><span class="name">${i.summary}</span><span class="note">not in the catalogue: add it in the app</span></div>
-          </div>`) : null}
-      </div>
-      ${view.swaps.length ? html`<div class="card span"><h2>Swaps and flags this week</h2>${view.swaps.map((s) => html`<div class=${"swap " + s.kind}><b>${s.need}</b> → ${s.chosen}${s.delta ? html` <span class=${s.kind === "switch" ? "ok-text" : "warn-text"}>(${Number(s.delta) < 0 ? "−" : "+"}${Math.abs(Number(s.delta)).toFixed(2)})</span>` : null}<div class="meta">${s.reason}</div></div>`)}</div>` : null}
-      ${view.pantry_check.length ? html`<div class="card"><h2>Check the pantry</h2><p style="font-size:13px">The recipes assume you have these; nothing is bought.</p><div class="chips">${view.pantry_check.map((p) => html`<span class="chip quiet">${p}</span>`)}</div></div>` : null}
       <div class="card">
-        <h2>Add anything</h2>
+        <h2>Add to the store run</h2>
         <div class="row">
-          <label for="free" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Add anything</label>
-          <input id="free" class="input" placeholder="birthday candles, cat food…" value=${text} onInput=${(e) => setText(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && add()} />
-          <button type="button" class="btn" onClick=${add}>Add</button>
+          <input id="free" class="input" placeholder="birthday candles, cat food…" aria-label="Add to the store run" value=${text} onInput=${(e) => setText(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && add()} />
+          <button type="button" class="btn" onClick=${add} disabled=${!text.trim()}>Add</button>
         </div>
       </div>
-      <div class="row span" style="padding-top:6px">
-        ${view.status === "needs_approval" ? html`<button type="button" class="btn primary" onClick=${approve} disabled=${!!busy}>Approve: send plan and lists</button>` : null}
-        ${view.status === "applied" ? html`<span class="pill ok">Applied</span>${view.checkout_url ? html`<a class="btn" href=${view.checkout_url} target="_blank" rel="noopener" style="text-decoration:none">Open the basket</a>` : null}<button type="button" class="btn ghost" onClick=${revert}>Undo</button>` : null}
-        ${view.status === "reverted" ? html`<span class="pill quiet">Reverted</span>` : null}
-      </div>
+      ${view.pantry_check.length ? html`<div class="card"><h2>Check the pantry</h2><p class="small">The recipes assume you have these; nothing is bought.</p><div class="chips">${view.pantry_check.map((p) => html`<span class="chip quiet">${p}</span>`)}</div></div>` : null}
     </div>`;
 }
 
@@ -271,20 +478,29 @@ function Chips({ items, onRemove, onAdd, placeholder }) {
 function Household({ household, patch, toast, planner }) {
   const [draft, setDraft] = useState(null);
   const [busyPhoto, setBusyPhoto] = useState(false);
-  if (!household) return html`<div class="screen"><div class="empty">Loading the household…</div></div>`;
+  if (!household) return html`<div class="screen"><div class="empty span">Loading the household…</div></div>`;
   const colors = ["var(--accent)", "var(--ok)", "var(--lilac)", "#ffd166"];
   const tags = ["fish", "legumes", "red_meat", "poultry", "vegetarian"];
-  const setRule = (tag, n) => patch({ rules: { min_per_week: { [tag]: n } } });
-  const setMax = (tag, n) => patch({ rules: { max_per_week: { [tag]: n } } });
+  // every edit is built from the latest household when its turn comes (App queues them), so
+  // quick taps and a blur-then-click don't overwrite each other
+  const setRule = (tag, delta) => patch((h) => ({ rules: { min_per_week: { [tag]: Math.max(0, (h.rules.min_tags[tag] || 0) + delta) } } }));
+  const toggleMax = (tag) => patch((h) => ({ rules: { max_per_week: { [tag]: h.rules.max_tags[tag] != null ? 0 : Math.max(h.rules.min_tags[tag] || 0, 1) } } }));
   const members = household.members;
-  const updateMember = (i, changes) => patch({ members: members.map((m, j) => (j === i ? { ...m, ...changes } : m)) });
+  const updateMember = (i, change) => patch((h) => ({ members: h.members.map((m, j) => (j === i ? { ...m, ...change(m) } : m)) }));
+  const listEdit = (get, wrap) => ({
+    add: (x) => patch((h) => (get(h).includes(x) ? null : wrap([...get(h), x]))),
+    remove: (x) => patch((h) => wrap(get(h).filter((d) => d !== x))),
+  });
+  const banned = listEdit((h) => h.rules.banned_ingredients, (v) => ({ rules: { banned_ingredients: v } }));
+  const health = listEdit((h) => h.health.rules, (v) => ({ health: { rules: v } }));
+  const minutes = (delta) => patch((h) => ({ rules: { max_total_minutes_weekday: Math.max(15, (h.rules.max_total_minutes_weekday || 60) + delta) } }));
   const photo = async (file) => {
     if (!file) return;
     setBusyPhoto(true);
     try {
       const fd = new FormData(); fd.append("file", file);
       const res = await fetch("/api/pantry/photo", { method: "POST", headers: { Authorization: `Bearer ${token()}` }, body: fd });
-      if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+      if (!res.ok) { let msg = res.statusText; try { msg = (await res.json()).detail || msg; } catch (e) { /* not json */ } throw new Error(msg); }
       const d = await res.json();
       setDraft(d.items.map((i) => ({ ...i, keep: i.confidence >= 0.5 })));
       if (d.unsure.length) toast(`Not sure about: ${d.unsure.join(", ")}`);
@@ -297,44 +513,44 @@ function Household({ household, patch, toast, planner }) {
   return html`
     <div class="screen">
       <div class="top span"><span class="brand">Household</span><span class="pill quiet">${household.servings} servings</span></div>
+      <p class="span muted small">Changes save as you make them, into your household file, and shape the next plan.</p>
       <div class="row span" style="align-items:stretch">
         ${members.map((m, i) => html`<div class="member"><div class="avatar" style=${`background:${colors[i % colors.length]}`}>${m.name.slice(0, 1).toUpperCase()}</div><b style="font-size:13px">${m.name}</b>
-          <select class="select" value=${m.age_group} onChange=${(e) => updateMember(i, { age_group: e.target.value })} aria-label=${m.name + " age group"}><option value="adult">adult</option><option value="child">child</option><option value="toddler">toddler</option></select>
+          <select class="select" value=${m.age_group} onChange=${(e) => { const v = e.target.value; updateMember(i, () => ({ age_group: v })); }} aria-label=${m.name + " age group"}><option value="adult">adult</option><option value="child">child</option><option value="toddler">toddler</option></select>
           <span class="muted" style="font-size:11px">${m.needs_mild_food ? "mild food" : "any spice"}</span></div>`)}
       </div>
       <div class="card">
         <h2>Dislikes and allergies</h2>
         ${members.map((m, i) => html`<div style="display:flex;flex-direction:column;gap:6px"><b style="font-size:13px">${m.name}</b>
-          <${Chips} items=${m.dislikes} placeholder="dislikes…" onAdd=${(x) => updateMember(i, { dislikes: [...m.dislikes, x] })} onRemove=${(x) => updateMember(i, { dislikes: m.dislikes.filter((d) => d !== x) })} />
-          <${Chips} items=${m.allergies} placeholder="allergies…" onAdd=${(x) => updateMember(i, { allergies: [...m.allergies, x] })} onRemove=${(x) => updateMember(i, { allergies: m.allergies.filter((d) => d !== x) })} /></div>`)}
+          <${Chips} items=${m.dislikes} placeholder="dislikes…" onAdd=${(x) => updateMember(i, (cur) => ({ dislikes: cur.dislikes.includes(x) ? cur.dislikes : [...cur.dislikes, x] }))} onRemove=${(x) => updateMember(i, (cur) => ({ dislikes: cur.dislikes.filter((d) => d !== x) }))} />
+          <${Chips} items=${m.allergies} placeholder="allergies…" onAdd=${(x) => updateMember(i, (cur) => ({ allergies: cur.allergies.includes(x) ? cur.allergies : [...cur.allergies, x] }))} onRemove=${(x) => updateMember(i, (cur) => ({ allergies: cur.allergies.filter((d) => d !== x) }))} /></div>`)}
       </div>
       <div class="card">
-        <h2>Every week</h2>
+        <h2>Every week, at least</h2>
         ${tags.map((t) => { const n = household.rules.min_tags[t] || 0; const mx = household.rules.max_tags[t]; return html`<div class="stepper"><span style="flex:1 1 auto;font-weight:500">${t.replace("_", " ")}</span>
-          <button type="button" class="check" aria-label=${"Fewer " + t} onClick=${() => setRule(t, n - 1)}>−</button><span class="n">${n}×</span><button type="button" class="check" aria-label=${"More " + t} onClick=${() => setRule(t, n + 1)}>+</button>
-          <button type="button" class=${"btn ghost" + (mx != null ? " on" : "")} style="padding:6px 10px;min-height:36px;font-size:12px" onClick=${() => setMax(t, mx != null ? 0 : Math.max(n, 1))}>${mx != null ? `max ${mx}` : "no max"}</button></div>`; })}
+          <button type="button" class="check" aria-label=${"Fewer " + t} onClick=${() => setRule(t, -1)} disabled=${n <= 0}>−</button><span class="n">${n}×</span><button type="button" class="check" aria-label=${"More " + t} onClick=${() => setRule(t, 1)}>+</button>
+          <button type="button" class=${"btn ghost maxbtn" + (mx != null ? " on" : "")} aria-pressed=${mx != null} onClick=${() => toggleMax(t)}>${mx != null ? `max ${mx}` : "no max"}</button></div>`; })}
         <div style="display:flex;flex-direction:column;gap:6px"><span class="muted" style="font-size:12px">Never in a recipe</span>
-          <${Chips} items=${household.rules.banned_ingredients} placeholder="banned…" onAdd=${(x) => patch({ rules: { banned_ingredients: [...household.rules.banned_ingredients, x] } })} onRemove=${(x) => patch({ rules: { banned_ingredients: household.rules.banned_ingredients.filter((d) => d !== x) } })} /></div>
-        <div class="stepper"><span style="flex:1 1 auto;font-weight:500">Weekday limit</span><button type="button" class="check" aria-label="Shorter weekday limit" onClick=${() => patch({ rules: { max_total_minutes_weekday: Math.max(15, (household.rules.max_total_minutes_weekday || 60) - 15) } })}>−</button><span class="n" style="width:auto">${household.rules.max_total_minutes_weekday || "—"} min</span><button type="button" class="check" aria-label="Longer weekday limit" onClick=${() => patch({ rules: { max_total_minutes_weekday: (household.rules.max_total_minutes_weekday || 45) + 15 } })}>+</button></div>
+          <${Chips} items=${household.rules.banned_ingredients} placeholder="banned…" onAdd=${banned.add} onRemove=${banned.remove} /></div>
+        <div class="stepper"><span style="flex:1 1 auto;font-weight:500">Weekday cooking time</span><button type="button" class="check" aria-label="Shorter weekday limit" onClick=${() => minutes(-15)}>−</button><span class="n" style="width:auto">${household.rules.max_total_minutes_weekday || "—"} min</span><button type="button" class="check" aria-label="Longer weekday limit" onClick=${() => minutes(15)}>+</button></div>
       </div>
       <div class="card">
         <h2>Health</h2>
-        ${household.health.rules.length ? html`<${Chips} items=${household.health.rules} placeholder="add a rule in words…" onAdd=${(x) => patch({ health: { rules: [...household.health.rules, x] } })} onRemove=${(x) => patch({ health: { rules: household.health.rules.filter((r) => r !== x) } })} />` : html`<p class="muted" style="font-size:13px">No health rules yet. Upload a lab report with <code>znacht extract lab</code>, confirm the draft, or type a rule.</p><${Chips} items=${[]} placeholder="e.g. limit added sugar" onAdd=${(x) => patch({ health: { rules: [x] } })} onRemove=${() => {}} />`}
+        ${household.health.rules.length ? html`<${Chips} items=${household.health.rules} placeholder="add a rule in words…" onAdd=${health.add} onRemove=${health.remove} />` : html`<p class="muted" style="font-size:13px">No health rules yet. Type one in your own words, or read a lab report with <code>znacht extract lab</code> and confirm the draft.</p><${Chips} items=${[]} placeholder="e.g. limit added sugar" onAdd=${health.add} onRemove=${health.remove} />`}
       </div>
       <div class="card">
         <div class="top"><h2>Pantry</h2>
-          <label class="btn primary" style="flex:0 0 auto;padding:8px 14px;min-height:36px;font-size:12px;cursor:pointer">${busyPhoto ? "Reading photo…" : "Photo"}<input type="file" accept="image/*" capture="environment" style="display:none" onChange=${(e) => photo(e.target.files[0])} disabled=${busyPhoto || planner !== "anthropic"} /></label></div>
-        ${planner !== "anthropic" ? html`<p class="muted" style="font-size:12px">Photo reading needs the Claude planner.</p>` : null}
+          ${planner === "anthropic" ? html`<label class="btn primary" style="flex:0 0 auto;padding:8px 14px;min-height:36px;font-size:12px;cursor:pointer">${busyPhoto ? "Reading photo…" : "Add from a photo"}<input type="file" accept="image/*" capture="environment" style="display:none" onChange=${(e) => { photo(e.target.files[0]); e.target.value = ""; }} disabled=${busyPhoto} /></label>` : null}</div>
         ${draft ? html`<div class="card dashed"><h2>From the photo: keep what is right</h2>
-          ${draft.map((i, k) => html`<div class="line"><button type="button" class=${"check" + (i.keep ? " on" : "")} aria-label="Keep" onClick=${() => setDraft(draft.map((d, j) => (j === k ? { ...d, keep: !d.keep } : d)))}><${Icon} name="check" /></button><div class="body"><span class="name">${i.name}</span><span class="note">${i.quantity} · ${Math.round(i.confidence * 100)}% sure</span></div></div>`)}
+          ${draft.map((i, k) => html`<div class="line"><button type="button" class=${"check" + (i.keep ? " on" : "")} aria-pressed=${i.keep} aria-label=${`Keep ${i.name}`} onClick=${() => setDraft(draft.map((d, j) => (j === k ? { ...d, keep: !d.keep } : d)))}><${Icon} name="check" /></button><div class="body"><span class="name">${i.name}</span><span class="note">${i.quantity} · ${Math.round(i.confidence * 100)}% sure</span></div></div>`)}
           <div class="row"><button type="button" class="btn primary" onClick=${confirmDraft}>Save to pantry</button><button type="button" class="btn ghost" onClick=${() => setDraft(null)}>Discard</button></div></div>` : null}
-        <${Chips} items=${household.pantry.map((p) => `${p.name} ${p.quantity}`)} placeholder="add: rice 1 kg" onAdd=${(x) => { const m = x.match(/^(.+?)\s+(\d[\d.,]*\s*\S*)$/); if (m) patch({ pantry: { [m[1].trim()]: m[2].trim() } }); else toast("Write it as 'name quantity', e.g. rice 1 kg"); }} onRemove=${(x) => { const name = household.pantry.find((p) => `${p.name} ${p.quantity}` === x); if (name) patch({ pantry: { [name.name]: "0" } }); }} />
-        <div style="font-size:13px">Make at home: <span class="muted">${household.make_at_home.join(", ") || "nothing yet (edit in the YAML)"}</span></div>
+        <${Chips} items=${household.pantry.map((p) => `${p.name} ${p.quantity}`)} placeholder="add: rice 1 kg" onAdd=${(x) => { const m = x.match(/^(.+?)\s+(\d[\d.,]*\s*\S*)$/); if (m) patch({ pantry: { [m[1].trim()]: m[2].trim() } }); else toast("Write it as name and amount, e.g. rice 1 kg"); }} onRemove=${(x) => { const name = household.pantry.find((p) => `${p.name} ${p.quantity}` === x); if (name) patch({ pantry: { [name.name]: "0" } }); }} />
+        ${planner !== "anthropic" ? html`<p class="muted" style="font-size:12px">Reading the pantry from a photo needs the Claude planner.</p>` : null}
+        <div style="font-size:13px">Made at home, never bought: <span class="muted">${household.make_at_home.join(", ") || "nothing yet (edit in the YAML)"}</span></div>
       </div>
       <div class="card">
         <h2>Delivery and store</h2>
         <div style="font-size:13px">Postcode <b>${household.delivery.postcode}</b>${household.store_lists ? html` · online list <b>${household.store_lists.online}</b> · store list <b>${household.store_lists.in_store}</b>` : null}</div>
-        <p class="muted" style="font-size:12px">Changes here are written into your household YAML, comments kept, and used by the next plan.</p>
       </div>
     </div>`;
 }
@@ -343,70 +559,90 @@ function Household({ household, patch, toast, planner }) {
 function Connections({ status, household }) {
   const adapters = (status && status.adapters) || {};
   const card = (icon, title, sub, on) => html`<div class="conn"><div class="ico"><${Icon} name=${icon} /></div><div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px"><b style="font-size:15px">${title}</b><span class="muted" style="font-size:12px">${sub}</span></div><span class=${"dot" + (on ? "" : " off")} role="img" aria-label=${on ? "Connected" : "Not connected"}></span></div>`;
+  const min = status && status.minimum_order;
   return html`
     <div class="screen">
       <div class="top span"><span class="brand">Connections</span></div>
       <p class="span">Where recipes come from, where the plan goes, where the food is bought. Each is a plug-in; the week does not care which.</p>
       <div style="display:flex;flex-direction:column;gap:8px"><h2>Cooking</h2>
-        ${card("robot", "Thermomix · Cookidoo", adapters.recipes === "cookidoo" ? "recipes and My Week" : "recipes from the fixture catalogue", adapters.recipes === "cookidoo")}
+        ${card("robot", "Thermomix · Cookidoo", adapters.recipes === "cookidoo" ? "recipes and My Week" : "not connected: recipes from the sample catalogue", adapters.recipes === "cookidoo")}
         ${card("week", "Home Assistant", "calendar, lists, tonight's dinner, this app", true)}
         <div class="card dashed"><b style="font-size:14px;color:var(--soft)">Mealie · Tandoor · Monsieur Cuisine · Cookit</b><span class="muted" style="font-size:12px">adapters anyone can add; the first two have real APIs</span></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px"><h2>Shopping</h2>
-        ${card("groceries", "Migros", household ? `delivery to ${household.delivery.postcode} · min. ${chf(status && status.minimum_order)}` : "", adapters.store === "migros")}
+        ${card("groceries", "Migros", adapters.store === "migros" ? [household ? `delivery to ${household.delivery.postcode}` : null, min ? `minimum order ${chf(min)}` : null].filter(Boolean).join(" · ") : "not connected: sample products and prices", adapters.store === "migros")}
         <div class="card dashed"><b style="font-size:14px;color:var(--soft)">Coop · Farmy · Aldi · Lidl</b><span class="muted" style="font-size:12px">compare the same basket across shops</span></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px"><h2>Planner</h2>
         ${card("spark", adapters.planner === "anthropic" ? "Claude plans, the rules decide" : "Rule-based planner", "every plan is checked; every write needs your tap", true)}
       </div>
-      <div class="card"><h2>Since the start</h2><span class="big">${chf(status && status.lifetime_savings)} saved</span><span class="muted" style="font-size:12px">counted on approved weeks</span></div>
+      <div class="card"><h2>Since the start</h2><span class="big">${chf((status && status.lifetime_savings) || 0)} saved</span><span class="muted" style="font-size:12px">by healthier-or-equal, cheaper product swaps, counted on approved weeks</span></div>
     </div>`;
 }
 
 // ---------- App shell -------------------------------------------------------------------
 function App() {
-  const hash = useHash();
-  const [view, setView] = useState(null);
+  const route = useRoute();
   const [tl, setTl] = useState(null);
-  const [runId, setRunId] = useState(null); // a run picked from the timeline's Approve pill
   const [status, setStatus] = useState(null);
+  const [runs, setRuns] = useState(null);
   const [household, setHousehold] = useState(null);
+  const [tick, setTick] = useState(0); // bumps to make the run views refetch
   const [error, setError] = useState(null);
   const [msg, setMsg] = useState(null);
-  const toast = useCallback((t) => { setMsg(t); setTimeout(() => setMsg(null), 3500); }, []);
+  const timer = useRef(null);
+  const toast = useCallback((t) => { clearTimeout(timer.current); setMsg(t); timer.current = setTimeout(() => setMsg(null), 4000); }, []);
 
   const reload = useCallback(async () => {
     try {
-      const [v, s, t] = await Promise.all([
-        api("GET", runId ? `/api/runs/${runId}/view` : "/api/view"),
-        api("GET", "/api/status"),
-        api("GET", `/api/timeline?days=${DAYS}`),
-      ]);
-      setView(v); setStatus(s); setTl(t); setError(null);
+      const [s, t, r] = await Promise.all([api("GET", "/api/status"), api("GET", `/api/timeline?days=${DAYS}`), api("GET", "/api/runs")]);
+      setStatus(s); setTl(t); setRuns(r); setError(null); setTick((n) => n + 1);
     } catch (e) { setError(e.message); }
-  }, [runId]);
+  }, []);
   useEffect(() => { api("GET", "/api/household").then(setHousehold).catch(() => {}); }, []);
   useEffect(() => { reload(); }, [reload]);
-  useEffect(() => {
-    const busy = (status && status.busy) || (view && view.busy);
-    if (!busy) return;
-    const t = setInterval(reload, 4000);
-    return () => clearInterval(t);
-  }, [status && status.busy, view && view.busy, reload]);
 
+  // while the engine works, poll; when it stops, say what came of it
   const busy = (status && status.busy) || null;
-  const patchHousehold = useCallback(async (p) => { try { setHousehold(await api("PATCH", "/api/household", p)); } catch (e) { toast(e.message); } }, []);
+  const wasBusy = useRef(null);
+  useEffect(() => {
+    if (busy) { wasBusy.current = { busy, run: status.run_id }; const t = setInterval(reload, 3000); return () => clearInterval(t); }
+    if (wasBusy.current && status) {
+      const before = wasBusy.current; wasBusy.current = null;
+      if (before.busy === "planning" && status.run_id !== before.run && !status.last_error) toast(status.plan_status === "needs_input" ? "The plan needs your input." : "A new proposal is ready to review.");
+    }
+  }, [busy, reload]);
+  // coming back to the tab (or the HA panel) after a while: refresh
+  useEffect(() => {
+    const f = () => { if (document.visibilityState === "visible") reload(); };
+    document.addEventListener("visibilitychange", f); return () => document.removeEventListener("visibilitychange", f);
+  }, [reload]);
+
+  // household edits run one at a time; each is a patch or a function of the latest household
+  const latest = useRef(null);
+  const queue = useRef(Promise.resolve());
+  useEffect(() => { latest.current = household; }, [household]);
+  const patchHousehold = useCallback((make) => {
+    queue.current = queue.current.then(async () => {
+      const p = typeof make === "function" ? make(latest.current) : make;
+      if (!p) return;
+      try { const h = await api("PATCH", "/api/household", p); latest.current = h; setHousehold(h); } catch (e) { toast(e.message); }
+    });
+    return queue.current;
+  }, []);
 
   let body;
-  if (error) body = html`<div class="screen"><div class="empty span"><b>Can't reach the engine</b><span>${error}</span><button type="button" class="btn" onClick=${reload}>Try again</button></div></div>`;
-  else if (!view || !tl) body = html`<div class="screen"><div class="empty span">Loading…</div></div>`;
-  else if (hash === "#groceries" && view.run_id == null) body = html`<div class="screen"><div class="empty span"><span class="brand">Groceries</span><span>No run yet. Plan the gaps on the Week screen and the lists appear here.</span><a class="btn" href="#week" style="text-decoration:none">Week</a></div></div>`;
-  else if (hash === "#groceries") body = html`<${Groceries} view=${view} reload=${reload} busy=${busy} toast=${toast} pinned=${runId != null} selectRun=${setRunId} />`;
-  else if (hash === "#household") body = html`<${Household} household=${household} patch=${patchHousehold} toast=${toast} planner=${status && status.adapters && status.adapters.planner} />`;
-  else if (hash === "#connections") body = html`<${Connections} status=${status} household=${household} />`;
-  else body = html`<${Timeline} tl=${tl} reload=${reload} busy=${busy} toast=${toast} selectRun=${setRunId} />`;
+  if (error && !tl) body = html`<div class="screen"><div class="empty span"><b>Can't reach the engine</b><span>${error}</span><button type="button" class="btn" onClick=${reload}>Try again</button></div></div>`;
+  else if (!tl || !status) body = html`<div class="screen"><div class="empty span">Loading…</div></div>`;
+  else if (route.name === "review" && route.id) body = html`<${Review} runId=${route.id} tick=${tick} reload=${reload} busy=${busy} toast=${toast} runs=${runs} />`;
+  else if (route.name === "groceries") body = html`<${Groceries} runId=${route.id || status.shopping_run_id} tick=${tick} reload=${reload} busy=${busy} toast=${toast} runs=${runs} today=${tl.today} />`;
+  else if (route.name === "household") body = html`<${Household} household=${household} patch=${patchHousehold} toast=${toast} planner=${status.adapters && status.adapters.planner} />`;
+  else if (route.name === "connections") body = html`<${Connections} status=${status} household=${household} />`;
+  else body = html`<${Week} tl=${tl} status=${status} reload=${reload} busy=${busy} toast=${toast} />`;
 
-  return html`<div class="shell">${body}<${Nav} hash=${hash} />${msg ? html`<div class="toast" role="status">${msg}</div>` : null}</div>`;
+  return html`<div class="shell">
+    ${error && tl ? html`<div class="offline" role="alert">Can't reach the engine just now. <button type="button" class="link" onClick=${reload}>Retry</button></div>` : null}
+    ${body}<${Nav} route=${route} />${msg ? html`<div class="toast" role="status">${msg}</div>` : null}</div>`;
 }
 
 render(html`<${App} />`, document.getElementById("root"));
