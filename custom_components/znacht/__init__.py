@@ -25,6 +25,7 @@ from .const import (
     PANEL_URL_PATH,
     PLATFORMS,
     SERVICE_APPLY,
+    SERVICE_MARK_ORDERED,
     SERVICE_OPTIMIZE,
     SERVICE_PANTRY,
     SERVICE_PLAN_WEEK,
@@ -137,6 +138,16 @@ def _register_services(hass: HomeAssistant, coordinator: ZnachtCoordinator) -> N
         except ZnachtApiError as exc:
             raise _friendly(exc) from exc
 
+    async def mark_ordered(call: ServiceCall) -> None:
+        # records the order the household placed in Migros (ADR-0014); writes only the engine's
+        # database and locks the days the order covers
+        dates = [str(d) for d in call.data.get("dates", [])]
+        try:
+            await coordinator.api.mark_ordered(call.data.get("run_id"), dates or None)
+        except ZnachtApiError as exc:
+            raise _friendly(exc) from exc
+        await coordinator.async_request_refresh()
+
     async def refresh(call: ServiceCall) -> None:
         try:
             await coordinator.api.refresh()
@@ -155,3 +166,14 @@ def _register_services(hass: HomeAssistant, coordinator: ZnachtCoordinator) -> N
         DOMAIN, SERVICE_PANTRY, pantry, schema=vol.Schema({vol.Required("items"): dict})
     )
     hass.services.async_register(DOMAIN, SERVICE_REFRESH, refresh)
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_MARK_ORDERED,
+        mark_ordered,
+        schema=vol.Schema(
+            {
+                vol.Optional("run_id"): cv.positive_int,
+                vol.Optional("dates"): vol.All(cv.ensure_list, [cv.date]),
+            }
+        ),
+    )

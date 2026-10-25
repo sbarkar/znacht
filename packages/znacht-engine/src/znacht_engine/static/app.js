@@ -88,6 +88,7 @@ const Nav = ({ route }) => {
 
 const Back = ({ href, label }) => html`<a class="back" href=${href}><${Icon} name="back" />${label}</a>`;
 const Badge = ({ g }) => html`<span class=${"badge g-" + g.coverage}>${g.coverage === "none" ? "no groceries yet" : g.label}</span>`;
+const dayName = (iso) => `${weekday(iso)} ${dayNum(iso)}`;
 
 // ---------- the day sheet: one dinner, its alternatives, lock ------------------------------
 // Used by the Week timeline and the Review. `runId` is the run the swap acts on; a swap
@@ -148,15 +149,122 @@ function DaySheet({ date, title, runId, locked, children, onClose, onSwapped, on
     </div>`;
 }
 
+// ---------- editing a day in My Week (ADR-0014) --------------------------------------------
+// Tap a recipe (or a day to move to, or Remove): the engine prices the change, the confirm
+// shows exactly what changes in My Week and on both Migros lists, Confirm writes it, and the
+// toast offers Undo. Ordered days are locked by the engine; the sheet only says why.
+function RecipePicker({ date, onPick, disabled, toast }) {
+  const [alts, setAlts] = useState(null);
+  const [q, setQ] = useState("");
+  const [found, setFound] = useState(null);
+  const [searching, setSearching] = useState(false);
+  useEffect(() => {
+    let live = true; setAlts(null);
+    api("GET", `/api/days/${date}/alternatives`).then((a) => live && setAlts(a)).catch((e) => { if (live) { setAlts([]); toast(e.message); } });
+    return () => { live = false; };
+  }, [date]);
+  const search = async () => {
+    if (q.trim().length < 2) return;
+    setSearching(true);
+    try { setFound(await api("GET", `/api/recipes/search?q=${encodeURIComponent(q.trim())}&day=${date}`)); }
+    catch (e) { setFound([]); toast(e.message); } finally { setSearching(false); }
+  };
+  const list = found != null ? found : alts;
+  return html`<div class="stack">
+    <div class="row"><input class="input" type="search" placeholder="Search Cookidoo recipes…" aria-label="Search recipes" value=${q}
+      onInput=${(e) => { setQ(e.target.value); if (!e.target.value) setFound(null); }} onKeyDown=${(e) => e.key === "Enter" && search()} />
+      <button type="button" class="btn" onClick=${search} disabled=${q.trim().length < 2 || searching}>Search</button></div>
+    ${searching || list == null ? html`<p class="muted small">${searching ? "Searching…" : "Finding dinners that fit this week…"}</p>` :
+      list.length === 0 ? html`<p class="muted small">${found != null ? "Nothing found that keeps your hard rules." : "No suggestions yet; search for a recipe."}</p>` :
+      list.map((a, j) => html`
+        <button type="button" class=${"alt" + (j === 0 && found == null ? " best" : "")} onClick=${() => onPick(a)} disabled=${disabled}>
+          <span>${a.title}</span>
+          <span class="meta">${a.minutes ? `${a.minutes} min · ` : ""}${a.tags.map((t) => t.replace("_", " ")).join(", ")}${a.keeps_rules ? "" : html` · <span class="warn-text">bends a weekly rule</span>`}</span>
+        </button>`)}
+  </div>`;
+}
+
+function ListChanges({ label, lines }) {
+  if (!lines.length) return null;
+  return html`<div class="stack"><h2>${label}</h2>${lines.map((l) => html`
+    <div class=${"diff " + l.op}>${l.op === "add" ? `+ ${l.to > 1 ? `${l.to}× ` : ""}${l.name}` : l.op === "remove" ? `− ${l.name}` : `${l.name}: ${l.from} → ${l.to}`}</div>`)}</div>`;
+}
+
+function EditConfirm({ preview, onConfirm, onCancel, working }) {
+  const mw = preview.my_week;
+  const none = !preview.lists.online.length && !preview.lists.in_store.length;
+  const before = preview.online_total_before;
+  return html`<div class="stack confirm">
+    <h2>Confirm the change</h2>
+    <b>${preview.title}</b>
+    <div class="stack"><h2>My Week</h2>
+      ${mw.remove.map((c) => html`<div class="diff remove">− ${dayName(c.date)} ${c.title}</div>`)}
+      ${mw.add.map((c) => html`<div class="diff add">+ ${dayName(c.date)} ${c.title}</div>`)}</div>
+    <${ListChanges} label="Online list" lines=${preview.lists.online} />
+    <${ListChanges} label="Store-run list" lines=${preview.lists.in_store} />
+    ${none ? html`<p class="muted small">Your Migros lists stay as they are.</p>` : html`<p class="muted small">Online basket ${before != null ? `${chf(before)} → ` : ""}${chf(preview.online_total)}. Your own items on the lists stay.</p>`}
+    ${preview.warnings.map((w) => html`<div class="warn-text small">${w}</div>`)}
+    <p class="muted small">Nothing is ordered or paid. You can undo it.</p>
+    <div class="row"><button type="button" class="btn primary" onClick=${onConfirm} disabled=${working}>${working ? "Writing…" : "Confirm"}</button><button type="button" class="btn ghost" onClick=${onCancel} disabled=${working}>Cancel</button></div>
+  </div>`;
+}
+
+function EditPanel({ day, weekDays, toast, reload, busy, onDone }) {
+  const [preview, setPreview] = useState(null);
+  const [working, setWorking] = useState(false);
+  const [moving, setMoving] = useState(false);
+  if (day.ordered) return html`<div class="card dashed"><span class="row"><${Icon} name="lock" /><b>Groceries ordered</b></span><p class="small">${day.lock_reason}</p></div>`;
+  if (!day.editable) return day.state === "past" ? null : html`<p class="muted small">My Week could not be read just now, so this day cannot be changed from here. Try again in a moment.</p>`;
+
+  const start = async (body) => {
+    setWorking(true);
+    try { setPreview(await api("POST", "/api/edits", { date: day.date, ...body })); setMoving(false); }
+    catch (e) { toast(e.message); } finally { setWorking(false); }
+  };
+  const cancel = async () => {
+    const id = preview.run_id; setPreview(null);
+    try { await api("DELETE", `/api/edits/${id}`); } catch (e) { /* nothing was written either way */ }
+  };
+  const confirm_ = async () => {
+    setWorking(true);
+    try {
+      await api("POST", `/api/edits/${preview.run_id}/confirm`);
+      const id = preview.run_id, title = preview.title;
+      onDone();
+      toast(`Changed. ${title}`, { label: "Undo", run: async () => {
+        try { await api("POST", `/api/runs/${id}/revert`); toast("Undone: My Week and the lists are back."); } catch (e) { toast(e.message); }
+        reload();
+      } });
+      reload();
+    } catch (e) { toast(e.message); setPreview(null); reload(); } finally { setWorking(false); }
+  };
+  if (preview) return html`<${EditConfirm} preview=${preview} onConfirm=${confirm_} onCancel=${cancel} working=${working} />`;
+  if (working) return html`<div class="banner" role="status"><span class="spinner" aria-hidden="true"></span><span>Working out what changes in My Week and on your lists…</span></div>`;
+  const blocked = working || !!busy;
+  if (!day.dinner) return html`<div class="stack"><h2>Add a dinner</h2><${RecipePicker} date=${day.date} toast=${toast} disabled=${blocked} onPick=${(a) => start({ kind: "add", recipe_id: a.recipe_id })} /></div>`;
+  const targets = weekDays.filter((d) => d.date !== day.date && d.state !== "past");
+  return html`<div class="stack">
+    <div class="row">
+      <button type="button" class=${"btn" + (moving ? " on" : "")} onClick=${() => setMoving(!moving)} disabled=${blocked}><${Icon} name="move" />Move to…</button>
+      <button type="button" class="btn ghost" onClick=${() => start({ kind: "remove" })} disabled=${blocked}>Remove</button>
+    </div>
+    ${moving ? html`<div class="chips" role="group" aria-label="Move to">${targets.map((d) => html`
+      <button type="button" class="chip big" disabled=${!d.editable || blocked} title=${d.ordered ? d.lock_reason : ""} onClick=${() => start({ kind: "move", to: d.date })}>
+        ${dayName(d.date)} · ${d.ordered ? "ordered" : d.dinner ? `swap with ${d.dinner.title}` : "free"}</button>`)}</div>` : null}
+    <h2>Swap for</h2>
+    <${RecipePicker} date=${day.date} toast=${toast} disabled=${blocked} onPick=${(a) => start({ kind: "swap", recipe_id: a.recipe_id })} />
+  </div>`;
+}
+
 // ---------- Week: tonight first, then a rolling timeline (ADR-0011) -----------------------
 const DAYS = 14;
-const SOURCE = (card) => (card.source === "manual" ? "yours in My Week" : `sent by Znacht`);
+const SOURCE = (card) => (card.source === "manual" ? "yours in My Week" : card.edited ? "changed in Znacht" : "sent by Znacht");
 
 function DayRow({ d, today, onOpen }) {
   const card = d.dinner || d.proposal;
   const also = d.also || [];
   const cls = `day st-${d.state}${d.date === today ? " today" : ""}${d.dinner && d.dinner.source === "manual" ? " manual" : ""}`;
-  const tappable = d.state !== "empty";
+  const tappable = d.state !== "empty" || d.editable;
   const open = () => tappable && onOpen(d);
   const label = `${d.weekday} ${dayNum(d.date)}: ${card ? card.title : "nothing planned"}${d.state === "proposed" ? ", proposed" : ""}`;
   return html`
@@ -171,7 +279,7 @@ function DayRow({ d, today, onOpen }) {
                ${d.proposal ? html`<span class="meta proposal">proposal: ${d.proposal.title}</span>` : null}
                ${d.state !== "past" ? html`<span><${Badge} g=${d.groceries} /></span>` : null}`}
       </div>
-      ${d.locked ? html`<span class="lock" title="Locked"><${Icon} name="lock" /></span>` : null}
+      ${d.locked || d.ordered ? html`<span class="lock" title=${d.ordered ? d.lock_reason : "Locked"}><${Icon} name="lock" /></span>` : null}
     </div>`;
 }
 
@@ -182,7 +290,7 @@ function Tonight({ tl, onOpen }) {
   const card = d.dinner || d.proposal;
   const nextCard = next && (next.dinner || next.proposal);
   return html`
-    <button type="button" class=${"tonight span st-" + d.state} onClick=${() => card && onOpen(d)} disabled=${!card} aria-label=${`Tonight: ${card ? card.title : "nothing planned"}`}>
+    <button type="button" class=${"tonight span st-" + d.state} onClick=${() => (card || d.editable) && onOpen(d)} disabled=${!card && !d.editable} aria-label=${`Tonight: ${card ? card.title : "nothing planned"}`}>
       <span class="eyebrow">Tonight · ${d.weekday} ${dayNum(d.date)}</span>
       <span class="dish">${card ? card.title : "Nothing planned"}</span>
       <span class="meta">
@@ -246,7 +354,7 @@ function Week({ tl, status, reload, busy, toast }) {
             ${w.awaiting_run_id ? "Plan the gaps again" : "Plan the gaps"}${w.locked_dates.length ? html` <span class="sub">keeps your ${plural(w.locked_dates.length, "dinner")}</span>` : null}</button>` : null}
         </section>`;
       })}
-      <p class="span muted small">Dinners come from Cookidoo My Week. Znacht only proposes; nothing changes there until you approve, and every approval shows what it removes first.</p>
+      <p class="span muted small">Dinners come from Cookidoo My Week. Tap a day to swap, move, remove or add a dinner; nothing changes there or on your lists until you confirm, and every change can be undone. Days whose groceries are ordered are locked.</p>
       ${day ? html`
         <${DaySheet} date=${day.date} title=${card && card.title} runId=${day.run_id} locked=${day.locked} toast=${toast} busy=${busy}
           badge=${day.dinner && day.state !== "past" ? html`<${Badge} g=${day.groceries} />` : null}
@@ -258,7 +366,7 @@ function Week({ tl, status, reload, busy, toast }) {
           ${card && card.url ? html`<a href=${card.url} target="_blank" rel="noopener" class="small">Open the recipe</a>` : null}
           ${(day.also || []).length ? html`<div class="stack"><h2>Also in My Week that day</h2><div class="chips">${day.also.map((a) => html`<span class="chip quiet">${a.title}${a.breakfast ? " · breakfast" : ""}</span>`)}</div></div>` : null}
           ${day.proposal ? html`<a class="btn primary" href=${`#review/${day.proposal.source}`}>Review the proposal</a>` : null}
-          ${!day.run_id && day.dinner ? html`<p class="muted small">To change it, edit My Week in Cookidoo or plan this week again.</p>` : null}
+          ${day.state !== "proposed" && !day.proposal ? html`<${EditPanel} key=${day.date} day=${day} weekDays=${tl.days.filter((x) => x.week === day.week)} toast=${toast} reload=${reload} busy=${busy} onDone=${() => setOpen(null)} />` : null}
         </${DaySheet}>` : null}
     </div>`;
 }
@@ -295,7 +403,7 @@ function Review({ runId, tick, reload, busy, toast, runs }) {
   if (err && !view) return html`<div class="screen"><${Back} href="#week" label="Week" /><div class="empty span"><b>Can't open this plan</b><span>${err}</span></div></div>`;
   if (!view) return html`<div class="screen"><${Back} href="#week" label="Week" /><div class="empty span">Loading the plan…</div></div>`;
 
-  const newer = (runs || []).find((r) => r.week === view.week && r.id > view.run_id);
+  const newer = (runs || []).find((r) => r.week === view.week && r.id > view.run_id && !r.edit);
   const d = open ? view.dinners.find((x) => x.date === open) : null;
   const m = view.money;
   const proposal = view.status === "needs_approval" || view.status === "needs_input";
@@ -369,6 +477,39 @@ function Review({ runId, tick, reload, busy, toast, runs }) {
     </div>`;
 }
 
+// "I placed the order": until Znacht can read Migros orders (roadmap P0-3) the household says
+// so, and the days the order covers are locked (ADR-0014)
+function OrderCard({ runId, tick, toast, reload }) {
+  const [offer, setOffer] = useState(null);
+  const [pick, setPick] = useState(new Set());
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    let live = true;
+    api("GET", `/api/runs/${runId}/order`).then((o) => { if (live) { setOffer(o); setPick(new Set(o.suggested)); } }).catch(() => live && setOffer(null));
+    return () => { live = false; };
+  }, [runId, tick]);
+  if (!offer || (!offer.order && !offer.days.length)) return null;
+  const names = (dates) => dates.map(dayName).join(", ");
+  if (offer.order) {
+    const undo = async () => { try { await api("DELETE", `/api/orders/${offer.order.id}`); toast("Not ordered: those days can be changed again."); reload(); } catch (e) { toast(e.message); } };
+    return html`<div class="card span"><div class="row between"><span class="row"><${Icon} name="lock" /><b>Ordered</b></span><button type="button" class="link" onClick=${undo}>Not ordered after all</button></div>
+      <span class="small">Covers ${names(offer.order.dates)}. Znacht leaves these days alone.</span></div>`;
+  }
+  const toggle = (d) => { const n = new Set(pick); if (n.has(d)) n.delete(d); else n.add(d); setPick(n); };
+  const save = async () => {
+    try { await api("POST", "/api/orders", { run_id: runId, dates: [...pick].sort() }); toast(`Locked ${plural(pick.size, "day")}: their groceries are ordered.`); setOpen(false); reload(); }
+    catch (e) { toast(e.message); }
+  };
+  return html`<div class="card span">
+    <h2>Placed the order in Migros?</h2>
+    <span class="small muted">Tell Znacht, and the days the order covers are locked: nothing here changes them.</span>
+    ${open ? html`<div class="chips" role="group" aria-label="Days this order covers">${offer.days.map((d) => html`
+        <button type="button" class=${"chip big" + (pick.has(d.date) ? " on" : "")} aria-pressed=${pick.has(d.date)} onClick=${() => toggle(d.date)}>${dayName(d.date)} · ${d.title}</button>`)}</div>
+      <div class="row"><button type="button" class="btn primary" onClick=${save} disabled=${!pick.size}>Lock ${plural(pick.size, "day")}</button><button type="button" class="btn ghost" onClick=${() => setOpen(false)}>Cancel</button></div>` :
+      html`<div class="row"><button type="button" class="btn" onClick=${() => setOpen(true)}>I placed the order</button></div>`}
+  </div>`;
+}
+
 // ---------- Groceries: the list for the week you are shopping ------------------------------
 function Groceries({ runId, tick, reload, busy, toast, runs, today }) {
   const [tab, setTab] = useState("online");
@@ -386,7 +527,7 @@ function Groceries({ runId, tick, reload, busy, toast, runs, today }) {
   const thisWeek = mondayOf(today);
   const choices = [];
   for (const r of runs || []) {
-    if (r.week < thisWeek) continue;
+    if (r.week < thisWeek || (r.edit && r.status !== "applied")) continue; // an undone edit is not a week of its own
     const same = choices.filter((c) => c.week === r.week);
     if (r.status === "applied" ? !same.some((c) => c.status === "applied") : same.length === 0) choices.push(r);
   }
@@ -440,6 +581,7 @@ function Groceries({ runId, tick, reload, busy, toast, runs, today }) {
         <div class="banner ok span"><span><b>On your Migros lists.</b><br /><span class="small">Znacht never orders or pays: finish the order in Migros. <a href=${`#review/${view.run_id}`}>See the plan or undo it</a></span></span>${view.checkout_url ? html`<a class="btn" href=${view.checkout_url} target="_blank" rel="noopener">Open Migros</a>` : null}</div>` :
         view.status === "reverted" ? html`<div class="banner span"><span>This plan was undone; nothing of it is on your lists.</span></div>` : html`
         <div class="banner span"><span><b>Proposal, not sent yet.</b><br /><span class="small muted">Nothing is on your Migros lists until you approve.</span></span><a class="btn primary" href=${`#review/${view.run_id}`}>Review</a></div>`}
+      ${applied ? html`<${OrderCard} runId=${view.run_id} tick=${tick} toast=${toast} reload=${reload} />` : null}
       <${Basket} m=${view.money} />
       <div class="tabs span" role="tablist">
         <button type="button" role="tab" aria-selected=${tab === "online"} class=${"tab" + (tab === "online" ? " on" : "")} onClick=${() => setTab("online")}>Online · ${applied ? left(view.online, "online") : view.online.length}</button>
@@ -715,7 +857,9 @@ function App() {
   const [error, setError] = useState(null);
   const [msg, setMsg] = useState(null);
   const timer = useRef(null);
-  const toast = useCallback((t) => { clearTimeout(timer.current); setMsg(t); timer.current = setTimeout(() => setMsg(null), 4000); }, []);
+  // a toast may carry one action (Undo); it then stays a little longer
+  const toast = useCallback((text, action) => { clearTimeout(timer.current); setMsg({ text, action }); timer.current = setTimeout(() => setMsg(null), action ? 9000 : 4000); }, []);
+  const Toast = () => (msg ? html`<div class="toast" role="status">${msg.text}${msg.action ? html` <button type="button" class="toast-act" onClick=${() => { const a = msg.action; setMsg(null); a.run(); }}>${msg.action.label}</button>` : null}</div>` : null);
 
   const reload = useCallback(async () => {
     try {
@@ -760,7 +904,7 @@ function App() {
 
   let body;
   // the first setup comes before anything that needs a household
-  if (setup && setup.needed) return html`<div class="shell"><${Welcome} adapters=${setup.adapters} toast=${toast} onDone=${() => { setSetup({ ...setup, needed: false }); loadHousehold(); reload(); go("#week"); }} />${msg ? html`<div class="toast" role="status">${msg}</div>` : null}</div>`;
+  if (setup && setup.needed) return html`<div class="shell"><${Welcome} adapters=${setup.adapters} toast=${toast} onDone=${() => { setSetup({ ...setup, needed: false }); loadHousehold(); reload(); go("#week"); }} /><${Toast} /></div>`;
   if (error && !tl) body = html`<div class="screen"><div class="empty span"><b>Can't reach the engine</b><span>${error}</span><button type="button" class="btn" onClick=${reload}>Try again</button></div></div>`;
   else if (!tl || !status || !setup) body = html`<div class="screen"><div class="empty span">Loading…</div></div>`;
   else if (route.name === "review" && route.id) body = html`<${Review} runId=${route.id} tick=${tick} reload=${reload} busy=${busy} toast=${toast} runs=${runs} />`;
@@ -771,7 +915,7 @@ function App() {
 
   return html`<div class="shell">
     ${error && tl ? html`<div class="offline" role="alert">Can't reach the engine just now. <button type="button" class="link" onClick=${reload}>Retry</button></div>` : null}
-    ${body}<${Nav} route=${route} />${msg ? html`<div class="toast" role="status">${msg}</div>` : null}</div>`;
+    ${body}<${Nav} route=${route} /><${Toast} /></div>`;
 }
 
 render(html`<${App} />`, document.getElementById("root"));

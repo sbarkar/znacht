@@ -104,6 +104,11 @@ the still-missing delivery-slot endpoint gets captured: Sergej opens migros.ch c
 tab open, picks a slot, and pastes request path and response shape (no cookies) into an issue. The
 household `slot_templates` stay as fallback. **Size** M, needs Sergej for the capture. **Depends on** nothing.
 
+Since ADR-0014 the engine keeps an `orders` table (run, dates covered, time, `source`) that the household fills
+with "I placed the order" in Groceries or `znacht.mark_ordered`, and ordered days are locked against edits. An
+`orders()` read lands in the same table with `source = migros`, confirming or adding to those records; the
+timeline's `ordered`, `lock_reason` and coverage `ordered` stay as they are.
+
 ## P1 · Talk to it
 
 ### 4. Voice control through Home Assistant Assist

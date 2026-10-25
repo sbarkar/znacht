@@ -77,6 +77,7 @@ CALENDAR = [
         "note": "fish night",
         "source": 7,
         "proposed": False,
+        "ordered": True,
     },
     {
         "date": "2026-10-28",
@@ -142,6 +143,7 @@ def engine(aioclient_mock):
     aioclient_mock.post(f"{base}/api/apply", json={"run_id": 7, "status": "applied"})
     aioclient_mock.post(f"{base}/api/refresh", json={})
     aioclient_mock.post(f"{base}/api/pantry", json={})
+    aioclient_mock.post(f"{base}/api/orders", json={"id": 1, "run_id": 7})
     aioclient_mock.post(f"{base}/api/lists/online/done", json={"ok": True})
     aioclient_mock.post(f"{base}/api/lists/in_store/items", json={"ok": True})
     return aioclient_mock

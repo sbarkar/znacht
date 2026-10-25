@@ -16,7 +16,7 @@ from znacht.domain.recipe import Recipe, Tag
 from znacht.services.pipeline import WeekResult
 
 DayState = Literal["past", "planned", "proposed", "empty"]
-Coverage = Literal["arriving", "online_list", "store_run", "none"]
+Coverage = Literal["ordered", "arriving", "online_list", "store_run", "none"]
 
 DEFAULT_DAYS = 14
 MAX_DAYS = 56
@@ -146,6 +146,15 @@ def coverage(
     return _none()
 
 
+def ordered_coverage(groceries: dict[str, Any]) -> dict[str, Any]:
+    """A day covered by a recorded order (ADR-0014): ordered, still saying when it arrives."""
+    if groceries["coverage"] == "arriving":
+        when = groceries["label"].split(" ", 1)[1]
+        verb = "delivered" if groceries["label"].startswith("delivered") else "arriving"
+        return {**groceries, "coverage": "ordered", "label": f"ordered · {verb} {when}"}
+    return {**groceries, "coverage": "ordered", "label": "ordered"}
+
+
 def _none() -> dict[str, Any]:
     return {"coverage": "none", "label": "none", "slot": None, "run_id": None}
 
@@ -164,6 +173,7 @@ def summary(days: Sequence[dict[str, Any]], *, awaiting_run_id: int | None) -> s
             + (f" (run {awaiting_run_id} awaits approval)" if awaiting_run_id else "")
         )
     arriving: dict[str, list[date]] = {}
+    ordered: list[date] = []
     store: list[date] = []
     listed: list[date] = []
     missing: list[date] = []
@@ -173,7 +183,9 @@ def summary(days: Sequence[dict[str, Any]], *, awaiting_run_id: int | None) -> s
         g = r["groceries"]
         if r["state"] == "proposed" and g["coverage"] == "none":
             continue  # a proposal brings its groceries when approved; not a gap to flag
-        if g["coverage"] == "arriving":
+        if g["coverage"] == "ordered":
+            ordered.append(d)
+        elif g["coverage"] == "arriving":
             label = g["label"].removeprefix("arriving ").removeprefix("delivered ")
             arriving.setdefault(label, []).append(d)
         elif g["coverage"] == "store_run":
@@ -182,6 +194,8 @@ def summary(days: Sequence[dict[str, Any]], *, awaiting_run_id: int | None) -> s
             listed.append(d)
         else:
             missing.append(d)
+    if ordered:
+        parts.append(f"ordered {span(ordered)}")
     for label, ds in arriving.items():
         parts.append(f"online order {label} covers {span(ds)}")
     if store:

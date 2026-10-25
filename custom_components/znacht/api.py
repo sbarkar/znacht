@@ -58,6 +58,12 @@ class ZnachtApi:
     async def apply(self, run_id: int | None = None) -> Any:
         return await self._call("POST", "/api/apply", params={"run_id": run_id} if run_id else None)
 
+    async def mark_ordered(self, run_id: int | None = None, dates: list[str] | None = None) -> Any:
+        body: dict[str, Any] = {"run_id": run_id}
+        if dates:
+            body["dates"] = dates
+        return await self._call("POST", "/api/orders", json=body)
+
     async def refresh(self) -> Any:
         return await self._call("POST", "/api/refresh")
 
