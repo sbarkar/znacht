@@ -1,7 +1,8 @@
-name: Release image
+name: Release
 
-# Publishes ghcr.io/sbarkar/znacht (used by deploy/compose.yaml and the add-on). Runs only on pushes to main and
-# v* tags, which only land through the branch and tag rulesets, so fork code never gets the write token.
+# Publishes ghcr.io/sbarkar/znacht (used by deploy/compose.yaml and the add-on) on pushes to main and v* tags, and
+# for a v* tag also the GitHub release that HACS offers. Both refs only land through the branch and tag rulesets,
+# so fork code never gets the write token.
 on:
   push:
     branches: [main]
@@ -16,7 +17,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # A tag whose version disagrees with manifest.json or the add-on's config.yaml publishes nothing.
+  verify:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 scripts/check_versions.py "$GITHUB_REF_NAME"
+
   image:
+    needs: verify
+    if: ${{ !cancelled() && needs.verify.result != 'failure' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -63,3 +77,19 @@ jobs:
           subject-name: ghcr.io/${{ github.repository }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
+
+  github-release:
+    needs: image
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Create the release HACS offers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=(--verify-tag --generate-notes --title "$GITHUB_REF_NAME")
+          case "$GITHUB_REF_NAME" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" "${flags[@]}"
