@@ -1,7 +1,7 @@
 // Znacht app: one page, four screens and a review, no build step. Preact + htm, vendored.
 // The screens follow the household's journeys (docs/ux-journey-review.md): glance at tonight,
 // plan the gaps, review and approve one proposal, shop the week you are in, adjust the house.
-import { html, render, useState, useEffect, useCallback, useRef } from "/app/static/vendor/htm-preact-standalone.module.js?v=1";
+import { html, render, useState, useEffect, useCallback, useRef } from "./vendor/htm-preact-standalone.module.js?v=1";
 
 // ---------- token and API --------------------------------------------------------------
 const params = new URLSearchParams(location.search);
@@ -9,10 +9,12 @@ if (params.get("token")) {
   try { localStorage.setItem("znacht_token", params.get("token")); } catch (e) { /* storage may be blocked */ }
   history.replaceState(null, "", location.pathname + location.hash);
 }
+// under Home Assistant's ingress every URL starts with its path (ADR-0012); empty otherwise
+const BASE = document.documentElement.dataset.base || "";
 function token() { try { return localStorage.getItem("znacht_token") || ""; } catch (e) { return ""; } }
 
 async function api(method, path, body) {
-  const res = await fetch(path, {
+  const res = await fetch(BASE + path, {
     method,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -499,7 +501,7 @@ function Household({ household, patch, toast, planner }) {
     setBusyPhoto(true);
     try {
       const fd = new FormData(); fd.append("file", file);
-      const res = await fetch("/api/pantry/photo", { method: "POST", headers: { Authorization: `Bearer ${token()}` }, body: fd });
+      const res = await fetch(BASE + "/api/pantry/photo", { method: "POST", headers: { Authorization: `Bearer ${token()}` }, body: fd });
       if (!res.ok) { let msg = res.statusText; try { msg = (await res.json()).detail || msg; } catch (e) { /* not json */ } throw new Error(msg); }
       const d = await res.json();
       setDraft(d.items.map((i) => ({ ...i, keep: i.confidence >= 0.5 })));

@@ -19,6 +19,10 @@ class EngineSettings:
     ha_token: str | None = None
     ha_notify_service: str | None = None  # e.g. "mobile_app_sergej" (without "notify.")
     host: str = "0.0.0.0"
+    # The HA add-on: trust Home Assistant's ingress gateway and serve under its path (ADR-0012)
+    ingress: bool = False
+    # where notification links point instead of the Brief, e.g. the add-on's sidebar panel
+    notify_link: str | None = None
     port: int = 8787
     extra: dict[str, str] = field(default_factory=dict)
 
@@ -41,5 +45,7 @@ class EngineSettings:
             ha_token=e.get("ZNACHT_HA_TOKEN") or None,
             ha_notify_service=e.get("ZNACHT_HA_NOTIFY") or None,
             host=e.get("ZNACHT_HOST", "0.0.0.0"),
+            ingress=e.get("ZNACHT_INGRESS", "").lower() in ("1", "true", "on"),
+            notify_link=e.get("ZNACHT_NOTIFY_LINK") or None,
             port=int(e.get("ZNACHT_PORT", "8787")),
         )

@@ -21,6 +21,8 @@ ZNACHT_HOUSEHOLD=examples/household.example.yaml ZNACHT_DATA_DIR=/tmp/znacht uv 
 | `ZNACHT_PUBLIC_URL` | `http://localhost:8787` | used in notification links |
 | `ZNACHT_HA_URL`, `ZNACHT_HA_TOKEN`, `ZNACHT_HA_NOTIFY` | unset | send actionable notifications through HA (`ZNACHT_HA_NOTIFY=mobile_app_<device>`) and fire `znacht_plan_ready` / `znacht_needs_input` events |
 | `ZNACHT_HOST`, `ZNACHT_PORT` | `0.0.0.0`, `8787` | where the engine listens |
+| `ZNACHT_INGRESS` | off | the HA add-on sets it: requests from the Supervisor's ingress gateway (`172.30.32.2`) need no token, and URLs start with their `X-Ingress-Path` (ADR-0012) |
+| `ZNACHT_NOTIFY_LINK` | the Brief | where notification links point instead; the add-on sets its panel path |
 
 Adapter variables:
 
@@ -36,7 +38,7 @@ Adapter variables:
 
 ## API
 
-Everything except `/healthz` takes the bearer token (`Authorization: Bearer …`, or `?token=` once on the Brief and the app).
+Everything except `/healthz` and `/` (a redirect to the app) takes the bearer token (`Authorization: Bearer …`, or `?token=` once on the Brief and the app).
 
 | Area | Endpoints |
 |---|---|

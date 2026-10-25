@@ -177,7 +177,7 @@ class ZnachtService:
                                 "Finish the order when you are ready."
                             ),
                             actions=("review",),
-                            data={"url": self.brief_url(rid), "run_id": str(rid)},
+                            data={"url": self.notify_url(rid), "run_id": str(rid)},
                         )
                     )
                 return rid, applied
@@ -865,6 +865,10 @@ class ZnachtService:
         token = f"?token={self.settings.api_token}" if self.settings.api_token else ""
         return f"{self.settings.public_url}/brief/{run_id}{token}"
 
+    def notify_url(self, run_id: int) -> str:
+        """Where a notification opens: the Brief, or the add-on's panel inside Home Assistant."""
+        return self.settings.notify_link or self.brief_url(run_id)
+
     def recent_meals(self, *, before: Week, weeks: int = 4) -> tuple[str, ...]:
         """Dinner titles from applied (or latest) runs of the previous weeks, newest first."""
         titles: list[str] = []
@@ -930,7 +934,7 @@ class ZnachtService:
                     title="Znacht: plan ready",
                     message=message,
                     actions=("approve", "review"),
-                    data={"url": self.brief_url(run_id), "run_id": str(run_id)},
+                    data={"url": self.notify_url(run_id), "run_id": str(run_id)},
                 )
             )
         else:
@@ -941,7 +945,7 @@ class ZnachtService:
                     message="; ".join(str(v) for v in result.violations[:3])
                     or "The plan could not be completed.",
                     actions=("review",),
-                    data={"url": self.brief_url(run_id), "run_id": str(run_id)},
+                    data={"url": self.notify_url(run_id), "run_id": str(run_id)},
                 )
             )
 

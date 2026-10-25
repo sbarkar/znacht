@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 from datetime import date, timedelta
 
 import httpx
 
 from znacht.domain.plan import Meal, MealSlot
 from znacht.domain.recipe import RecipeId
+from znacht_engine.app import INGRESS_GATEWAY, create_app
 from znacht_engine.service import ZnachtService, next_monday
 from znacht_memory.fixtures import GOLDEN_WEEK_START
 
@@ -643,3 +645,56 @@ async def test_a_delivery_in_the_past_reads_delivered(service: ZnachtService):
     assert coverage(wed, today=GOLDEN_WEEK_START, **kw)["label"] == "arriving Mon 19:00"
     late = coverage(wed, today=wed, **kw)
     assert late["coverage"] == "arriving" and late["label"] == "delivered Mon 19:00"
+
+
+INGRESS = "/api/hassio_ingress/abc_DEF-123"
+
+
+def _client_from(app, peer: str, **headers: str) -> httpx.AsyncClient:
+    transport = httpx.ASGITransport(app=app, client=(peer, 40000))
+    return httpx.AsyncClient(transport=transport, base_url="http://engine.test", headers=headers)
+
+
+async def test_ingress_gateway_is_trusted_and_urls_carry_its_path(settings, service):
+    app = create_app(replace(settings, ingress=True), service)
+    async with (
+        app.router.lifespan_context(app),
+        _client_from(app, INGRESS_GATEWAY, **{"X-Ingress-Path": INGRESS}) as c,
+    ):
+        assert (await c.get("/api/status")).status_code == 200  # no token: HA checked the user
+        root = await c.get("/")
+        assert root.status_code == 302 and root.headers["location"] == f"{INGRESS}/app"
+        page = (await c.get("/app")).text
+        assert f'data-base="{INGRESS}"' in page and f'src="{INGRESS}/app/static/app.js' in page
+        run_id, _ = await service.plan_week(GOLDEN_WEEK_START)
+        assert f'action="{INGRESS}/brief/{run_id}/apply' in (await c.get(f"/brief/{run_id}")).text
+        r = await c.get(f"/brief/{run_id}?token=x")
+        assert r.headers["location"] == f"{INGRESS}/brief/{run_id}"
+
+
+async def test_ingress_trust_needs_the_flag_the_gateway_and_a_sane_path(settings, service):
+    ingress_app = create_app(replace(settings, ingress=True), service)
+    plain_app = create_app(settings, service)
+    async with ingress_app.router.lifespan_context(ingress_app):
+        # another peer still needs the token, and its X-Ingress-Path is ignored
+        async with _client_from(ingress_app, "172.30.33.7", **{"X-Ingress-Path": INGRESS}) as c:
+            assert (await c.get("/api/status")).status_code == 401
+            assert 'data-base=""' in (await c.get("/app")).text
+        # a malformed path from the gateway is not echoed into the page
+        async with _client_from(ingress_app, INGRESS_GATEWAY, **{"X-Ingress-Path": '/x"><b>'}) as c:
+            assert 'data-base=""' in (await c.get("/app")).text
+    # without ZNACHT_INGRESS the gateway address means nothing
+    async with (
+        plain_app.router.lifespan_context(plain_app),
+        _client_from(plain_app, INGRESS_GATEWAY) as c,
+    ):
+        assert (await c.get("/api/status")).status_code == 401
+
+
+async def test_notifications_open_the_configured_link(settings, notifier, service):
+    service.settings = replace(settings, notify_link="/abc123_znacht")
+    await service.plan_week(GOLDEN_WEEK_START)
+    assert notifier.events[-1].data["url"] == "/abc123_znacht"
+    assert service.status()["brief_url"].startswith(
+        "http://engine.test/brief/"
+    )  # the app still links the Brief

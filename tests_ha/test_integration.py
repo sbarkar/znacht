@@ -146,3 +146,87 @@ async def test_reconfigure_moves_the_entry_to_a_new_engine(hass):
     assert result["reason"] == "reconfigure_successful"
     assert entry.data == new
     assert entry.unique_id == new["url"]
+
+
+def _discovery(token: str = "made-by-the-addon"):
+    from homeassistant.helpers.service_info.hassio import HassioServiceInfo
+
+    return HassioServiceInfo(
+        config={"url": ENTRY["url"], "token": token},
+        name="Znacht",
+        slug="abc123_znacht",
+        uuid="0123456789abcdef0123456789abcdef",
+    )
+
+
+async def test_the_addon_announces_itself_and_sets_up_with_one_click(hass):
+    api = MagicMock()
+    api.health = AsyncMock(return_value={"status": "ok"})
+    api.status = AsyncMock(return_value={"plan_status": "idle"})
+    with (
+        patch("custom_components.znacht.config_flow.ZnachtApi", return_value=api),
+        patch("custom_components.znacht.async_setup_entry", return_value=True),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "hassio"}, data=_discovery()
+        )
+        assert result["type"] == "form" and result["step_id"] == "hassio_confirm"
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        await hass.async_block_till_done()
+    assert result["type"] == "create_entry"
+    assert result["data"] == {"url": ENTRY["url"], "token": "made-by-the-addon", "addon": True}
+
+
+async def test_a_new_addon_token_updates_the_existing_entry(hass):
+    entry = MockConfigEntry(domain=DOMAIN, data=ENTRY, unique_id=ENTRY["url"])
+    entry.add_to_hass(hass)
+    with patch("custom_components.znacht.async_setup_entry", return_value=True):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "hassio"}, data=_discovery("fresh")
+        )
+    assert result["type"] == "abort" and result["reason"] == "already_configured"
+    assert entry.data["token"] == "fresh" and entry.data["addon"] is True
+
+
+async def test_only_a_separate_engine_gets_the_iframe_panel(hass, engine):
+    entry = await setup(hass, engine)
+    assert "znacht" in hass.data.get("frontend_panels", {})
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    assert "znacht" not in hass.data.get("frontend_panels", {})
+
+    addon = MockConfigEntry(
+        domain=DOMAIN, data={**ENTRY, "addon": True}, unique_id="addon", entry_id="addon"
+    )
+    addon.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(addon.entry_id)
+    await hass.async_block_till_done()
+    assert "znacht" not in hass.data.get("frontend_panels", {})
+
+
+async def _reconfigure(hass, entry, user_input):
+    api = MagicMock()
+    api.health = AsyncMock(return_value={"status": "ok"})
+    api.status = AsyncMock(return_value={"plan_status": "idle"})
+    with (
+        patch("custom_components.znacht.config_flow.ZnachtApi", return_value=api),
+        patch("custom_components.znacht.async_setup_entry", return_value=True),
+        patch("custom_components.znacht.async_unload_entry", return_value=True),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "reconfigure", "entry_id": entry.entry_id}
+        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], user_input)
+        await hass.async_block_till_done()
+    assert result["reason"] == "reconfigure_successful"
+
+
+async def test_reconfigure_keeps_the_addon_flag_only_for_the_same_engine(hass):
+    addon = {**ENTRY, "addon": True}
+    entry = MockConfigEntry(domain=DOMAIN, data=addon, unique_id=ENTRY["url"])
+    entry.add_to_hass(hass)
+    await _reconfigure(hass, entry, {"url": ENTRY["url"], "token": "new"})
+    assert entry.data == {"url": ENTRY["url"], "token": "new", "addon": True}
+    # moving to an LXC: a separate engine, so the integration's panel comes back
+    lxc = {"url": "http://192.168.1.50:8787", "token": "t"}
+    await _reconfigure(hass, entry, lxc)
+    assert entry.data == lxc

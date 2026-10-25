@@ -105,7 +105,13 @@ You need Home Assistant 2025.6 or newer and somewhere to run the engine.
 
 Pick one. All three run the same engine and keep everything in one data folder.
 
-- **Proxmox LXC** (the tested path). One script creates a Debian container and installs the engine as
+- **Home Assistant OS add-on** (no other hardware, the simplest). In Home Assistant: Settings → Add-ons
+  → Add-on store → ⋮ → Repositories, add `https://github.com/sbarkar/znacht`, install **Znacht**, fill
+  in your accounts and start it. On first start it writes an example `household.yaml` to the add-on's
+  config folder: edit it and restart. The add-on makes its own API token and announces itself to Home
+  Assistant, and its sidebar entry is the app. Details in
+  [the add-on docs](https://github.com/sbarkar/znacht/blob/main/addon/znacht/DOCS.md).
+- **Proxmox LXC** (what the household that built it runs). One script creates a Debian container and installs the engine as
   a systemd service: [deploy/lxc/README.md](https://github.com/sbarkar/znacht/blob/main/deploy/lxc/README.md).
 - **Docker / Compose** (a NAS, any box). Copy [`deploy/.env.example`](https://github.com/sbarkar/znacht/blob/main/deploy/.env.example) to
   `deploy/.env` and fill it in. Seed the data volume with the example household once, then start the
@@ -117,19 +123,14 @@ Pick one. All three run the same engine and keep everything in one data folder.
   ```
 
   The image is `ghcr.io/sbarkar/znacht`.
-- **Home Assistant OS add-on** (no other hardware; experimental, less tested than the two above). In
-  Home Assistant: Settings → Add-ons → Add-on store → ⋮ → Repositories, add
-  `https://github.com/sbarkar/znacht`, install **Znacht**, fill in the options and start it. On first
-  start it writes an example `household.yaml` to the add-on's config folder: edit it and restart.
-  The entities and actions work; the sidebar app does not load with the add-on yet. Details in
-  [the add-on docs](https://github.com/sbarkar/znacht/blob/main/addon/znacht/DOCS.md).
 
-Check it is up: `curl http://<engine>:8787/healthz` answers `{"status":"ok",...}`.
+For the LXC or a container, check it is up: `curl http://<engine>:8787/healthz` answers
+`{"status":"ok",...}`.
 
 What the engine needs from you:
 
-- **An API token** (`ZNACHT_API_TOKEN`, add-on option `api_token`): any long random string. Home
-  Assistant and the app present it on every request. Without one the API is open to your whole LAN.
+- **An API token** (`ZNACHT_API_TOKEN`): any long random string. Home Assistant and the app present it
+  on every request. Without one the API is open to your whole LAN. The add-on makes one for you.
 - **Cookidoo**: email and password. The password is used once; after that a token file is kept.
 - **Migros**: email, password and the TOTP secret of your two-factor setup, used for the first login and
   whenever the single sign-on expires. Only the session is stored.
@@ -141,21 +142,22 @@ What the engine needs from you:
 
 1. HACS → ⋮ → Custom repositories → add `https://github.com/sbarkar/znacht` as type **Integration**.
 2. Find **Znacht** in HACS, download it, restart Home Assistant.
-3. Settings → Devices & services → Add integration → **Znacht**. Enter the engine URL
-   (`http://<engine>:8787`; for the add-on, `http://<add-on hostname>:8787` with the hostname from the
-   add-on's Info page) and the API token.
+3. With the add-on: Settings → Devices & services shows **Znacht** as discovered; press Configure and
+   Submit. With the LXC or a container: Add integration → **Znacht**, then enter the engine URL
+   (`http://<engine>:8787`) and the API token.
 
-The entities appear, and **Znacht** shows up in the sidebar.
+The entities appear, and **Znacht** shows up in the sidebar (with the add-on, as the add-on's entry).
 
-> If you open Home Assistant over HTTPS (Nabu Casa, a reverse proxy), the sidebar app can only load an
-> engine that is also on HTTPS: put the engine behind your proxy (a Caddy snippet is in
+> With the LXC or a container: if you open Home Assistant over HTTPS (Nabu Casa, a reverse proxy), the
+> sidebar app can only load an engine that is also on HTTPS: put the engine behind your proxy (a Caddy snippet is in
 > [`deploy/caddy/`](https://github.com/sbarkar/znacht/blob/main/deploy/caddy/Caddyfile.snippet)) and use that URL in the integration.
 
 ### 3. Notifications (optional)
 
 Give the engine a Home Assistant long-lived access token (`ZNACHT_HA_URL`, `ZNACHT_HA_TOKEN`) and your
 phone's notify service without the `notify.` prefix (`ZNACHT_HA_NOTIFY=mobile_app_<your_phone>`). The
-add-on only needs `ha_notify`; it reaches Home Assistant by itself.
+add-on only needs `ha_notify`; it reaches Home Assistant by itself, and its links open the Znacht panel in
+the Home Assistant app.
 
 You then get "plan ready" (with Approve and Review buttons) and "needs a hand" when a plan could not be
 completed. Review opens the Brief. The Approve button fires a `mobile_app_notification_action` event
@@ -244,7 +246,8 @@ token. Entities, history and the sidebar panel follow.
 | Plan status `needs_input` | the rules could not all be met (too few fish recipes, too little time); the Week screen and the Brief say which. Loosen a rule or lock a dinner and plan again |
 | Migros lists stop updating | the Migros session expired: make sure email, password and TOTP secret are set and restart the engine, or Migros changed an endpoint (check the issues) |
 | Cookidoo errors after a password change | delete `cookidoo-token.json` in the data folder, set the new password, restart |
-| Sidebar panel stays blank | Home Assistant on HTTPS and the engine on HTTP; see the HTTPS note in Setup |
+| Sidebar panel stays blank | Home Assistant on HTTPS and the engine on HTTP; see the HTTPS note in Setup (not an issue with the add-on) |
+| Add-on: Znacht not offered as discovered | add it by hand with `http://<add-on hostname>:8787` (Info page) and the token in `.api_token` in the add-on's config folder |
 
 Engine logs: the add-on's Log tab, `journalctl -u znacht` on the LXC, `docker logs znacht`.
 

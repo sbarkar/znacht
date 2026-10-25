@@ -127,10 +127,10 @@
 
 <div class="bar">
   {% if b.status == 'needs_approval' %}
-    <form method="post" action="/brief/{{ b.run_id }}/apply{% if token %}?token={{ token }}{% endif %}">
+    <form method="post" action="{{ base }}/brief/{{ b.run_id }}/apply{% if token %}?token={{ token }}{% endif %}">
       <button class="go" type="submit">Approve: send plan and lists</button>
     </form>
-    <form method="post" action="/brief/{{ b.run_id }}/replan{% if token %}?token={{ token }}{% endif %}">
+    <form method="post" action="{{ base }}/brief/{{ b.run_id }}/replan{% if token %}?token={{ token }}{% endif %}">
       <button type="submit">Plan again</button>
     </form>
   {% elif b.status == 'applied' %}

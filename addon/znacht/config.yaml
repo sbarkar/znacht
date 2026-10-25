@@ -12,6 +12,13 @@ ingress_port: 8787
 panel_icon: mdi:silverware-fork-knife
 panel_title: Znacht
 homeassistant_api: true
+hassio_api: true
+discovery:
+  - znacht
+ports:
+  8787/tcp: null
+ports_description:
+  8787/tcp: Direct access to the engine from other machines (optional; the sidebar panel needs no port)
 map:
   - type: addon_config
     read_only: false
