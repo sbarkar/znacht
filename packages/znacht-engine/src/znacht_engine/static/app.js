@@ -231,7 +231,7 @@ function Week({ tl, status, reload, busy, toast }) {
         const gaps = w.days.some((d) => d.state === "empty");
         return html`
         <section class="wk span" aria-label=${w.label}>
-          <div class="wk-head"><h2>${w.label}</h2><span class="sum">${w.summary}</span></div>
+          <div class="wk-head"><div class="row between"><h2>${w.label}</h2>${w.applied_run_id ? html`<a class="small" href=${`#review/${w.applied_run_id}`}>Sent plan ›</a>` : null}</div><span class="sum">${w.summary}</span></div>
           ${w.my_week_ok ? null : html`<div class="card dashed"><span class="warn-text">My Week could not be read just now; showing what Znacht last sent.</span></div>`}
           ${w.awaiting_run_id ? html`
             <div class="proposal-banner">
@@ -435,7 +435,7 @@ function Groceries({ runId, tick, reload, busy, toast, runs, today }) {
       ${choices.length > 1 ? html`<div class="chips span" role="tablist" aria-label="Which week">${choices.map((c) => html`
         <a role="tab" aria-selected=${c.id === view.run_id} class=${"chip big" + (c.id === view.run_id ? " on" : "")} href=${`#groceries/${c.id}`}>${weekName(c.week, today)} · ${STATUS_WORD[c.status] || c.status}</a>`)}</div>` : null}
       ${applied ? html`
-        <div class="banner ok span"><span><b>On your Migros lists.</b><br /><span class="small">Znacht never orders or pays: finish the order in Migros.</span></span>${view.checkout_url ? html`<a class="btn" href=${view.checkout_url} target="_blank" rel="noopener">Open Migros</a>` : null}</div>` :
+        <div class="banner ok span"><span><b>On your Migros lists.</b><br /><span class="small">Znacht never orders or pays: finish the order in Migros. <a href=${`#review/${view.run_id}`}>See the plan or undo it</a></span></span>${view.checkout_url ? html`<a class="btn" href=${view.checkout_url} target="_blank" rel="noopener">Open Migros</a>` : null}</div>` :
         view.status === "reverted" ? html`<div class="banner span"><span>This plan was undone; nothing of it is on your lists.</span></div>` : html`
         <div class="banner span"><span><b>Proposal, not sent yet.</b><br /><span class="small muted">Nothing is on your Migros lists until you approve.</span></span><a class="btn primary" href=${`#review/${view.run_id}`}>Review</a></div>`}
       <${Basket} m=${view.money} />
