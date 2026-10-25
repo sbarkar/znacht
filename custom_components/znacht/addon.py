@@ -95,6 +95,7 @@ async def install_and_start(hass: HomeAssistant, accounts: dict[str, Any]) -> Ad
         if info.state == AddonState.NOT_INSTALLED:
             await manager.async_install_addon()
             info = await manager.async_get_addon_info()
+            await _show_in_sidebar(hass, slug)
         await manager.async_set_addon_options(accounts_to_options(dict(info.options), accounts))
         if info.state == AddonState.RUNNING:
             await manager.async_restart_addon()
@@ -103,6 +104,17 @@ async def install_and_start(hass: HomeAssistant, accounts: dict[str, Any]) -> Ad
         return await _wait_for_engine(hass, manager, slug)
     except AddonError as exc:
         raise AddonSetupError(str(exc)) from exc
+
+
+async def _show_in_sidebar(hass: HomeAssistant, slug: str) -> None:
+    """An add-on installed through the API is not in the sidebar; the app lives there. The
+    watchdog restarts the engine if it ever stops."""
+    from aiohasupervisor.models import AddonsOptions
+    from homeassistant.components.hassio import get_supervisor_client
+
+    await get_supervisor_client(hass).addons.set_addon_options(
+        slug, AddonsOptions(ingress_panel=True, watchdog=True)
+    )
 
 
 async def update_accounts(hass: HomeAssistant, slug: str, accounts: dict[str, Any]) -> None:

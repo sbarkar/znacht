@@ -274,6 +274,7 @@ async def _run_addon_flow(hass, connections):
             result["flow_id"], {"next_step_id": "addon"}
         )
         assert result["type"] == "form" and result["step_id"] == "addon"
+        assert result["description_placeholders"] == {"details": ""}  # the text needs it
         result = await _past_progress(
             hass, await hass.config_entries.flow.async_configure(result["flow_id"], ACCOUNTS)
         )
@@ -362,3 +363,58 @@ async def test_configure_on_a_separate_engine_explains_itself(hass):
     entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] == "abort" and result["reason"] == "not_addon"
+
+
+async def test_a_fresh_install_puts_the_addon_in_the_sidebar(hass):
+    from custom_components.znacht import addon
+    from homeassistant.components.hassio import AddonInfo, AddonState
+
+    def info(state):
+        return AddonInfo(
+            available=True,
+            hostname="abc123-znacht",
+            options={"api_token": ""},
+            state=state,
+            update_available=False,
+            version="0.1.0",
+        )
+
+    manager = MagicMock()
+    manager.async_get_addon_info = AsyncMock(
+        side_effect=[info(AddonState.NOT_INSTALLED), info(AddonState.NOT_RUNNING)]
+    )
+    manager.async_install_addon = AsyncMock()
+    manager.async_set_addon_options = AsyncMock()
+    manager.async_start_addon = AsyncMock()
+    client = MagicMock()
+    client.addons.set_addon_options = AsyncMock()
+    engine = addon.AddonEngine(slug="abc123_znacht", url="http://abc123-znacht:8787", token="t")
+    with (
+        patch.object(addon, "find_addon_slug", AsyncMock(return_value="abc123_znacht")),
+        patch.object(addon, "_manager", return_value=manager),
+        patch("homeassistant.components.hassio.get_supervisor_client", return_value=client),
+        patch.object(addon, "_wait_for_engine", AsyncMock(return_value=engine)),
+    ):
+        assert await addon.install_and_start(hass, {"migros_email": "a@b.ch"}) == engine
+    manager.async_install_addon.assert_awaited_once()
+    sidebar = client.addons.set_addon_options.await_args.args
+    assert sidebar[0] == "abc123_znacht"
+    assert sidebar[1].ingress_panel is True and sidebar[1].watchdog is True
+    options = manager.async_set_addon_options.await_args.args[0]
+    assert options["store"] == "migros" and options["recipe_source"] == "memory"
+    manager.async_start_addon.assert_awaited_once()
+
+
+async def test_removing_the_addon_entry_keeps_the_other_entrys_panel(hass, engine):
+    lxc = await setup(hass, engine)
+    assert "znacht" in hass.data.get("frontend_panels", {})
+    addon_entry = MockConfigEntry(
+        domain=DOMAIN, data={**ENTRY, "addon": True}, unique_id="addon", entry_id="addon"
+    )
+    addon_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(addon_entry.entry_id)
+    await hass.async_block_till_done()
+    assert await hass.config_entries.async_unload(addon_entry.entry_id)
+    assert "znacht" in hass.data.get("frontend_panels", {})  # still the LXC's panel
+    assert await hass.config_entries.async_unload(lxc.entry_id)
+    assert "znacht" not in hass.data.get("frontend_panels", {})

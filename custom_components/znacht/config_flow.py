@@ -118,7 +118,11 @@ class ZnachtConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._accounts = user_input
             return await self.async_step_install()
-        return self.async_show_form(step_id="addon", data_schema=_accounts_schema({}))
+        return self.async_show_form(
+            step_id="addon",
+            data_schema=_accounts_schema({}),
+            description_placeholders={"details": ""},
+        )
 
     async def async_step_install(
         self, user_input: dict[str, Any] | None = None
