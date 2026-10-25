@@ -18,6 +18,7 @@ except ImportError:  # pragma: no cover
 
 from .api import ZnachtApi, ZnachtApiError
 from .const import (
+    CONF_ADDON,
     CONF_TOKEN,
     CONF_URL,
     DOMAIN,
@@ -54,10 +55,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: ZnachtConfigEntry) -> b
 def _register_panel(hass: HomeAssistant, entry: ZnachtConfigEntry) -> None:
     """Put the Znacht app in the sidebar: an iframe panel on the engine's /app page.
 
-    The token travels once in the panel URL; the app keeps it in its own storage.
+    The token travels once in the panel URL; the app keeps it in its own storage. With the add-on,
+    its own ingress panel is the app, and the browser could not reach the internal URL anyway.
     """
-    if async_register_built_in_panel is None or PANEL_URL_PATH in hass.data.get(
-        "frontend_panels", {}
+    if (
+        async_register_built_in_panel is None
+        or entry.data.get(CONF_ADDON)
+        or PANEL_URL_PATH in hass.data.get("frontend_panels", {})
     ):
         return
     token = entry.data.get(CONF_TOKEN)

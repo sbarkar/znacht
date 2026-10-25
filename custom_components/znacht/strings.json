@@ -15,6 +15,10 @@
           "url": "Engine URL",
           "token": "API token"
         }
+      },
+      "hassio_confirm": {
+        "title": "Znacht add-on found",
+        "description": "Set up Znacht with the {addon} add-on? The Znacht app is the add-on's own entry in the sidebar."
       }
     },
     "error": {

@@ -1,6 +1,6 @@
 # ADR-0002: Standalone engine in an LXC, thin HACS integration, add-on as packaging later
 
-Status: accepted · 2026-10-24
+Status: accepted · 2026-10-24 · amended by ADR-0012 (the add-on is first-class)
 
 ## Context
 HA runs as HAOS (VM 105 `haos12.3`) on Proxmox node `teodor`, at 95 % memory. A Caddy LXC already fronts other services. The planner does LLM calls and long network sessions with Cookidoo and Migros, which must not run in HA's event loop.

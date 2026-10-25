@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import date
@@ -65,6 +66,11 @@ class MoveRequest(BaseModel):
 
 _STATIC = Path(__file__).parent / "static"
 
+INGRESS_GATEWAY = (
+    "172.30.32.2"  # the Supervisor's ingress proxy, the only peer trusted without a token
+)
+_INGRESS_PATH = re.compile(r"/api/hassio_ingress/[A-Za-z0-9_-]+")
+
 
 def create_app(settings: EngineSettings, service: ZnachtService | None = None) -> FastAPI:
     @asynccontextmanager
@@ -92,8 +98,23 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
     def svc(request: Request) -> ZnachtService:
         return request.app.state.service  # type: ignore[no-any-return]
 
+    def via_ingress(request: Request) -> bool:
+        """Home Assistant has already authenticated a request its ingress gateway forwards."""
+        return (
+            settings.ingress
+            and request.client is not None
+            and request.client.host == INGRESS_GATEWAY
+        )
+
+    def base(request: Request) -> str:
+        """The path prefix every URL the app and the Brief build starts with (ADR-0012)."""
+        if not via_ingress(request):
+            return ""
+        path = request.headers.get("x-ingress-path", "")
+        return path if _INGRESS_PATH.fullmatch(path) else ""
+
     def auth(request: Request, token: str | None = Query(default=None)) -> None:
-        if not settings.api_token:
+        if not settings.api_token or via_ingress(request):
             return
         header = request.headers.get("authorization", "")
         presented = (
@@ -267,12 +288,22 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
 
     stamp = str(int(max(p.stat().st_mtime for p in _STATIC.rglob("*") if p.is_file())))
 
+    @app.get("/")
+    async def root(request: Request) -> RedirectResponse:
+        # the add-on's ingress panel opens the root
+        return RedirectResponse(url=f"{base(request)}/app", status_code=302)
+
     @app.get("/app")
-    async def app_entry(token: str | None = None) -> Response:
+    async def app_entry(request: Request, token: str | None = None) -> Response:
         # the token travels once in the URL (from the HA sidebar link); the app keeps it in
         # local storage and sends it as a bearer header from then on. The version stamp in the
         # asset links busts browser caches whenever a static file changes.
-        html = (_STATIC / "index.html").read_text(encoding="utf-8").replace("__V__", stamp)
+        html = (
+            (_STATIC / "index.html")
+            .read_text(encoding="utf-8")
+            .replace("__V__", stamp)
+            .replace("__BASE__", base(request))
+        )
         return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
     @app.post("/api/runs/{run_id}/revert", dependencies=[Depends(auth)])
@@ -342,11 +373,11 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
 
     @app.get("/brief/{run_id}", dependencies=[Depends(auth)])
     async def brief(
-        run_id: int, token: str | None = None, s: ZnachtService = Depends(svc)
+        request: Request, run_id: int, token: str | None = None, s: ZnachtService = Depends(svc)
     ) -> Response:
         if token:
             # move the token out of the URL (and out of access logs) into a cookie
-            redirect = RedirectResponse(url=f"/brief/{run_id}", status_code=303)
+            redirect = RedirectResponse(url=f"{base(request)}/brief/{run_id}", status_code=303)
             redirect.set_cookie(
                 "znacht_token", token, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 30
             )
@@ -355,12 +386,16 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
             b = s.brief(run_id)
         except LookupError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
-        return HTMLResponse(_TEMPLATES.get_template("brief.html").render(b=b, token=None))
+        return HTMLResponse(
+            _TEMPLATES.get_template("brief.html").render(b=b, token=None, base=base(request))
+        )
 
     @app.get("/brief", dependencies=[Depends(auth)])
-    async def latest_brief(token: str | None = None, s: ZnachtService = Depends(svc)) -> Response:
+    async def latest_brief(
+        request: Request, token: str | None = None, s: ZnachtService = Depends(svc)
+    ) -> Response:
         if token:
-            redirect = RedirectResponse(url="/brief", status_code=303)
+            redirect = RedirectResponse(url=f"{base(request)}/brief", status_code=303)
             redirect.set_cookie(
                 "znacht_token", token, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 30
             )
@@ -369,27 +404,29 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
             b = s.brief(None)
         except LookupError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
-        return HTMLResponse(_TEMPLATES.get_template("brief.html").render(b=b, token=None))
+        return HTMLResponse(
+            _TEMPLATES.get_template("brief.html").render(b=b, token=None, base=base(request))
+        )
 
     @app.post("/brief/{run_id}/apply", dependencies=[Depends(auth)])
     async def brief_apply(
-        run_id: int, token: str | None = None, s: ZnachtService = Depends(svc)
+        request: Request, run_id: int, token: str | None = None, s: ZnachtService = Depends(svc)
     ) -> RedirectResponse:
         try:
             await s.apply(run_id)
         except (LookupError, PermissionError, ValueError) as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         suffix = f"?token={token}" if token else ""
-        return RedirectResponse(url=f"/brief/{run_id}{suffix}", status_code=303)
+        return RedirectResponse(url=f"{base(request)}/brief/{run_id}{suffix}", status_code=303)
 
     @app.post("/brief/{run_id}/replan", dependencies=[Depends(auth)])
     async def brief_replan(
-        run_id: int, token: str | None = None, s: ZnachtService = Depends(svc)
+        request: Request, run_id: int, token: str | None = None, s: ZnachtService = Depends(svc)
     ) -> RedirectResponse:
         _, previous = s._run(run_id)
         new_id, _ = await s.plan_week(previous.week.start)
         suffix = f"?token={token}" if token else ""
-        return RedirectResponse(url=f"/brief/{new_id}{suffix}", status_code=303)
+        return RedirectResponse(url=f"{base(request)}/brief/{new_id}{suffix}", status_code=303)
 
     app.mount("/app/static", StaticFiles(directory=str(_STATIC)), name="static")
     return app

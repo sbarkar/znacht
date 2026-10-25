@@ -1,6 +1,7 @@
 DOMAIN = "znacht"
 CONF_URL = "url"
 CONF_TOKEN = "token"
+CONF_ADDON = "addon"  # set up from the add-on's discovery: its ingress panel is the app
 DEFAULT_SCAN_SECONDS = 300
 PLATFORMS = ["sensor", "todo", "calendar"]
 SERVICE_PLAN_WEEK = "plan_week"

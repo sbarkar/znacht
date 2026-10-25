@@ -18,7 +18,7 @@ what follows is what makes Znacht something the household actually lives with.
 ## How to work an item
 
 1. Say which item you take and write a one-line note under it ("in progress, session X, date").
-2. Non-obvious decisions get an ADR in `docs/decisions/` (next number: 0012).
+2. Non-obvious decisions get an ADR in `docs/decisions/` (next number: 0013).
 3. Before any commit: `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest -q`
    and `make test-ha` when `custom_components/` changed.
 4. Deploy is Sergej's command (needs his ssh to the Proxmox host):
