@@ -47,48 +47,6 @@ hostname is on the add-on's Info page) and the token from `.api_token` in the ad
 - **No port is published by default.** Under Network you can publish `8787/tcp` for direct access from
   other machines, for example to put a reverse proxy in front.
 
-## Moving from the LXC
-
-An engine that ran in an LXC (`deploy/lxc`) moves here with its household, run history, savings, learned
-Migros availability, Cookidoo token and Migros session:
-
-1. Install the add-on (above), but don't set up its accounts.
-2. **Stop the LXC's engine** and leave it stopped: two engines on one Cookidoo or Migros account sign
-   each other out. It stays in place as the way back.
-
-   ```bash
-   ssh root@<proxmox-host> "pct exec 102 -- systemctl stop znacht"
-   ```
-
-3. Make the bundle with this repository's `deploy/lxc/bundle.sh`. It lands on your computer, not in the
-   terminal:
-
-   ```bash
-   ssh root@<proxmox-host> "pct exec 102 -- env ZNACHT_CONFIG_DIR=/etc/znacht ZNACHT_DATA_DIR=/var/lib/znacht bash -s" < deploy/lxc/bundle.sh > znacht-bundle.tgz
-   ```
-
-4. Put `znacht-bundle.tgz`, under exactly that name, in the add-on's config folder
-   (`/addon_configs/<something>_znacht`):
-   - **File editor**: in its Configuration tab, turn off `enforce_basepath` and restart it. Open it, go
-     up to `/addon_configs/…_znacht` and upload the file. Turn `enforce_basepath` back on afterwards.
-   - **Samba share**: copy it into the `addon_configs\…_znacht` share.
-5. Start (or restart) the add-on. Its log lists what it took over, by name only: the files restored,
-   the options set from the env (accounts, adapters, `ha_notify`), and the env lines it left out. Then
-   it overwrites the bundle and removes it. What was in the config folder before is kept as
-   `*.before-import`.
-6. Delete `znacht-bundle.tgz` from your computer. In Home Assistant, delete the integration entry that
-   points at the LXC, then confirm the discovered **Znacht** add-on under Settings → Devices &
-   services. The entities keep their names and history.
-
-The add-on keeps its own API token and talks to Home Assistant through the Supervisor, so the env's
-`ZNACHT_API_TOKEN`, `ZNACHT_HA_URL`, `ZNACHT_HA_TOKEN` and `ZNACHT_PUBLIC_URL` are not taken over. Engine
-settings without an add-on option (`ZNACHT_MIGROS_LANGUAGE`, `ZNACHT_MIGROS_MINIMUM_ORDER`,
-`ZNACHT_ANTHROPIC_EFFORT`, `ZNACHT_ANTHROPIC_FALLBACKS`) are kept in `engine.env` in the config folder.
-
-To go back: stop the add-on, `systemctl start znacht` in the LXC, and add the integration for the LXC's
-address again. If its Cookidoo or Migros session was replaced in the meantime, the LXC signs in again with
-the passwords in its env.
-
 ## Data and backups
 
 The database, the household file, the generated token, the Cookidoo token and the Migros session live

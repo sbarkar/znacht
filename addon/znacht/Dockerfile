@@ -4,7 +4,7 @@
 FROM ghcr.io/sbarkar/znacht:0.2.0-rc.1
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends jq curl && rm -rf /var/lib/apt/lists/*
-COPY run.sh import_bundle.py /
+COPY run.sh /run.sh
 RUN chmod +x /run.sh
 ENV ZNACHT_DATA_DIR=/config ZNACHT_HOUSEHOLD=/config/household.yaml ZNACHT_HOST=0.0.0.0
 CMD ["/run.sh"]
