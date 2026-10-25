@@ -10,7 +10,8 @@
   3.13, the Home Assistant tests, and a build plus smoke test of the image).
 - Squash or rebase merge only; history stays linear. Open review threads must be resolved.
 - No force pushes to `main`, no deleting it. Admins can merge a PR whose checks are stuck, but cannot push directly.
-- `v*` tags are release tags; only admins can create them and they cannot be moved or deleted.
+- `v*` tags are release tags; only admins can create them (`release tags`), and nobody can move or delete them
+  (`release tags immutable`, no bypass; disable that ruleset in the settings if a tag ever truly has to go).
 
 The rules live in `.github/rulesets/` and are applied with:
 
