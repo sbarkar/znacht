@@ -1,6 +1,17 @@
-# Znacht — architecture (Phase 0 proposal)
+# Znacht — architecture
 
-Status: draft for review, 2026-10-24. Name confirmed as Znacht on 2026-10-24 (ADR-0004).
+Status: the Phase 0 design of 2026-10-24, built as Phases 1–7 (name confirmed in ADR-0004). It is kept
+as the map of the system; where the build differs, the code, the ADRs and the README win. Known
+differences, as of 2026-10-25:
+
+- There is no `znacht-hasink` package. A household without Cookidoo uses the `memory` sink, which keeps
+  the plan in the engine; the integration's calendar shows it from `/api/calendar`.
+- The Home Assistant entities are named on one *Znacht* device: `todo` Online basket and Store run,
+  `calendar` Meal plan, and sensors for plan status, unplanned days, basket total, minimum order, next
+  delivery, tonight's dinner and savings (see the README).
+- The engine also serves the Znacht app at `/app`, which the integration puts in the sidebar (ADR-0010),
+  and the Week screen is a timeline over My Week rather than a run (ADR-0011).
+- Status reaches Home Assistant by polling (every five minutes, and a few times after planning), not SSE.
 
 **Znacht** (ts-NAKHT) is Swiss German for dinner, the evening meal and the centre of the weekly food loop.
 

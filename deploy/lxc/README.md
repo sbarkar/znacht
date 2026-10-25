@@ -22,7 +22,7 @@ On the Proxmox host as root:
 curl -fsSL https://raw.githubusercontent.com/sbarkar/znacht/main/deploy/lxc/create.sh | VMID=102 bash
 ```
 
-Knobs via env: `VMID`, `STORAGE` (local-lvm), `BRIDGE` (vmbr0), `IP` (`dhcp` or `192.168.4.12/24` plus `GW`),
+Knobs via env: `VMID`, `STORAGE` (local-lvm), `BRIDGE` (vmbr0), `IP` (`dhcp` or a static `192.168.1.50/24` plus `GW`),
 `TEMPLATE` (newest Debian 12 on `local` by default), `BRANCH`. It prints the container's address and the
 bundle line for step 2.
 
@@ -33,15 +33,25 @@ already arrived.
 ## 2. Move the secrets over
 
 From the repo checkout on the machine that has `~/.config/znacht` (the host address and VMID come from
-step 1's output):
+step 1's output; replace `102` if you chose another VMID):
 
 ```bash
-deploy/lxc/bundle.sh | ssh root@192.168.4.10 "cat > /root/znacht-bundle.tgz && pct push 102 /root/znacht-bundle.tgz /root/znacht-bundle.tgz && rm -f /root/znacht-bundle.tgz && pct exec 102 -- /opt/znacht/deploy/lxc/restore.sh /root/znacht-bundle.tgz"
+deploy/lxc/bundle.sh | ssh root@<proxmox-host> "cat > /root/znacht-bundle.tgz && pct push 102 /root/znacht-bundle.tgz /root/znacht-bundle.tgz && rm -f /root/znacht-bundle.tgz && pct exec 102 -- /opt/znacht/deploy/lxc/restore.sh /root/znacht-bundle.tgz"
 ```
 
 The tarball only ever exists in the pipe, briefly in `/root` on the host, and in the LXC until `restore.sh`
 shreds it. `PUBLIC_URL=https://znacht.example.ch deploy/lxc/bundle.sh | ...` sets the public URL used in
 notification links; otherwise it is the LXC's own address.
+
+Setting up from scratch, without an existing `~/.config/znacht`? Inside the LXC, copy
+`deploy/.env.example` to `/etc/znacht/env` and fill it in, put your household file at
+`/var/lib/znacht/household.yaml` (start from `/opt/znacht/examples/household.example.yaml`), then:
+
+```bash
+chown root:znacht /etc/znacht/env && chmod 640 /etc/znacht/env
+chown znacht:znacht /var/lib/znacht/household.yaml
+systemctl restart znacht
+```
 
 ## 3. Check and connect
 
@@ -49,9 +59,10 @@ notification links; otherwise it is the LXC's own address.
 curl http://<lxc-ip>:8787/healthz
 ```
 
-In Home Assistant: Settings → Devices & services → Znacht → Reconfigure, enter `http://<lxc-ip>:8787`
-and the token from your env file. Entities and history stay; the sidebar panel follows the new URL after
-the integration reloads. Then stop the old engine and close its firewall port.
+In Home Assistant, install the Znacht integration from HACS and add it with `http://<lxc-ip>:8787` and
+the `ZNACHT_API_TOKEN` from the env file. Moving from another engine instead: Settings → Devices &
+services → Znacht → Reconfigure with the new URL; entities and history stay and the sidebar panel follows
+after the integration reloads. Then stop the old engine and close its firewall port.
 
 ## Update
 
