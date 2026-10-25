@@ -36,7 +36,7 @@ hostname is on the add-on's Info page) and the token from `.api_token` in the ad
 | `cookidoo_country`, `cookidoo_language` | e.g. `ch` and `en` |
 | `migros_email`, `migros_password`, `migros_totp_secret` | used for the first login and whenever the Migros sign-on expires; only the session is stored |
 | `anthropic_api_key`, `anthropic_model` | for the Claude planner |
-| `ha_notify` | your phone's notify service without `notify.`, e.g. `mobile_app_pixel` |
+| `ha_notify` | your phone's notify service without `notify.`, e.g. `mobile_app_pixel`; easier from the integration's Configure, which lists your phones |
 
 ## How it fits together
 
@@ -54,4 +54,5 @@ in the add-on's config folder and are part of Home Assistant backups.
 
 ## Updating
 
-Updates appear in the add-on store. Update the integration in HACS to the same release.
+Updates appear in the add-on store. Update the integration in HACS to the same release. Each release builds
+on the engine image of the same version, so rebuilding an add-on never picks up unreleased code.

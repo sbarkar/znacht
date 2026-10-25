@@ -174,7 +174,12 @@ async def test_the_addon_announces_itself_and_sets_up_with_one_click(hass):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
         await hass.async_block_till_done()
     assert result["type"] == "create_entry"
-    assert result["data"] == {"url": ENTRY["url"], "token": "made-by-the-addon", "addon": True}
+    assert result["data"] == {
+        "url": ENTRY["url"],
+        "token": "made-by-the-addon",
+        "addon": True,
+        "addon_slug": "abc123_znacht",
+    }
 
 
 async def test_a_new_addon_token_updates_the_existing_entry(hass):
@@ -186,6 +191,7 @@ async def test_a_new_addon_token_updates_the_existing_entry(hass):
         )
     assert result["type"] == "abort" and result["reason"] == "already_configured"
     assert entry.data["token"] == "fresh" and entry.data["addon"] is True
+    assert entry.data["addon_slug"] == "abc123_znacht"  # so its Configure reaches the add-on
 
 
 async def test_only_a_separate_engine_gets_the_iframe_panel(hass, engine):
@@ -356,6 +362,52 @@ async def test_configure_changes_the_addon_accounts(hass):
         )
     assert result["type"] == "create_entry"
     assert update.await_args.args[1:] == ("abc123_znacht", {"migros_email": "c@d.ch"})
+
+
+async def test_configure_picks_the_phone_from_the_companion_apps(hass):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={**ENTRY, "addon": True, "addon_slug": "abc123_znacht"},
+        unique_id=ENTRY["url"],
+    )
+    entry.add_to_hass(hass)
+    for service in ("mobile_app_pixel", "mobile_app_ipad", "persistent_notification"):
+        hass.services.async_register("notify", service, AsyncMock())
+    current = {"cookidoo_email": "a@b.ch", "ha_notify": "mobile_app_old_phone"}
+    update = AsyncMock()
+    with (
+        patch("custom_components.znacht.config_flow.addon.update_accounts", update),
+        patch(
+            "custom_components.znacht.config_flow.addon.addon_options",
+            AsyncMock(return_value=current),
+        ),
+        patch("custom_components.znacht.config_flow.asyncio.sleep", AsyncMock()),
+        patch("custom_components.znacht.config_flow.ZnachtApi", return_value=_engine_api([ALL_OK])),
+    ):
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        field = next(k for k in result["data_schema"].schema if k == "ha_notify")
+        # the phones, and the one set now although it is gone; no other notify services
+        assert result["data_schema"].schema[field].config["options"] == [
+            "mobile_app_ipad",
+            "mobile_app_old_phone",
+            "mobile_app_pixel",
+        ]
+        assert field.description == {"suggested_value": "mobile_app_old_phone"}
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"cookidoo_email": "a@b.ch", "ha_notify": "mobile_app_pixel"}
+        )
+    assert result["type"] == "create_entry"
+    assert update.await_args.args[2]["ha_notify"] == "mobile_app_pixel"
+
+
+def test_the_phone_becomes_the_addons_notify_option():
+    from custom_components.znacht.addon import accounts_to_options
+
+    current = {"ha_notify": "mobile_app_old"}
+    assert accounts_to_options(current, {"ha_notify": "mobile_app_pixel"})["ha_notify"] == (
+        "mobile_app_pixel"
+    )
+    assert accounts_to_options(current, {})["ha_notify"] == ""  # cleared: no notifications
 
 
 async def test_configure_on_a_separate_engine_explains_itself(hass):
