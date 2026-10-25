@@ -5,12 +5,15 @@ from __future__ import annotations
 import asyncio
 from dataclasses import replace
 from datetime import date, timedelta
+from pathlib import Path
 
 import httpx
+import pytest
 
 from znacht.domain.plan import Meal, MealSlot
 from znacht.domain.recipe import RecipeId
 from znacht_engine.app import INGRESS_GATEWAY, create_app
+from znacht_engine.config import EngineSettings
 from znacht_engine.service import ZnachtService, next_monday
 from znacht_memory.fixtures import GOLDEN_WEEK_START
 
@@ -698,3 +701,121 @@ async def test_notifications_open_the_configured_link(settings, notifier, servic
     assert service.status()["brief_url"].startswith(
         "http://engine.test/brief/"
     )  # the app still links the Brief
+
+
+# -- first setup in the app, connections (ADR-0013) -----------------------------------------
+
+WIZARD = {
+    "name": "The Müllers",
+    "members": [
+        {"name": "Anna", "age_group": "adult", "dislikes": ["dill"]},
+        {"name": " ", "age_group": "adult"},  # an empty row is dropped
+        {"name": "Leo", "age_group": "toddler"},
+    ],
+    "rules": {
+        "dinners_per_week": 5,
+        "max_total_minutes_weekday": 45,
+        "min_per_week": {"fish": 1, "legumes": 0},
+        "max_per_week": {"red_meat": 1},
+    },
+    "delivery": {"postcode": "8004", "weekday": 0, "start": "18:00", "end": "20:00"},
+    "store_lists": {"online": "list-online", "in_store": "list-store"},
+}
+
+
+def _fresh_service(settings, service, tmp_path):
+    household = tmp_path / "household.yaml"
+    household.write_text(Path(settings.household_path).read_text(encoding="utf-8"))
+    object.__setattr__(settings, "household_path", household)  # like the tests above
+    assert service.settings is settings
+    return household
+
+
+async def test_the_wizard_replaces_the_example_and_keeps_it(client, settings, service, tmp_path):
+    household = _fresh_service(settings, service, tmp_path)
+    assert (await client.get("/api/setup")).json()["needed"] is True
+    view = (await client.post("/api/setup", json=WIZARD)).json()
+    assert view["id"] == "the-müllers" and view["name"] == "The Müllers"
+    assert [m["name"] for m in view["members"]] == ["Anna", "Leo"]
+    assert view["needs_mild_food"] is True  # the toddler
+    assert view["rules"]["min_tags"] == {"fish": 1} and view["rules"]["max_tags"] == {"red_meat": 1}
+    assert view["delivery"]["slots"] == [
+        {"id": "mon-18-20", "weekday": 0, "start": "18:00", "end": "20:00"}
+    ]
+    assert view["store_lists"] == {"online": "list-online", "in_store": "list-store"}
+    assert '"18:00"' in household.read_text()  # quoted: YAML 1.1 reads 18:00 as 1080
+    assert (tmp_path / "household.example.yaml").read_text().startswith("# One household")
+    assert (await client.get("/api/setup")).json()["needed"] is False
+    _, result = await service.plan_week(GOLDEN_WEEK_START)
+    assert result.status == "needs_approval"
+
+
+async def test_a_zero_maximum_from_the_wizard_means_never(client, settings, service, tmp_path):
+    _fresh_service(settings, service, tmp_path)
+    rules = {**WIZARD["rules"], "max_per_week": {"red_meat": 0}}
+    view = (await client.post("/api/setup", json={**WIZARD, "rules": rules})).json()
+    assert view["rules"]["max_tags"] == {"red_meat": 0}
+
+
+async def test_a_wizard_mistake_keeps_the_old_file(client, settings, service, tmp_path):
+    household = _fresh_service(settings, service, tmp_path)
+    before = household.read_text()
+    r = await client.post("/api/setup", json={**WIZARD, "delivery": {"postcode": ""}})
+    assert r.status_code == 422 and "postcode" in r.json()["detail"]
+    r = await client.post("/api/setup", json={**WIZARD, "members": [{"name": ""}]})
+    assert r.status_code == 422
+    assert household.read_text() == before and not (tmp_path / "household.example.yaml").exists()
+
+
+async def test_household_edits_the_delivery_slot(client, settings, service, tmp_path):
+    household = _fresh_service(settings, service, tmp_path)
+    await client.post("/api/setup", json=WIZARD)
+    slot = {"id": "wed-17-19", "weekday": 2, "start": "17:00", "end": "19:00"}
+    r = await client.patch(
+        "/api/household",
+        json={"delivery": {"preferred_slot_id": slot["id"], "slot_templates": [slot]}},
+    )
+    assert r.status_code == 200 and r.json()["delivery"]["slots"] == [slot]
+    assert r.json()["delivery"]["postcode"] == "8004"  # the rest of delivery stays
+    assert '"17:00"' in household.read_text()
+
+
+async def test_store_lists_and_connections(client):
+    lists = (await client.get("/api/store/lists")).json()
+    assert {"id": "list-online", "name": "Online basket"} in lists
+    checks = (await client.get("/api/connections")).json()
+    assert all(c["ok"] for c in checks.values())
+
+
+async def test_a_failed_login_does_not_stop_the_engine(monkeypatch, tmp_path):
+    import znacht_cookidoo
+    from znacht_engine.repo import Repo
+    from znacht_engine.wiring import Unavailable, build_adapters
+
+    class Refusing:
+        def __init__(self, settings):
+            pass
+
+        async def __aenter__(self):
+            raise PermissionError("401 wrong password")
+
+        async def __aexit__(self, *exc):
+            return None
+
+    monkeypatch.setattr(znacht_cookidoo, "CookidooSession", Refusing)
+    monkeypatch.setenv("ZNACHT_COOKIDOO_EMAIL", "a@b.ch")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    s = EngineSettings(
+        household_path=tmp_path / "h.yaml",
+        data_dir=tmp_path,
+        recipe_source="cookidoo",
+        sink="cookidoo",
+        planner="anthropic",
+    )
+    adapters = await build_adapters(s, Repo(tmp_path / "x.sqlite"))
+    assert isinstance(adapters.recipes, Unavailable) and isinstance(adapters.sink, Unavailable)
+    assert "wrong password" in adapters.problems["cookidoo"]
+    assert adapters.problems["anthropic"] == "Claude needs an API key"
+    with pytest.raises(RuntimeError, match="wrong password"):
+        await adapters.recipes.search(None)
+    await adapters.close()

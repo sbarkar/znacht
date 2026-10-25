@@ -11,8 +11,12 @@ from pathlib import Path
 from typing import Any
 
 from ruamel.yaml import YAML
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
 from znacht.config import parse_household
+
+EXAMPLE_HOUSEHOLD_ID = "example"  # the shipped example; while it is in place, the app offers setup
+WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 
 
 def _yaml() -> YAML:
@@ -72,10 +76,13 @@ def apply_patch(path: Path, patch: dict[str, Any]) -> dict[str, Any]:
             health = data.setdefault("health", {})
             if "rules" in value:
                 health["rules"] = [str(x) for x in value["rules"]]
+        elif key == "delivery":
+            delivery = data.setdefault("delivery", {})
+            for dk, dv in value.items():
+                delivery[dk] = _slots(dv) if dk == "slot_templates" else dv
         elif key in (
             "free_text_items",
             "default_servings",
-            "delivery",
             "store_lists",
             "store_policy",
         ):
@@ -93,6 +100,86 @@ def apply_patch(path: Path, patch: dict[str, Any]) -> dict[str, Any]:
     tmp.write_text(text, encoding="utf-8")
     tmp.replace(path)
     return patch
+
+
+def write_new_household(path: Path, answers: dict[str, Any]) -> None:
+    """Write a household file from the Welcome wizard's answers, validated, atomically.
+
+    answers: name, members [{name, age_group?, dislikes?, allergies?}], rules {dinners_per_week?,
+    max_total_minutes_weekday?, min_per_week?, max_per_week?}, delivery {postcode, weekday?,
+    start?, end?}, store_lists {online, in_store}?
+    """
+    name = str(answers.get("name") or "").strip() or "Our household"
+    members = [
+        _clean_member(m) for m in answers.get("members") or [] if str(m.get("name", "")).strip()
+    ]
+    if not members:
+        raise ValueError("add at least one person")
+    rules_in = answers.get("rules") or {}
+    rules: dict[str, Any] = {"dinners_per_week": int(rules_in.get("dinners_per_week") or 7)}
+    if rules_in.get("max_total_minutes_weekday"):
+        rules["max_total_minutes_weekday"] = int(rules_in["max_total_minutes_weekday"])
+    minimum = {str(k): int(v) for k, v in (rules_in.get("min_per_week") or {}).items() if v}
+    if any(n > 0 for n in minimum.values()):
+        rules["min_per_week"] = {k: n for k, n in minimum.items() if n > 0}
+    # a maximum of 0 means "never", unlike a minimum of 0
+    maximum = rules_in.get("max_per_week") or {}
+    if maximum:
+        rules["max_per_week"] = {
+            str(k): max(0, int(v)) for k, v in maximum.items() if v is not None
+        }
+    d = answers.get("delivery") or {}
+    postcode = str(d.get("postcode") or "").strip()
+    if not postcode:
+        raise ValueError("the delivery postcode is missing")
+    delivery: dict[str, Any] = {"postcode": postcode}
+    if d.get("weekday") is not None and d.get("start") and d.get("end"):
+        weekday = int(d["weekday"])
+        slot_id = f"{WEEKDAYS[weekday]}-{str(d['start'])[:2]}-{str(d['end'])[:2]}"
+        delivery["preferred_slot_id"] = slot_id
+        delivery["slot_templates"] = _slots(
+            [{"id": slot_id, "weekday": weekday, "start": d["start"], "end": d["end"]}]
+        )
+    data: dict[str, Any] = {
+        "id": _slug(name),
+        "name": name,
+        "members": members,
+        "rules": rules,
+        "pantry": {},
+        "delivery": delivery,
+    }
+    lists = answers.get("store_lists") or {}
+    if lists.get("online") and lists.get("in_store"):
+        data["store_lists"] = {"online": str(lists["online"]), "in_store": str(lists["in_store"])}
+    yaml = _yaml()
+    buf = io.StringIO()
+    buf.write("# Made by the Znacht setup. Edit it here or in the app's Household screen.\n")
+    yaml.dump(data, buf)
+    text = buf.getvalue()
+    parse_household(text)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)
+
+
+def _slots(templates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Quote the times: YAML 1.1 would read an unquoted 18:00 as the number 1080."""
+    return [
+        {
+            "id": str(t["id"]),
+            "weekday": int(t["weekday"]),
+            "start": DoubleQuotedScalarString(str(t["start"])),
+            "end": DoubleQuotedScalarString(str(t["end"])),
+        }
+        for t in templates
+    ]
+
+
+def _slug(name: str) -> str:
+    slug = "".join(c if c.isalnum() else "-" for c in name.lower()).strip("-")
+    slug = "-".join(p for p in slug.split("-") if p) or "home"
+    return "home" if slug == EXAMPLE_HOUSEHOLD_ID else slug
 
 
 def _clean_member(m: dict[str, Any]) -> dict[str, Any]:
