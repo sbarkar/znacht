@@ -119,12 +119,15 @@ def write_new_household(path: Path, answers: dict[str, Any]) -> None:
     rules: dict[str, Any] = {"dinners_per_week": int(rules_in.get("dinners_per_week") or 7)}
     if rules_in.get("max_total_minutes_weekday"):
         rules["max_total_minutes_weekday"] = int(rules_in["max_total_minutes_weekday"])
-    for bucket in ("min_per_week", "max_per_week"):
-        counts = {
-            str(k): int(v) for k, v in (rules_in.get(bucket) or {}).items() if v and int(v) > 0
+    minimum = {str(k): int(v) for k, v in (rules_in.get("min_per_week") or {}).items() if v}
+    if any(n > 0 for n in minimum.values()):
+        rules["min_per_week"] = {k: n for k, n in minimum.items() if n > 0}
+    # a maximum of 0 means "never", unlike a minimum of 0
+    maximum = rules_in.get("max_per_week") or {}
+    if maximum:
+        rules["max_per_week"] = {
+            str(k): max(0, int(v)) for k, v in maximum.items() if v is not None
         }
-        if counts:
-            rules[bucket] = counts
     d = answers.get("delivery") or {}
     postcode = str(d.get("postcode") or "").strip()
     if not postcode:

@@ -482,6 +482,8 @@ function DeliveryCard({ household, patch, store }) {
   const slot = (d.slots || []).find((t) => t.id === d.preferred_slot_id) || (d.slots || [])[0];
   const [postcode, setPostcode] = useState(d.postcode);
   const [picking, setPicking] = useState(false);
+  // the first pick stays here until the second one completes a pair
+  const [lists, setLists] = useState(household.store_lists || { online: "", in_store: "" });
   const setSlot = (v) => {
     if (v.weekday == null) { patch({ delivery: { preferred_slot_id: null, slot_templates: [] } }); return; }
     const id = `${["mon", "tue", "wed", "thu", "fri", "sat", "sun"][v.weekday]}-${v.start.slice(0, 2)}-${v.end.slice(0, 2)}`;
@@ -492,7 +494,7 @@ function DeliveryCard({ household, patch, store }) {
     <label class="field"><span>Postcode</span><input class="input" inputmode="numeric" value=${postcode} onInput=${(e) => setPostcode(e.target.value)} onBlur=${() => { if (/^\d{4}$/.test(postcode.trim()) && postcode.trim() !== d.postcode) patch({ delivery: { postcode: postcode.trim() } }); }} /></label>
     <div class="field"><span>Usual delivery slot</span><${SlotPicker} value=${slot ? { weekday: slot.weekday, start: slot.start, end: slot.end } : { weekday: null, start: "18:00", end: "20:00" }} onChange=${setSlot} /></div>
     ${store === "migros" ? (picking
-      ? html`<${ListPicker} value=${household.store_lists || { online: "", in_store: "" }} onChange=${(v) => { if (v.online && v.in_store && v.online !== v.in_store) { patch({ store_lists: v }); setPicking(false); } }} />`
+      ? html`<${ListPicker} value=${lists} onChange=${(v) => { setLists(v); if (v.online && v.in_store && v.online !== v.in_store) { patch({ store_lists: v }); setPicking(false); } }} />`
       : html`<div class="row between"><span class="small">${household.store_lists ? "Your two Migros lists are set." : "No Migros lists chosen yet."}</span><button type="button" class="btn" onClick=${() => setPicking(true)}>${household.store_lists ? "Change lists" : "Choose lists"}</button></div>`) : null}
   </div>`;
 }

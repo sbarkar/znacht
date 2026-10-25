@@ -750,6 +750,13 @@ async def test_the_wizard_replaces_the_example_and_keeps_it(client, settings, se
     assert result.status == "needs_approval"
 
 
+async def test_a_zero_maximum_from_the_wizard_means_never(client, settings, service, tmp_path):
+    _fresh_service(settings, service, tmp_path)
+    rules = {**WIZARD["rules"], "max_per_week": {"red_meat": 0}}
+    view = (await client.post("/api/setup", json={**WIZARD, "rules": rules})).json()
+    assert view["rules"]["max_tags"] == {"red_meat": 0}
+
+
 async def test_a_wizard_mistake_keeps_the_old_file(client, settings, service, tmp_path):
     household = _fresh_service(settings, service, tmp_path)
     before = household.read_text()
