@@ -403,3 +403,18 @@ async def test_a_fresh_install_puts_the_addon_in_the_sidebar(hass):
     options = manager.async_set_addon_options.await_args.args[0]
     assert options["store"] == "migros" and options["recipe_source"] == "memory"
     manager.async_start_addon.assert_awaited_once()
+
+
+async def test_removing_the_addon_entry_keeps_the_other_entrys_panel(hass, engine):
+    lxc = await setup(hass, engine)
+    assert "znacht" in hass.data.get("frontend_panels", {})
+    addon_entry = MockConfigEntry(
+        domain=DOMAIN, data={**ENTRY, "addon": True}, unique_id="addon", entry_id="addon"
+    )
+    addon_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(addon_entry.entry_id)
+    await hass.async_block_till_done()
+    assert await hass.config_entries.async_unload(addon_entry.entry_id)
+    assert "znacht" in hass.data.get("frontend_panels", {})  # still the LXC's panel
+    assert await hass.config_entries.async_unload(lxc.entry_id)
+    assert "znacht" not in hass.data.get("frontend_panels", {})

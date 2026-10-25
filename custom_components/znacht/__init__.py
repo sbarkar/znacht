@@ -47,8 +47,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZnachtConfigEntry) -> bo
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ZnachtConfigEntry) -> bool:
-    if async_remove_panel is not None and PANEL_URL_PATH in hass.data.get("frontend_panels", {}):
+    # only the entry that registered the panel removes it; an add-on entry never has one
+    if (
+        async_remove_panel is not None
+        and hass.data.get(DOMAIN, {}).get("panel_entry") == entry.entry_id
+        and PANEL_URL_PATH in hass.data.get("frontend_panels", {})
+    ):
         async_remove_panel(hass, PANEL_URL_PATH)
+        hass.data[DOMAIN].pop("panel_entry")
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
@@ -75,6 +81,7 @@ def _register_panel(hass: HomeAssistant, entry: ZnachtConfigEntry) -> None:
         config={"url": url},
         require_admin=False,
     )
+    hass.data.setdefault(DOMAIN, {})["panel_entry"] = entry.entry_id
 
 
 def _register_services(hass: HomeAssistant, coordinator: ZnachtCoordinator) -> None:
