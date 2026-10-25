@@ -341,7 +341,8 @@ async def test_timeline_states_sources_and_coverage(
     # the golden week delivers Monday 19:00–21:00: Monday is a store run, Tue–Sun arrive
     assert by_date[mon.isoformat()]["groceries"]["coverage"] == "store_run"
     tue = by_date[(mon + timedelta(days=1)).isoformat()]["groceries"]
-    assert tue["coverage"] == "arriving" and tue["label"] == "arriving Mon 19:00"
+    # "arriving" until the slot has passed, "delivered" after (the label follows the real date)
+    assert tue["coverage"] == "arriving" and tue["label"].endswith(" Mon 19:00")
     assert tue["slot"].startswith(mon.isoformat())
     week = tl["weeks"][0]
     assert week["applied_run_id"] == run_id and week["awaiting_run_id"] is None
@@ -631,3 +632,14 @@ async def test_app_edits_keep_spice_settings_and_remove_overlaid_pantry_items(
     assert "tahini" in names
     r = await client.patch("/api/household", json={"pantry": {"tahini": "0"}})
     assert "tahini" not in [p["name"] for p in r.json()["pantry"]]
+
+
+async def test_a_delivery_in_the_past_reads_delivered(service: ZnachtService):
+    from znacht_engine.timeline import coverage
+
+    _, result = await service.plan_week(GOLDEN_WEEK_START)
+    wed = GOLDEN_WEEK_START + timedelta(days=2)
+    kw = {"applied": result, "from_applied": True, "proposal": None, "list_members": {}}
+    assert coverage(wed, today=GOLDEN_WEEK_START, **kw)["label"] == "arriving Mon 19:00"
+    late = coverage(wed, today=wed, **kw)
+    assert late["coverage"] == "arriving" and late["label"] == "delivered Mon 19:00"

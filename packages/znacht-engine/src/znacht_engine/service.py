@@ -801,6 +801,7 @@ class ZnachtService:
                         from_applied=from_applied,
                         proposal=awaiting[1] if awaiting and proposal else None,
                         list_members=members,
+                        today=today,
                     ),
                     "run_id": act[0] if act else None,
                     "locked": bool(act and d in act[1].locked_dates),

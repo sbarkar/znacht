@@ -102,6 +102,7 @@ def coverage(
     from_applied: bool,
     proposal: WeekResult | None,
     list_members: dict[str, frozenset[str]],
+    today: date | None = None,
 ) -> dict[str, Any]:
     """The groceries badge for one day. First version of the heuristic (ADR-0011):
 
@@ -119,9 +120,11 @@ def coverage(
     if from_applied and applied is not None:
         s = applied.shopping
         if s.slot is not None and day > s.slot.delivery_day:
+            # same coverage once the slot has passed; only the words follow the calendar
+            done = today is not None and s.slot.delivery_day < today
             return {
                 "coverage": "arriving",
-                "label": f"arriving {slot_label(applied)}",
+                "label": f"{'delivered' if done else 'arriving'} {slot_label(applied)}",
                 "slot": s.slot.start.isoformat(),
                 "run_id": None,
             }
@@ -171,7 +174,8 @@ def summary(days: Sequence[dict[str, Any]], *, awaiting_run_id: int | None) -> s
         if r["state"] == "proposed" and g["coverage"] == "none":
             continue  # a proposal brings its groceries when approved; not a gap to flag
         if g["coverage"] == "arriving":
-            arriving.setdefault(g["label"].removeprefix("arriving "), []).append(d)
+            label = g["label"].removeprefix("arriving ").removeprefix("delivered ")
+            arriving.setdefault(label, []).append(d)
         elif g["coverage"] == "store_run":
             store.append(d)
         elif g["coverage"] == "online_list":
