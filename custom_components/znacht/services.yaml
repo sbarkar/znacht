@@ -35,3 +35,20 @@ update_pantry:
 refresh:
   name: Refresh
   description: Re-read the store lists.
+mark_ordered:
+  name: Mark ordered
+  description: Record that you placed the Migros order for a sent plan. Znacht then leaves the days it covers alone. Writes only to Znacht; it never orders anything itself.
+  fields:
+    run_id:
+      name: Run
+      description: The sent run the order is for. Defaults to the latest.
+      selector:
+        number:
+          min: 1
+          mode: box
+    dates:
+      name: Days
+      description: The days the order covers. Defaults to the dinners after the delivery day.
+      example: '["2026-10-27", "2026-10-28"]'
+      selector:
+        object:

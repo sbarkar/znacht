@@ -9,13 +9,16 @@ from datetime import date, timedelta
 from typing import Any
 
 from znacht.config import load_household
+from znacht.domain.diff import PlanDiff, ShoppingList, diff_lists
 from znacht.domain.household import Household, Pantry, PantryItem
 from znacht.domain.money import Money
 from znacht.domain.plan import Meal, MealPlan, MealSlot, Week
 from znacht.domain.quantity import Quantity
 from znacht.domain.recipe import Recipe, RecipeId
 from znacht.ports.notify import Notifier, PlanEvent
+from znacht.ports.recipes import RecipeQuery
 from znacht.services.checker import check_plan
+from znacht.services.lists import shopping_list_from
 from znacht.services.pipeline import (
     PlanStatus,
     WeekResult,
@@ -26,6 +29,18 @@ from znacht.services.pipeline import (
 )
 from znacht_engine.brief import WALK_ORDER, Brief, build_brief, lifetime, price_rows
 from znacht_engine.config import EngineSettings
+from znacht_engine.edits import (
+    EDIT_KINDS,
+    OrderedLock,
+    StaleEdit,
+    diff_keys,
+    edit_changes,
+    grocery_meals,
+    lock_reason,
+    rebase_list,
+    suggested_order_dates,
+    touched_dates,
+)
 from znacht_engine.household_edit import EXAMPLE_HOUSEHOLD_ID, write_new_household
 from znacht_engine.repo import Repo
 from znacht_engine.timeline import (
@@ -35,6 +50,7 @@ from znacht_engine.timeline import (
     coverage,
     dinner_on,
     is_breakfast,
+    ordered_coverage,
     pick_dinner,
     summary,
     week_label,
@@ -44,6 +60,7 @@ from znacht_engine.wiring import Adapters
 log = logging.getLogger(__name__)
 
 LIVE_READ_SECONDS = 180  # My Week and the store lists are re-read at most this often
+HARD_RULES = ("banned_ingredient", "allergen", "not_mild", "too_long_weekday", "dislike")
 
 
 def next_monday(today: date | None = None) -> date:
@@ -149,10 +166,19 @@ class ZnachtService:
                 self._busy = None
 
     async def apply(self, run_id: int | None = None) -> tuple[int, WeekResult]:
+        """Write an approved run (a proposal or an edit). Refused when it touches an ordered day
+        or when My Week changed since the run was made (ADR-0014)."""
         async with self._lock:
             self._busy = "applying"
             try:
                 rid, result = self._run(run_id)
+                edit = self.edit_meta(rid)
+                self.refuse_if_ordered(touched_dates(result.plan_diff))
+                if result.status == PlanStatus.NEEDS_APPROVAL:
+                    if edit is not None:
+                        await self._check_edit_fresh(edit, result.week)
+                    else:
+                        await self._check_proposal_fresh(rid, result)
                 applied = await apply_week(
                     result, store=self.adapters.store, sink=self.adapters.sink, approved=True
                 )
@@ -167,7 +193,9 @@ class ZnachtService:
                     str(applied.shopping.savings.amount),
                     str(applied.shopping.online_total.amount),
                 )
-                if self.notifier:
+                if edit is not None and edit.get("base_run") is not None:
+                    self._carry_shopping_state(int(edit["base_run"]), rid)
+                if self.notifier and edit is None:
                     await self.notifier.notify(
                         PlanEvent(
                             kind="applied",
@@ -472,6 +500,7 @@ class ZnachtService:
             self._busy = "reverting"
             try:
                 rid, result = self._run(run_id)
+                self.refuse_if_ordered(touched_dates(result.plan_diff))
                 reverted = await revert_week(
                     result, store=self.adapters.store, sink=self.adapters.sink, approved=True
                 )
@@ -511,13 +540,23 @@ class ZnachtService:
             if result is None:
                 raise LookupError(f"run {run_id} not found")
             return run_id, result
-        latest = self.repo.latest_run(self.household().id)
+        latest = self._latest()
         if latest is None:
             raise LookupError("no run yet; call plan_week first")
         return latest
 
+    def _latest(self) -> tuple[int, WeekResult] | None:
+        """The newest run, skipping edit previews that were never confirmed."""
+        for row in self.repo.runs(self.household().id, limit=50):
+            if self.is_open_edit(int(row["id"]), row["status"]):
+                continue
+            result = self.repo.get_run(int(row["id"]))
+            if result is not None:
+                return int(row["id"]), result
+        return None
+
     def status(self) -> dict[str, Any]:
-        latest = self.repo.latest_run(self.household().id)
+        latest = self._latest()
         today = date.today()
         last_error = self.repo.get("last_error")
         if latest is None:
@@ -634,7 +673,7 @@ class ZnachtService:
         latest run's week is always included so a proposal for a far week shows up."""
         today = date.today()
         start, end = today, today + timedelta(days=DEFAULT_DAYS - 1)
-        latest = self.repo.latest_run(self.household().id)
+        latest = self._latest()
         if latest is not None:
             start = min(start, latest[1].week.start)
             end = max(end, latest[1].week.end)
@@ -655,9 +694,433 @@ class ZnachtService:
                         "note": c["note"],
                         "source": c["source"],
                         "proposed": c is card and day["dinner"] is None,
+                        "ordered": day["ordered"],
                     }
                 )
         return out
+
+    # -- editing the schedule and the order lock (ADR-0014) ---------------------------------
+    def edit_meta(self, run_id: int) -> dict[str, Any] | None:
+        meta: dict[str, Any] | None = self.repo.get(f"edit.{run_id}")
+        return meta
+
+    def is_open_edit(self, run_id: int, status: str) -> bool:
+        """An edit preview that was never confirmed (or was discarded): not a run to show."""
+        return status not in (PlanStatus.APPLIED, PlanStatus.REVERTED) and bool(
+            self.edit_meta(run_id)
+        )
+
+    def ordered_dates(self) -> dict[date, dict[str, Any]]:
+        """Each day covered by a recorded order, with that order (the newest wins)."""
+        out: dict[date, dict[str, Any]] = {}
+        for order in self.repo.orders():
+            for d in order["dates"]:
+                out[date.fromisoformat(d)] = order
+        return out
+
+    def refuse_if_ordered(self, dates: set[date] | list[date]) -> None:
+        orders = self.ordered_dates()
+        hit = sorted(d for d in dates if d in orders)
+        if hit:
+            names = ", ".join(f"{WEEKDAYS[d.weekday()]} {d.day}" for d in hit)
+            raise OrderedLock(f"{names}: {lock_reason(orders[hit[0]])}")
+
+    def orders_view(self) -> list[dict[str, Any]]:
+        return [{**o, "lock_reason": lock_reason(o)} for o in self.repo.orders()]
+
+    def order_for_run(self, run_id: int) -> dict[str, Any]:
+        """What the Groceries screen offers for "I placed the order": the run's days, the ones
+        an order would cover, and the order already recorded for the run, if any."""
+        rid, result = self._run(run_id)
+        today = date.today()
+        chain = self._run_chain(rid)
+        recorded = next((o for o in reversed(self.orders_view()) if o["run_id"] in chain), None)
+        return {
+            "run_id": rid,
+            "order": recorded,
+            "suggested": [d.isoformat() for d in suggested_order_dates(result, today)],
+            "days": [
+                {
+                    "date": m.date.isoformat(),
+                    "weekday": WEEKDAYS[m.date.weekday()],
+                    "title": self._title(m.recipe_id.key),
+                }
+                for m in result.plan.dinners()
+                if m.date >= today
+            ],
+        }
+
+    def mark_ordered(self, run_id: int | None, dates: list[date] | None = None) -> dict[str, Any]:
+        """Record that the household placed the order for ``run_id``. Writes only the engine's
+        database: Znacht never orders (tests/safety)."""
+        rid, result = self._run(run_id)
+        if result.status != PlanStatus.APPLIED:
+            raise ValueError("only groceries that were sent to your lists can be ordered")
+        days = sorted(set(dates)) if dates else suggested_order_dates(result, date.today())
+        if not days:
+            raise ValueError("pick the days this order covers")
+        chain = self._run_chain(rid)
+        for o in self.repo.orders():  # one record per run: a second "placed" replaces it
+            if o["run_id"] in chain:
+                self.repo.delete_order(int(o["id"]))
+        oid = self.repo.record_order(rid, [d.isoformat() for d in days])
+        return next(o for o in self.orders_view() if o["id"] == oid)
+
+    def unmark_ordered(self, order_id: int) -> None:
+        if not self.repo.delete_order(order_id):
+            raise LookupError(f"order {order_id} not found")
+
+    def _run_chain(self, rid: int) -> list[int]:
+        """``rid`` and the runs its edits were built on: an order placed for the base run is
+        still this week's order after an edit on another day."""
+        chain = [rid]
+        while (edit := self.edit_meta(chain[-1])) and edit.get("base_run") is not None:
+            base = int(edit["base_run"])
+            if base in chain:
+                break
+            chain.append(base)
+        return chain
+
+    def _source_of(self, rid: int, result: WeekResult, meal: Meal) -> int | None:
+        """The run that put ``meal`` into My Week: the applied run when its diff added it, else
+        the run an edit was built on, and so on (an edit changes only its own days)."""
+        key = (meal.date, meal.recipe_id.key)
+        seen: set[int] = set()
+        while rid not in seen:
+            seen.add(rid)
+            if result.plan_diff is None or key in diff_keys(result.plan_diff)[0]:
+                return rid
+            edit = self.edit_meta(rid)
+            if not edit or edit.get("base_run") is None:
+                return None
+            rid = int(edit["base_run"])
+            base = self.repo.get_run(rid)
+            if base is None:
+                return None
+            result = base
+        return None
+
+    async def _fresh_dinners(self, week: Week, dates: list[date]) -> dict[date, Meal | None]:
+        """Each date's dinner in My Week, read now (the cache is dropped for this)."""
+        self._my_week_cache.pop(week.start, None)
+        mine = await self.my_week(week)
+        return {d: (await self._day_in_my_week(mine, d))[0] for d in dates}
+
+    async def _check_edit_fresh(self, edit: dict[str, Any], week: Week) -> None:
+        # another change confirmed since this preview was priced: its lists and plan are stale
+        applied, _ = self._runs_for_week(week)
+        if (applied[0] if applied else None) != edit.get("base_run"):
+            raise StaleEdit(
+                "another change to this week was confirmed since you opened this; look again"
+            )
+        expect: dict[str, str | None] = edit["expect"]
+        now = await self._fresh_dinners(week, [date.fromisoformat(d) for d in expect])
+        for d, meal in now.items():
+            if (meal.recipe_id.key if meal else None) != expect[d.isoformat()]:
+                raise StaleEdit(
+                    f"My Week changed on {WEEKDAYS[d.weekday()]} {d.day} since you opened "
+                    "this; look again"
+                )
+
+    async def _check_proposal_fresh(self, rid: int, result: WeekResult) -> None:
+        if result.plan_diff is None:
+            return
+        self._my_week_cache.pop(result.week.start, None)
+        fresh = await self.adapters.sink.diff(result.plan)
+        if diff_keys(fresh) != diff_keys(result.plan_diff):
+            raise StaleEdit(
+                f"My Week changed since run {rid} was planned; plan this week again so "
+                "nothing you changed is overwritten"
+            )
+
+    async def _week_context(self, week: Week) -> tuple[list[Meal], tuple[Recipe, ...]]:
+        """My Week's dinners for ``week`` (the applied plan if it cannot be read) and the
+        candidate pool to suggest from: the week's runs first, else the newest run's."""
+        applied, awaiting = self._runs_for_week(week)
+        try:
+            mine = await self.my_week(week)
+        except Exception as exc:
+            log.warning("could not read My Week for %s: %s", week, exc)
+            mine = applied[1].plan if applied else MealPlan(week=week)
+        dinners = [dn for d in week.days() if (dn := (await self._day_in_my_week(mine, d))[0])]
+        pool: tuple[Recipe, ...] = ()
+        for run in (applied, awaiting, self._latest()):
+            if run is not None and run[1].candidates:
+                pool = run[1].candidates
+                break
+        return dinners, pool
+
+    def _fits(
+        self,
+        recipes: tuple[Recipe, ...] | list[Recipe],
+        week: Week,
+        day: date,
+        dinners: list[Meal],
+        *,
+        strict: bool,
+    ) -> list[dict[str, Any]]:
+        """``recipes`` that could be the dinner on ``day`` without breaking a hard rule, the
+        ones that keep every weekly rule first."""
+        household = self.household()
+        others = [m for m in dinners if m.date != day]
+        current = next((m.recipe_id.key for m in dinners if m.date == day), None)
+        known = {k: r for k, r in self._recipes.items()}
+        known.update({r.id.key: r for r in recipes})
+        # what the week already bends without a dinner on this day is not the suggestion's fault
+        before = {
+            (v.code, v.message)
+            for v in check_plan(MealPlan(week=week, meals=tuple(others)), known, household)
+        }
+        in_week = {m.recipe_id.key for m in others}
+        out: list[dict[str, Any]] = []
+        seen_titles: set[str] = set()
+        for recipe in recipes:
+            # a suggestion must be a dinner, not a side or a basic: enough ingredients
+            if recipe.id.key in in_week or recipe.id.key == current:
+                continue
+            if strict and len(recipe.ingredients) < 4:
+                continue
+            if recipe.title.lower() in seen_titles:
+                continue
+            seen_titles.add(recipe.title.lower())
+            trial = MealPlan(
+                week=week,
+                meals=(
+                    *others,
+                    Meal(
+                        date=day,
+                        slot=MealSlot.DINNER,
+                        recipe_id=recipe.id,
+                        servings=household.servings,
+                    ),
+                ),
+            )
+            violations = check_plan(trial, known, household)
+            if any(v.code in HARD_RULES and v.date in (None, day) for v in violations):
+                continue
+            mine = [
+                v
+                for v in violations
+                if (v.code, v.message) not in before and v.code not in ("dinner_count", "min_tag")
+            ]
+            out.append(
+                {
+                    "recipe_id": recipe.id.key,
+                    "title": recipe.title,
+                    "minutes": recipe.total_minutes,
+                    "tags": sorted(recipe.tags),
+                    "spiciness": str(recipe.spiciness),
+                    "keeps_rules": not mine,
+                    "url": recipe.url,
+                }
+            )
+        out.sort(key=lambda a: (not a["keeps_rules"], a["minutes"] or 999))
+        return out
+
+    async def day_alternatives(self, day: date) -> list[dict[str, Any]]:
+        """Pre-checked recipes for any day: the pool of the week's runs, checked against what
+        My Week holds that week."""
+        week = Week.containing(day)
+        dinners, pool = await self._week_context(week)
+        return self._fits(pool, week, day, dinners, strict=True)[:12]
+
+    async def search_recipes(self, text: str, day: date | None = None) -> list[dict[str, Any]]:
+        household = self.household()
+        found = await self.adapters.recipes.search(
+            RecipeQuery(
+                text=text,
+                exclude_ingredients=household.rules.banned_ingredients | household.allergies,
+                limit=20,
+            )
+        )
+        day = day or date.today()
+        week = Week.containing(day)
+        dinners, _ = await self._week_context(week)
+        return self._fits(list(found), week, day, dinners, strict=False)[:12]
+
+    async def preview_edit(
+        self,
+        kind: str,
+        day: date,
+        *,
+        recipe_id: str | None = None,
+        to: date | None = None,
+    ) -> dict[str, Any]:
+        """Price one change to My Week and turn it into a run awaiting confirmation. Nothing is
+        written to Cookidoo or the store; the returned document is the confirm sheet."""
+        if kind not in EDIT_KINDS:
+            raise ValueError(f"unknown edit {kind!r}; one of {', '.join(EDIT_KINDS)}")
+        today = date.today()
+        week = Week.containing(day)
+        if day < today or (to is not None and to < today):
+            raise ValueError("days in the past cannot be changed")
+        if to is not None and to not in week:
+            raise ValueError("a dinner moves within its week")
+        dates = [day] + ([to] if kind == "move" and to is not None else [])
+        self.refuse_if_ordered(dates)
+        async with self._lock:
+            self._busy = "pricing a change"
+            try:
+                return await self._preview_edit(kind, day, week, dates, recipe_id, to)
+            finally:
+                self._busy = None
+
+    async def _preview_edit(
+        self,
+        kind: str,
+        day: date,
+        week: Week,
+        dates: list[date],
+        recipe_id: str | None,
+        to: date | None,
+    ) -> dict[str, Any]:
+        household = self.household()
+        try:
+            current = await self._fresh_dinners(week, dates)
+        except Exception as exc:
+            raise StaleEdit(f"My Week cannot be read just now: {exc}") from exc
+        new: Meal | None = None
+        if recipe_id:
+            source, _, external = recipe_id.partition(":")
+            new = Meal(
+                date=day,
+                slot=MealSlot.DINNER,
+                recipe_id=RecipeId(source=source, external_id=external),
+                servings=household.servings,
+            )
+        if kind == "swap" and current.get(day) is None:
+            kind = "add"
+        add, remove = edit_changes(kind, day, current, new=new, to=to)
+        plan_diff = PlanDiff(week=week, add=tuple(add), remove=tuple(remove))
+
+        applied, _ = self._runs_for_week(week)
+        base = applied[1] if applied else None
+        moved_from = {to: day, day: to} if kind == "move" and to is not None else None
+        meals = grocery_meals(
+            kind, base.plan.meals if base else (), add, dates, moved_from=moved_from
+        )
+        latest = self._latest()
+        known = base.candidates if base else (latest[1].candidates if latest else ())
+        result = await run_week(
+            household,
+            week,
+            recipes=self.adapters.recipes,
+            store=self.adapters.store,
+            sink=self.adapters.sink,
+            planner=self.adapters.planner,
+            slot=base.shopping.slot if base else None,
+            fixed_plan=MealPlan(week=week, meals=meals),
+            known_candidates=known,
+            channel_overrides=dict(base.channel_overrides) if base else None,
+            stop_on_violations=False,
+        )
+        online_diff = in_store_diff = None
+        lines: dict[str, list[dict[str, Any]]] = {"online": [], "in_store": []}
+        names = {
+            str(c.product.id): c.product.name
+            for r in (base, result)
+            if r is not None
+            for c in (*r.shopping.online, *r.shopping.in_store)
+        }
+        if household.store_lists is not None:
+            for kind_, list_id in (
+                ("online", household.store_lists.online),
+                ("in_store", household.store_lists.in_store),
+            ):
+                live = await self.adapters.store.read_list(list_id)
+                target = rebase_list(
+                    live, _as_list(base, kind_, list_id), _as_list(result, kind_, list_id)
+                )
+                diff = diff_lists(live, target)
+                if kind_ == "online":
+                    online_diff = diff
+                else:
+                    in_store_diff = diff
+                before = live.as_dict()
+                lines[kind_] = [
+                    {
+                        "name": names.get(str(c.line.product_id), str(c.line.product_id))
+                        if c.line.product_id is not None
+                        else c.line.text,
+                        "op": c.op,
+                        "from": before[c.line.key].quantity if c.line.key in before else 0,
+                        "to": 0 if c.op == "remove" else c.line.quantity,
+                    }
+                    for c in diff.lines
+                ]
+        result = result.model_copy(
+            update={
+                "status": PlanStatus.NEEDS_APPROVAL,
+                "plan_diff": plan_diff,
+                "online_diff": online_diff,
+                "in_store_diff": in_store_diff,
+                "locked_dates": (),
+            }
+        )
+        rid = self.repo.save_run(result)
+        await self._remember_recipes(result)
+        for m in add:
+            await self._recipe(m.recipe_id)
+        cards = {
+            "add": [{**(await self._card(m, rid)), "date": m.date.isoformat()} for m in add],
+            "remove": [
+                {**(await self._card(m, "manual")), "date": m.date.isoformat()} for m in remove
+            ],
+        }
+        title = self._edit_title(kind, day, to, add, remove)
+        self.repo.set(
+            f"edit.{rid}",
+            {
+                "kind": kind,
+                "day": day.isoformat(),
+                "to": to.isoformat() if to else None,
+                "base_run": applied[0] if applied else None,
+                "title": title,
+                "expect": {
+                    d.isoformat(): (m.recipe_id.key if m else None) for d, m in current.items()
+                },
+            },
+        )
+        # a partial week always misses the count and the minimums; say only what this change bends
+        warnings = [
+            v.message
+            for v in result.violations
+            if v.code in (*HARD_RULES, "max_tag", "repeat") and v.date in (None, *dates)
+        ]
+        return {
+            "run_id": rid,
+            "kind": kind,
+            "title": title,
+            "week": week.start.isoformat(),
+            "my_week": cards,
+            "lists": lines,
+            "online_total": str(result.shopping.online_total.amount),
+            "online_total_before": str(base.shopping.online_total.amount) if base else None,
+            "warnings": warnings,
+        }
+
+    def _edit_title(
+        self, kind: str, day: date, to: date | None, add: list[Meal], remove: list[Meal]
+    ) -> str:
+        name = f"{WEEKDAYS[day.weekday()]} {day.day}"
+        title = self._title
+        if kind == "swap":
+            return f"{name}: {title(remove[0].recipe_id.key)} → {title(add[0].recipe_id.key)}"
+        if kind == "add":
+            return f"{name}: add {title(add[0].recipe_id.key)}"
+        if kind == "remove":
+            return f"{name}: remove {title(remove[0].recipe_id.key)}"
+        assert to is not None
+        other = f"{WEEKDAYS[to.weekday()]} {to.day}"
+        verb = "swap with" if len(remove) > 1 else "move to"
+        return f"{name}: {title(remove[0].recipe_id.key)}, {verb} {other}"
+
+    def discard_edit(self, run_id: int) -> None:
+        """Forget a preview that was not confirmed. Nothing was written, so nothing to undo."""
+        rid, result = self._run(run_id)
+        if self.edit_meta(rid) is None or result.status != PlanStatus.NEEDS_APPROVAL:
+            raise ValueError(f"run {rid} is not an open edit")
+        self.repo.update_run(rid, result.model_copy(update={"status": PlanStatus.DRAFT}))
 
     # -- the timeline (ADR-0011) --
     def forget_live_reads(self) -> None:
@@ -729,9 +1192,12 @@ class ZnachtService:
             if r["week"] == week.start.isoformat()
         ]
         applied = next((r for r in rows if r["status"] == str(PlanStatus.APPLIED)), None)
+        # edits are never the proposal awaiting approval (ADR-0014)
+        proposals = [r for r in rows if self.edit_meta(int(r["id"])) is None]
         awaiting = (
-            rows[0]
-            if rows and rows[0]["status"] in (PlanStatus.NEEDS_APPROVAL, PlanStatus.NEEDS_INPUT)
+            proposals[0]
+            if proposals
+            and proposals[0]["status"] in (PlanStatus.NEEDS_APPROVAL, PlanStatus.NEEDS_INPUT)
             else None
         )
 
@@ -801,6 +1267,7 @@ class ZnachtService:
             }
 
         known_before = len(self._recipes)
+        orders = self.ordered_dates()
         records: list[dict[str, Any]] = []
         for d in dates:
             w = weeks[Week.containing(d).start]
@@ -819,12 +1286,13 @@ class ZnachtService:
                 and in_applied.recipe_id == in_sink.recipe_id
             )
             if in_sink is not None:
-                added = applied is not None and (
-                    applied[1].plan_diff is None or in_sink in applied[1].plan_diff.add
+                source = (
+                    self._source_of(applied[0], applied[1], in_sink)
+                    if from_applied and applied
+                    else None
                 )
-                dinner = await self._card(
-                    in_sink, applied[0] if from_applied and added and applied else "manual"
-                )
+                dinner = await self._card(in_sink, source if source is not None else "manual")
+                dinner["edited"] = source is not None and self.edit_meta(source) is not None
             if (
                 in_awaiting is not None
                 and awaiting is not None
@@ -839,9 +1307,20 @@ class ZnachtService:
                 state = "proposed"
             else:
                 state = "empty"
-            # the run the swap sheet acts on: the applied run that put the dinner there, else
-            # the run awaiting approval (a swap on it is another proposal), else nothing
-            act = applied if from_applied and applied else awaiting if proposal else None
+            # the run a proposal's swap and lock act on; dinners in My Week are edited directly
+            # (ADR-0014)
+            act = awaiting if proposal else None
+            groceries = coverage(
+                d,
+                applied=applied[1] if applied else None,
+                from_applied=from_applied,
+                proposal=awaiting[1] if awaiting and proposal else None,
+                list_members=members,
+                today=today,
+            )
+            order = orders.get(d)
+            if order is not None and in_sink is not None:
+                groceries = ordered_coverage(groceries)
             records.append(
                 {
                     "date": d.isoformat(),
@@ -851,17 +1330,14 @@ class ZnachtService:
                     "dinner": dinner,
                     "also": [await self._card(m, "manual") for m in rest],
                     "proposal": proposal,
-                    "groceries": coverage(
-                        d,
-                        applied=applied[1] if applied else None,
-                        from_applied=from_applied,
-                        proposal=awaiting[1] if awaiting and proposal else None,
-                        list_members=members,
-                        today=today,
-                    ),
+                    "groceries": groceries,
                     "run_id": act[0] if act else None,
                     "locked": bool(act and d in act[1].locked_dates),
                     "my_week_ok": w["ok"],
+                    "ordered": order is not None,
+                    "order_id": order["id"] if order else None,
+                    "lock_reason": lock_reason(order) if order else None,
+                    "editable": d >= today and order is None and w["ok"],
                 }
             )
         if len(self._recipes) != known_before:
@@ -1004,6 +1480,16 @@ class ZnachtService:
                     data={"url": self.notify_url(run_id), "run_id": str(run_id)},
                 )
             )
+
+
+def _as_list(result: WeekResult | None, kind: str, list_id: str) -> ShoppingList:
+    """A run's lines for one of the two store lists, as they were sent."""
+    if result is None:
+        return ShoppingList(id=list_id)
+    s = result.shopping
+    if kind == "online":
+        return shopping_list_from(list_id, s.online)
+    return shopping_list_from(list_id, s.in_store, s.free_text)
 
 
 def money(value: str) -> Money:

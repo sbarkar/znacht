@@ -27,6 +27,14 @@ CREATE TABLE IF NOT EXISTS prices (
 CREATE TABLE IF NOT EXISTS ledger (
   week TEXT PRIMARY KEY, savings TEXT NOT NULL, online_total TEXT NOT NULL, applied_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id INTEGER NOT NULL,
+  dates TEXT NOT NULL,
+  placed_at TEXT NOT NULL,
+  source TEXT NOT NULL,
+  note TEXT
+);
 """
 
 
@@ -120,6 +128,26 @@ class Repo:
         return [
             dict(r) for r in self._db.execute("SELECT * FROM ledger ORDER BY week DESC").fetchall()
         ]
+
+    # -- orders (ADR-0014): the household's "I placed the order", later read from the store ---
+    def record_order(
+        self, run_id: int, dates: list[str], *, source: str = "household", note: str | None = None
+    ) -> int:
+        cur = self._db.execute(
+            "INSERT INTO orders (run_id, dates, placed_at, source, note) VALUES (?, ?, ?, ?, ?)",
+            (run_id, json.dumps(sorted(set(dates))), _now(), source, note),
+        )
+        self._db.commit()
+        return int(cur.lastrowid or 0)
+
+    def orders(self) -> list[dict[str, Any]]:
+        rows = self._db.execute("SELECT * FROM orders ORDER BY id").fetchall()
+        return [{**dict(r), "dates": json.loads(r["dates"])} for r in rows]
+
+    def delete_order(self, order_id: int) -> bool:
+        cur = self._db.execute("DELETE FROM orders WHERE id = ?", (order_id,))
+        self._db.commit()
+        return cur.rowcount > 0
 
 
 def _now() -> str:

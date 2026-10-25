@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime as dt
 import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -19,6 +20,7 @@ from pydantic import BaseModel
 from znacht import __version__
 from znacht.domain.plan import Week
 from znacht_engine.config import EngineSettings
+from znacht_engine.edits import OrderedLock, StaleEdit
 from znacht_engine.ha import HaNotifier
 from znacht_engine.repo import Repo
 from znacht_engine.service import ZnachtService
@@ -62,6 +64,18 @@ class LockRequest(BaseModel):
 class MoveRequest(BaseModel):
     need: str
     to: str  # "online" | "store"
+
+
+class EditRequest(BaseModel):
+    kind: str  # "swap" | "add" | "remove" | "move"
+    date: date
+    recipe_id: str | None = None
+    to: dt.date | None = None  # for a move
+
+
+class OrderRequest(BaseModel):
+    run_id: int | None = None
+    dates: list[date] | None = None  # defaults to what the run's online order feeds
 
 
 _STATIC = Path(__file__).parent / "static"
@@ -394,7 +408,92 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
 
     @app.get("/api/runs", dependencies=[Depends(auth)])
     async def runs(s: ZnachtService = Depends(svc)) -> list[dict[str, Any]]:
-        return s.repo.runs(s.household().id)
+        out = []
+        for row in s.repo.runs(s.household().id, limit=40):
+            if s.is_open_edit(int(row["id"]), row["status"]):
+                continue
+            edit = s.edit_meta(int(row["id"]))
+            out.append({**row, "edit": edit["title"] if edit else None})
+        return out[:20]
+
+    # -- editing the schedule, the order lock (ADR-0014) -----------------------------------
+    def _edit_error(exc: Exception) -> HTTPException:
+        if isinstance(exc, (OrderedLock, StaleEdit)):
+            return HTTPException(status_code=409, detail=str(exc))
+        if isinstance(exc, LookupError):
+            return HTTPException(status_code=404, detail=str(exc))
+        return HTTPException(status_code=422, detail=str(exc))
+
+    @app.get("/api/days/{day}/alternatives", dependencies=[Depends(auth)])
+    async def day_alternatives(day: date, s: ZnachtService = Depends(svc)) -> list[dict[str, Any]]:
+        return await s.day_alternatives(day)
+
+    @app.get("/api/recipes/search", dependencies=[Depends(auth)])
+    async def search_recipes(
+        q: str = Query(min_length=2), day: date | None = None, s: ZnachtService = Depends(svc)
+    ) -> list[dict[str, Any]]:
+        try:
+            return await s.search_recipes(q, day)
+        except Exception as exc:  # the recipe source is live: say why it failed
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    @app.post("/api/edits", dependencies=[Depends(auth)])
+    async def preview_edit(body: EditRequest, s: ZnachtService = Depends(svc)) -> dict[str, Any]:
+        """Price one change to My Week; nothing is written until it is confirmed."""
+        _busy_guard(s)
+        try:
+            return await s.preview_edit(body.kind, body.date, recipe_id=body.recipe_id, to=body.to)
+        except (ValueError, LookupError, PermissionError) as exc:
+            raise _edit_error(exc) from exc
+
+    @app.post("/api/edits/{run_id}/confirm", dependencies=[Depends(auth)])
+    async def confirm_edit(run_id: int, s: ZnachtService = Depends(svc)) -> dict[str, Any]:
+        _busy_guard(s)
+        if s.edit_meta(run_id) is None:
+            raise HTTPException(status_code=404, detail=f"run {run_id} is not an edit")
+        run = s.repo.get_run(run_id)
+        if run is None or str(run.status) != "needs_approval":
+            raise HTTPException(status_code=409, detail="this change was confirmed or discarded")
+        try:
+            rid, result = await s.apply(run_id)
+        except (ValueError, LookupError, PermissionError) as exc:
+            raise _edit_error(exc) from exc
+        return {"run_id": rid, "status": str(result.status), "notes": list(result.notes)}
+
+    @app.delete("/api/edits/{run_id}", dependencies=[Depends(auth)])
+    async def discard_edit(run_id: int, s: ZnachtService = Depends(svc)) -> dict[str, bool]:
+        try:
+            s.discard_edit(run_id)
+        except (ValueError, LookupError) as exc:
+            raise _edit_error(exc) from exc
+        return {"ok": True}
+
+    @app.get("/api/orders", dependencies=[Depends(auth)])
+    async def orders(s: ZnachtService = Depends(svc)) -> list[dict[str, Any]]:
+        return s.orders_view()
+
+    @app.get("/api/runs/{run_id}/order", dependencies=[Depends(auth)])
+    async def run_order(run_id: int, s: ZnachtService = Depends(svc)) -> dict[str, Any]:
+        try:
+            return s.order_for_run(run_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.post("/api/orders", dependencies=[Depends(auth)])
+    async def mark_ordered(body: OrderRequest, s: ZnachtService = Depends(svc)) -> dict[str, Any]:
+        """The household placed the order in Migros: lock the days it covers. Local only."""
+        try:
+            return s.mark_ordered(body.run_id, body.dates)
+        except (ValueError, LookupError) as exc:
+            raise _edit_error(exc) from exc
+
+    @app.delete("/api/orders/{order_id}", dependencies=[Depends(auth)])
+    async def unmark_ordered(order_id: int, s: ZnachtService = Depends(svc)) -> dict[str, bool]:
+        try:
+            s.unmark_ordered(order_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return {"ok": True}
 
     @app.get("/brief/{run_id}", dependencies=[Depends(auth)])
     async def brief(

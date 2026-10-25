@@ -342,7 +342,10 @@ async def test_timeline_states_sources_and_coverage(
     by_date = {d["date"]: d for d in tl["days"]}
     assert all(d["state"] == "planned" for d in by_date.values())
     assert all(d["dinner"]["source"] == run_id for d in by_date.values())
-    assert all(d["run_id"] == run_id and d["proposal"] is None for d in by_date.values())
+    # a dinner in My Week is edited directly (ADR-0014): no run to swap on, and editable
+    assert all(d["run_id"] is None and d["proposal"] is None for d in by_date.values())
+    assert all(d["editable"] == (d["date"] >= tl["today"]) for d in by_date.values())
+    assert not any(d["ordered"] for d in by_date.values())
     # the golden week delivers Monday 19:00–21:00: Monday is a store run, Tue–Sun arrive
     assert by_date[mon.isoformat()]["groceries"]["coverage"] == "store_run"
     tue = by_date[(mon + timedelta(days=1)).isoformat()]["groceries"]
@@ -526,7 +529,7 @@ async def test_plan_the_gaps_locks_my_week_dinners(
     assert tue["dinner"]["source"] == "manual" and fri["dinner"]["source"] == "manual"
     assert tue["groceries"]["coverage"] == "arriving" and fri["groceries"]["coverage"] == "arriving"
     assert by_date[mon.isoformat()]["dinner"]["source"] == run_id
-    assert tue["run_id"] == run_id  # the swap sheet still acts on the run that covers it
+    assert tue["run_id"] is None and tue["editable"]  # edited directly (ADR-0014)
 
 
 async def test_shopping_run_is_the_applied_week_not_the_newest_proposal(

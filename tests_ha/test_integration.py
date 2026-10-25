@@ -72,6 +72,8 @@ async def test_calendar_carries_manual_dinners_and_marks_proposals(hass, engine)
     assert by_date["2026-10-29"].summary == "Proposed: Lentil dal"
     assert "proposed by Znacht run 8" in by_date["2026-10-29"].description
     assert "Znacht run 7" in by_date["2026-10-26"].description
+    assert "groceries ordered" in by_date["2026-10-27"].description
+    assert "groceries ordered" not in by_date["2026-10-26"].description
 
 
 async def test_unplanned_days_is_unknown_on_an_older_engine(hass, aioclient_mock):
@@ -94,10 +96,16 @@ async def test_services_forward_to_the_engine(hass, engine):
     await hass.services.async_call(
         DOMAIN, "update_pantry", {"items": {"rice": "1 kg"}}, blocking=True
     )
+    await hass.services.async_call(
+        DOMAIN, "mark_ordered", {"run_id": 7, "dates": ["2026-10-27"]}, blocking=True
+    )
     calls = [(m, str(u)) for m, u, *_ in engine.mock_calls]
     assert ("POST", "http://engine.test:8787/api/plan_week") in calls
     assert ("POST", "http://engine.test:8787/api/apply?run_id=7") in calls
     assert ("POST", "http://engine.test:8787/api/pantry") in calls
+    assert ("POST", "http://engine.test:8787/api/orders") in calls
+    body = next(d for m, u, d, *_ in engine.mock_calls if str(u).endswith("/api/orders"))
+    assert body == {"run_id": 7, "dates": ["2026-10-27"]}
 
 
 async def test_todo_updates_write_back(hass, engine):

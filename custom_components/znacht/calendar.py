@@ -48,8 +48,9 @@ class ZnachtCalendar(CoordinatorEntity[ZnachtCoordinator], CalendarEntity):
                 if source is not None
                 else None
             )
+            ordered = "groceries ordered" if m.get("ordered") else None
             description = " · ".join(
-                part for part in (m.get("note"), origin, m.get("recipe_id")) if part
+                part for part in (m.get("note"), origin, ordered, m.get("recipe_id")) if part
             )
             out.append(
                 CalendarEvent(

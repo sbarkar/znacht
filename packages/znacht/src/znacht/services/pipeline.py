@@ -418,12 +418,15 @@ async def run_week(
     fixed_plan: MealPlan | None = None,
     known_candidates: tuple[Recipe, ...] = (),
     channel_overrides: dict[str, str] | None = None,
+    stop_on_violations: bool = True,
 ) -> WeekResult:
     """Plan, check, explode, split, optimise, top up, diff. No writes.
 
     ``fixed_plan`` skips the planner (a swap made by the household); ``locked_meals`` survive
     a re-plan; ``channel_overrides`` force a need online or in store; ``known_candidates``
-    reuse a stored pool instead of searching again."""
+    reuse a stored pool instead of searching again. With ``stop_on_violations=False`` a plan
+    that bends the weekly rules is still priced (an edit of part of a week, ADR-0014); the
+    violations stay on the result."""
     notes: list[str] = []
     overrides = dict(channel_overrides or {})
     plan, known, violations, rationale, candidates = await _plan(
@@ -440,7 +443,7 @@ async def run_week(
     )
     minimum = await store.minimum_order()
     empty = ShoppingPlan(slot=slot, minimum_order=minimum)
-    if violations:
+    if violations and stop_on_violations:
         return WeekResult(
             status=PlanStatus.NEEDS_INPUT,
             household_id=household.id,
@@ -634,6 +637,7 @@ async def run_week(
         household_id=household.id,
         week=week,
         plan=plan,
+        violations=tuple(violations),
         needs=tuple(needs),
         shopping=shopping,
         minimum_order=min_report,
