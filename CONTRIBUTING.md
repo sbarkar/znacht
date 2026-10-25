@@ -39,7 +39,7 @@ updates only when its `version` changes. So a release is:
    the `FROM ghcr.io/sbarkar/znacht:<version>` line of `addon/znacht/Dockerfile` (CI fails if they differ),
    and adds `docs/releases/v<version>.md` (a release candidate uses its final version's notes). Merge it.
 2. Right away, tag the merge commit and push the tag (admins only). Until the tag's image is published (a few
-   minutes), the add-on store may already offer the new version and its build fails (ADR-0014):
+   minutes), the add-on store may already offer the new version and its build fails (ADR-0015):
 
    ```bash
    git tag v0.2.0 origin/main && git push origin v0.2.0

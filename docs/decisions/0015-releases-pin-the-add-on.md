@@ -1,4 +1,4 @@
-# ADR-0014: A release pins the add-on's engine image; the add-on is the household's production
+# ADR-0015: A release pins the add-on's engine image; the add-on is the household's production
 
 Status: accepted · 2026-10-25 · builds on ADR-0012 and ADR-0013
 

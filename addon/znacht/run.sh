@@ -6,7 +6,7 @@ opt() { jq -r --arg k "$1" '.[$k] // empty' "$OPTS"; }
 supervisor() { curl -fsS --max-time 10 -H "Authorization: Bearer ${SUPERVISOR_TOKEN:-}" "$@"; }
 
 # A bundle from the LXC (deploy/lxc/bundle.sh) restores household, tokens, sessions and database, and sets
-# the options from its env; it is shredded either way (ADR-0014).
+# the options from its env; it is shredded either way (ADR-0015).
 if [ -f /config/znacht-bundle.tgz ]; then
   python3 /import_bundle.py /config/znacht-bundle.tgz || echo "[znacht] import: incomplete, see above"
 fi

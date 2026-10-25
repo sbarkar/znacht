@@ -1,4 +1,4 @@
-"""Restore a bundle from deploy/lxc/bundle.sh into the add-on (ADR-0014). Run by run.sh on start.
+"""Restore a bundle from deploy/lxc/bundle.sh into the add-on (ADR-0015). Run by run.sh on start.
 
     python3 /import_bundle.py /config/znacht-bundle.tgz
 

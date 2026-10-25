@@ -1,4 +1,4 @@
-"""The add-on's import of an LXC bundle (addon/znacht/import_bundle.py, ADR-0014)."""
+"""The add-on's import of an LXC bundle (addon/znacht/import_bundle.py, ADR-0015)."""
 
 from __future__ import annotations
 
