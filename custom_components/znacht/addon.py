@@ -25,6 +25,7 @@ ACCOUNT_FIELDS = (
     "migros_password",
     "migros_totp_secret",
     "anthropic_api_key",
+    "ha_notify",  # the phone, not an account, but asked on the same form
 )
 SECRET_FIELDS = ("cookidoo_password", "migros_password", "migros_totp_secret", "anthropic_api_key")
 

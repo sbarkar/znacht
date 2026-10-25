@@ -5,10 +5,17 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.hassio import is_hassio
-from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, TextSelectorType
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
 from . import addon
@@ -30,22 +37,38 @@ _FIELD_FOR = {
 }
 
 
-def _accounts_schema(current: dict[str, Any]) -> vol.Schema:
-    """Emails are prefilled; secrets are never shown again (empty keeps the stored one)."""
-    return vol.Schema(
-        {
-            vol.Optional(
-                "cookidoo_email", description={"suggested_value": current.get("cookidoo_email")}
-            ): _EMAIL,
-            vol.Optional("cookidoo_password"): _SECRET,
-            vol.Optional(
-                "migros_email", description={"suggested_value": current.get("migros_email")}
-            ): _EMAIL,
-            vol.Optional("migros_password"): _SECRET,
-            vol.Optional("migros_totp_secret"): _SECRET,
-            vol.Optional("anthropic_api_key"): _SECRET,
-        }
-    )
+def _phones(hass: HomeAssistant, current: str | None) -> list[str]:
+    """The Companion app phones that can get notifications, plus the one set now if it is gone."""
+    phones = {
+        service
+        for service in hass.services.async_services_for_domain("notify")
+        if service.startswith("mobile_app_")
+    }
+    if current:
+        phones.add(current)
+    return sorted(phones)
+
+
+def _accounts_schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
+    """Emails are prefilled; secrets are never shown again (empty keeps the stored one). The phone
+    for notifications sits with them, so the add-on's own options tab is never needed."""
+    fields: dict[Any, Any] = {
+        vol.Optional(
+            "cookidoo_email", description={"suggested_value": current.get("cookidoo_email")}
+        ): _EMAIL,
+        vol.Optional("cookidoo_password"): _SECRET,
+        vol.Optional(
+            "migros_email", description={"suggested_value": current.get("migros_email")}
+        ): _EMAIL,
+        vol.Optional("migros_password"): _SECRET,
+        vol.Optional("migros_totp_secret"): _SECRET,
+        vol.Optional("anthropic_api_key"): _SECRET,
+    }
+    if phones := _phones(hass, current.get("ha_notify")):
+        fields[
+            vol.Optional("ha_notify", description={"suggested_value": current.get("ha_notify")})
+        ] = SelectSelector(SelectSelectorConfig(options=phones, mode=SelectSelectorMode.DROPDOWN))
+    return vol.Schema(fields)
 
 
 async def _connection_errors(api: ZnachtApi) -> tuple[dict[str, str], str]:
@@ -120,7 +143,7 @@ class ZnachtConfigFlow(ConfigFlow, domain=DOMAIN):
             return await self.async_step_install()
         return self.async_show_form(
             step_id="addon",
-            data_schema=_accounts_schema({}),
+            data_schema=_accounts_schema(self.hass, {}),
             description_placeholders={"details": ""},
         )
 
@@ -160,7 +183,7 @@ class ZnachtConfigFlow(ConfigFlow, domain=DOMAIN):
         if errors:
             return self.async_show_form(
                 step_id="addon",
-                data_schema=_accounts_schema(self._accounts),
+                data_schema=_accounts_schema(self.hass, self._accounts),
                 errors=errors,
                 description_placeholders={"details": details},
             )
@@ -184,8 +207,10 @@ class ZnachtConfigFlow(ConfigFlow, domain=DOMAIN):
         token = str(discovery_info.config.get(CONF_TOKEN) or "")
         await self.async_set_unique_id(url)
         # the add-on may have made a new token; an existing entry for it just picks that up
-        self._abort_if_unique_id_configured(updates={CONF_TOKEN: token, CONF_ADDON: True})
-        self._discovered = {CONF_URL: url, CONF_TOKEN: token, CONF_ADDON: True}
+        # with its slug, the entry's Configure changes the add-on's accounts and phone
+        found = {CONF_TOKEN: token, CONF_ADDON: True, CONF_ADDON_SLUG: discovery_info.slug}
+        self._abort_if_unique_id_configured(updates=found)
+        self._discovered = {CONF_URL: url, **found}
         self._addon_name = discovery_info.name
         return await self.async_step_hassio_confirm()
 
@@ -230,7 +255,7 @@ class ZnachtConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class ZnachtOptionsFlow(OptionsFlow):
-    """Change the accounts of the add-on this integration installed."""
+    """Change the accounts and the notified phone of the add-on this integration runs on."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         slug = self.config_entry.data.get(CONF_ADDON_SLUG)
@@ -254,7 +279,7 @@ class ZnachtOptionsFlow(OptionsFlow):
         current = await addon.addon_options(self.hass, slug)
         return self.async_show_form(
             step_id="init",
-            data_schema=_accounts_schema(current),
+            data_schema=_accounts_schema(self.hass, current),
             errors=errors,
             description_placeholders=placeholders,
         )

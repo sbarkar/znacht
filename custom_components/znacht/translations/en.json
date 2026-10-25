@@ -41,7 +41,8 @@
           "migros_email": "Migros email",
           "migros_password": "Migros password",
           "migros_totp_secret": "Migros two-factor secret",
-          "anthropic_api_key": "Claude API key"
+          "anthropic_api_key": "Claude API key",
+          "ha_notify": "Phone for notifications"
         },
         "data_description": {
           "cookidoo_email": "Recipes and My Week on your Thermomix. Leave empty to try Znacht with sample recipes.",
@@ -49,7 +50,8 @@
           "migros_email": "Your Migros Online account, for the two shopping lists. Leave empty for a sample shop.",
           "migros_password": "Used to sign in and when Migros asks to sign in again.",
           "migros_totp_secret": "Only if your Migros account uses an authenticator app: the setup key, not the 6-digit code.",
-          "anthropic_api_key": "Optional. Claude plans more varied weeks and reads the pantry from a photo. Without a key, the built-in planner is used."
+          "anthropic_api_key": "Optional. Claude plans more varied weeks and reads the pantry from a photo. Without a key, the built-in planner is used.",
+          "ha_notify": "Told when a plan is ready to approve, when it was sent, and when Znacht needs a hand. Leave empty for no notifications."
         }
       }
     },
@@ -113,15 +115,16 @@
   "options": {
     "step": {
       "init": {
-        "title": "Your accounts",
-        "description": "Change the accounts Znacht uses. Leave a password empty to keep the current one; clear an email to use sample data for it. {details}",
+        "title": "Your accounts and phone",
+        "description": "Change the accounts Znacht uses and the phone it notifies. Leave a password empty to keep the current one; clear an email to use sample data for it. {details}",
         "data": {
           "cookidoo_email": "Cookidoo email",
           "cookidoo_password": "Cookidoo password",
           "migros_email": "Migros email",
           "migros_password": "Migros password",
           "migros_totp_secret": "Migros two-factor secret",
-          "anthropic_api_key": "Claude API key"
+          "anthropic_api_key": "Claude API key",
+          "ha_notify": "Phone for notifications"
         },
         "data_description": {
           "cookidoo_email": "Recipes and My Week on your Thermomix. Leave empty to try Znacht with sample recipes.",
@@ -129,7 +132,8 @@
           "migros_email": "Your Migros Online account, for the two shopping lists. Leave empty for a sample shop.",
           "migros_password": "Used to sign in and when Migros asks to sign in again.",
           "migros_totp_secret": "Only if your Migros account uses an authenticator app: the setup key, not the 6-digit code.",
-          "anthropic_api_key": "Optional. Claude plans more varied weeks and reads the pantry from a photo. Without a key, the built-in planner is used."
+          "anthropic_api_key": "Optional. Claude plans more varied weeks and reads the pantry from a photo. Without a key, the built-in planner is used.",
+          "ha_notify": "Told when a plan is ready to approve, when it was sent, and when Znacht needs a hand. Leave empty for no notifications."
         }
       }
     },
