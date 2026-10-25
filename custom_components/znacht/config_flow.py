@@ -79,8 +79,13 @@ class ZnachtConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             errors = await self._check(user_input)
             if not errors:
+                data = dict(user_input)
+                # a new token for the same add-on keeps it the add-on; another URL is another
+                # engine, which needs the iframe panel again
+                if entry.data.get(CONF_ADDON) and user_input[CONF_URL] == entry.data.get(CONF_URL):
+                    data[CONF_ADDON] = True
                 return self.async_update_reload_and_abort(
-                    entry, unique_id=user_input[CONF_URL], data={**entry.data, **user_input}
+                    entry, unique_id=user_input[CONF_URL], data=data
                 )
         schema = vol.Schema(
             {

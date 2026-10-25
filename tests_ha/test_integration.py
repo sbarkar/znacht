@@ -201,3 +201,32 @@ async def test_only_a_separate_engine_gets_the_iframe_panel(hass, engine):
     assert await hass.config_entries.async_setup(addon.entry_id)
     await hass.async_block_till_done()
     assert "znacht" not in hass.data.get("frontend_panels", {})
+
+
+async def _reconfigure(hass, entry, user_input):
+    api = MagicMock()
+    api.health = AsyncMock(return_value={"status": "ok"})
+    api.status = AsyncMock(return_value={"plan_status": "idle"})
+    with (
+        patch("custom_components.znacht.config_flow.ZnachtApi", return_value=api),
+        patch("custom_components.znacht.async_setup_entry", return_value=True),
+        patch("custom_components.znacht.async_unload_entry", return_value=True),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "reconfigure", "entry_id": entry.entry_id}
+        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], user_input)
+        await hass.async_block_till_done()
+    assert result["reason"] == "reconfigure_successful"
+
+
+async def test_reconfigure_keeps_the_addon_flag_only_for_the_same_engine(hass):
+    addon = {**ENTRY, "addon": True}
+    entry = MockConfigEntry(domain=DOMAIN, data=addon, unique_id=ENTRY["url"])
+    entry.add_to_hass(hass)
+    await _reconfigure(hass, entry, {"url": ENTRY["url"], "token": "new"})
+    assert entry.data == {"url": ENTRY["url"], "token": "new", "addon": True}
+    # moving to an LXC: a separate engine, so the integration's panel comes back
+    lxc = {"url": "http://192.168.1.50:8787", "token": "t"}
+    await _reconfigure(hass, entry, lxc)
+    assert entry.data == lxc
