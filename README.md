@@ -108,8 +108,15 @@ Pick one. All three run the same engine and keep everything in one data folder.
 - **Proxmox LXC** (the tested path). One script creates a Debian container and installs the engine as
   a systemd service: [deploy/lxc/README.md](https://github.com/sbarkar/znacht/blob/main/deploy/lxc/README.md).
 - **Docker / Compose** (a NAS, any box). Copy [`deploy/.env.example`](https://github.com/sbarkar/znacht/blob/main/deploy/.env.example) to
-  `deploy/.env`, fill it in, and `docker compose -f deploy/compose.yaml up -d`. The image is
-  `ghcr.io/sbarkar/znacht`.
+  `deploy/.env` and fill it in. Seed the data volume with the example household once, then start the
+  engine; adjust the household afterwards in the app's Household screen:
+
+  ```bash
+  docker compose -f deploy/compose.yaml run --rm --no-deps znacht cp /app/household.example.yaml /data/household.yaml
+  docker compose -f deploy/compose.yaml up -d
+  ```
+
+  The image is `ghcr.io/sbarkar/znacht`.
 - **Home Assistant OS add-on** (no other hardware; experimental, less tested than the two above). In
   Home Assistant: Settings → Add-ons → Add-on store → ⋮ → Repositories, add
   `https://github.com/sbarkar/znacht`, install **Znacht**, fill in the options and start it. On first
@@ -185,6 +192,8 @@ screen edits it for you and keeps your comments. A full example with every optio
 [examples/household.example.yaml](https://github.com/sbarkar/znacht/blob/main/examples/household.example.yaml).
 
 ```yaml
+id: home
+name: Our household
 members:
   - name: Anna
     age_group: adult
