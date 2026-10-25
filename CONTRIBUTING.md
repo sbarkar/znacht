@@ -35,17 +35,21 @@ Images: `latest` follows `main`, `sha-<commit>` pins one build, and a `v1.2.3` t
 HACS offers GitHub releases once there is one (until then it offers every commit on `main`), and the add-on
 updates only when its `version` changes. So a release is:
 
-1. A PR that sets the same version in `custom_components/znacht/manifest.json` and `addon/znacht/config.yaml`
-   (CI fails if they differ). Merge it.
-2. Tag the merge commit and push the tag (admins only):
+1. A PR that sets the same version in `custom_components/znacht/manifest.json`, `addon/znacht/config.yaml` and
+   the `FROM ghcr.io/sbarkar/znacht:<version>` line of `addon/znacht/Dockerfile` (CI fails if they differ),
+   and adds `docs/releases/v<version>.md` (a release candidate uses its final version's notes). Merge it.
+2. Right away, tag the merge commit and push the tag (admins only). Until the tag's image is published (a few
+   minutes), the add-on store may already offer the new version and its build fails (ADR-0014):
 
    ```bash
    git tag v0.2.0 origin/main && git push origin v0.2.0
    ```
 
-3. `release.yml` checks the tag against both files, publishes the image, and creates the GitHub release with
-   generated notes. A tag with a hyphen (`v0.2.0-rc.1`) becomes a pre-release, which HACS shows only to those
-   who opt into beta versions.
+3. `release.yml` checks the tag against the three files, publishes the image, and creates the GitHub release
+   with `docs/releases/v<version>.md` followed by GitHub's generated notes. A tag with a hyphen (`v0.2.0-rc.1`)
+   becomes a pre-release, which HACS shows only to those who opt into beta versions. A release candidate is a
+   version of its own (`0.2.0-rc.1` in all three files), because the add-on updates only when its version
+   changes; the final release is a second version PR and tag.
 
 Tags cannot be moved or deleted. If a tag's version check fails nothing is published; fix the versions and
 release the next patch version.

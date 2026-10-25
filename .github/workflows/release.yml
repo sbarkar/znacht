@@ -86,10 +86,16 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Create the release HACS offers
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           flags=(--verify-tag --generate-notes --title "$GITHUB_REF_NAME")
           case "$GITHUB_REF_NAME" in *-*) flags+=(--prerelease) ;; esac
+          # The written notes come first, GitHub's list of PRs after; an rc uses its release's notes.
+          notes="docs/releases/${GITHUB_REF_NAME%%-*}.md"
+          [ -f "$notes" ] && flags+=(--notes-file "$notes")
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" "${flags[@]}"
