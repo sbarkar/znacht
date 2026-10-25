@@ -1,6 +1,6 @@
 """Check that the HACS integration and the add-on carry the same version, and the tag's if given.
 
-    python scripts/check_versions.py            # manifest.json, config.yaml and the Dockerfile agree
+    python scripts/check_versions.py            # manifest, config.yaml, Dockerfile agree
     python scripts/check_versions.py v0.2.0     # ... and all are 0.2.0
 
 HACS shows the GitHub release tag, Home Assistant shows manifest.json, and the Supervisor offers
@@ -30,7 +30,8 @@ def addon_version() -> str:
 
 
 def addon_image_version() -> str:
-    match = re.search(r"^FROM\s+ghcr\.io/sbarkar/znacht:(\S+)", DOCKERFILE.read_text(), re.MULTILINE)
+    text = DOCKERFILE.read_text()
+    match = re.search(r"^FROM\s+ghcr\.io/sbarkar/znacht:(\S+)", text, re.MULTILINE)
     if not match:
         sys.exit(f"no FROM ghcr.io/sbarkar/znacht:<version> in {DOCKERFILE.relative_to(ROOT)}")
     return match.group(1)
