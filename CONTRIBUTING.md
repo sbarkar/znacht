@@ -25,10 +25,30 @@ gh api -X POST repos/sbarkar/znacht/rulesets --input .github/rulesets/main.json
 
 | workflow | runs on | does |
 |---|---|---|
-| `ci.yml` | every PR, pushes to `main` | `make check` on 3.12 and 3.13, `make test-ha`, builds and smoke-tests the image |
-| `release.yml` | pushes to `main`, `v*` tags | builds amd64 + arm64, pushes to GHCR with build provenance |
+| `ci.yml` | every PR, pushes to `main` | `make check` on 3.12 and 3.13, `make test-ha`, the version check, builds and smoke-tests the image |
+| `release.yml` | pushes to `main`, `v*` tags | builds amd64 + arm64, pushes to GHCR with build provenance; for a tag, checks the versions first and creates the GitHub release |
 
 Images: `latest` follows `main`, `sha-<commit>` pins one build, and a `v1.2.3` tag also gives `1.2.3` and `1.2`.
+
+### Cutting a release
+
+HACS offers GitHub releases once there is one (until then it offers every commit on `main`), and the add-on
+updates only when its `version` changes. So a release is:
+
+1. A PR that sets the same version in `custom_components/znacht/manifest.json` and `addon/znacht/config.yaml`
+   (CI fails if they differ). Merge it.
+2. Tag the merge commit and push the tag (admins only):
+
+   ```bash
+   git tag v0.2.0 origin/main && git push origin v0.2.0
+   ```
+
+3. `release.yml` checks the tag against both files, publishes the image, and creates the GitHub release with
+   generated notes. A tag with a hyphen (`v0.2.0-rc.1`) becomes a pre-release, which HACS shows only to those
+   who opt into beta versions.
+
+Tags cannot be moved or deleted. If a tag's version check fails nothing is published; fix the versions and
+release the next patch version.
 
 Deploying to the LXC is pull-based on purpose (no self-hosted runner on a public repo, no inbound access to the
 LAN): run `install.sh` in the container to update, as in `deploy/lxc/README.md`.

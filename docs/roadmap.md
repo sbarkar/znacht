@@ -159,9 +159,10 @@ adapter guide first (`docs/adapters.md`: ports, contract suites, cassette rules)
 
 ### 10. Releases
 
-Version tags, a `manifest.json` version bump per release, a GitHub Actions job that builds the Docker
-image to `ghcr.io/sbarkar/znacht` and runs the HA add-on build (`addon/`). HACS then offers versions
-instead of commits. **Size** M.
+**Done 2026-10-25** except the add-on build: `release.yml` publishes `ghcr.io/sbarkar/znacht` on every
+push to `main` and, for a `v*` tag whose version matches `manifest.json` and the add-on's `config.yaml`,
+creates the GitHub release HACS offers (`CONTRIBUTING.md`, "Cutting a release"). Left: the add-on build
+in CI (`addon/`), and cutting the first release. **Size** S.
 
 ### 11. Operations
 
