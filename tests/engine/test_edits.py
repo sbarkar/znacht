@@ -221,6 +221,24 @@ async def test_a_change_in_my_week_after_the_preview_is_never_overwritten(
     assert (await client.post(f"/api/edits/{preview['run_id']}/confirm")).status_code == 409
 
 
+async def test_a_preview_priced_before_another_confirmed_edit_is_refused(
+    client: httpx.AsyncClient, service: ZnachtService
+):
+    mon, _ = await _applied_week(client, service)
+    tue, thu = (mon + timedelta(days=i) for i in (1, 3))
+    first = (
+        await client.post("/api/edits", json={"kind": "remove", "date": tue.isoformat()})
+    ).json()
+    second = (
+        await client.post("/api/edits", json={"kind": "remove", "date": thu.isoformat()})
+    ).json()
+    assert (await client.post(f"/api/edits/{first['run_id']}/confirm")).status_code == 200
+    writes = _writes(service)
+    r = await client.post(f"/api/edits/{second['run_id']}/confirm")
+    assert r.status_code == 409 and "another change" in r.json()["detail"]
+    assert _writes(service) == writes
+
+
 async def test_a_proposal_planned_before_a_change_cannot_overwrite_it(
     client: httpx.AsyncClient, service: ZnachtService
 ):

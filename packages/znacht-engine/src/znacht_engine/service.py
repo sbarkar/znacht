@@ -733,7 +733,8 @@ class ZnachtService:
         an order would cover, and the order already recorded for the run, if any."""
         rid, result = self._run(run_id)
         today = date.today()
-        recorded = next((o for o in self.orders_view() if o["run_id"] == rid), None)
+        chain = self._run_chain(rid)
+        recorded = next((o for o in reversed(self.orders_view()) if o["run_id"] in chain), None)
         return {
             "run_id": rid,
             "order": recorded,
@@ -758,8 +759,9 @@ class ZnachtService:
         days = sorted(set(dates)) if dates else suggested_order_dates(result, date.today())
         if not days:
             raise ValueError("pick the days this order covers")
+        chain = self._run_chain(rid)
         for o in self.repo.orders():  # one record per run: a second "placed" replaces it
-            if o["run_id"] == rid:
+            if o["run_id"] in chain:
                 self.repo.delete_order(int(o["id"]))
         oid = self.repo.record_order(rid, [d.isoformat() for d in days])
         return next(o for o in self.orders_view() if o["id"] == oid)
@@ -767,6 +769,17 @@ class ZnachtService:
     def unmark_ordered(self, order_id: int) -> None:
         if not self.repo.delete_order(order_id):
             raise LookupError(f"order {order_id} not found")
+
+    def _run_chain(self, rid: int) -> list[int]:
+        """``rid`` and the runs its edits were built on: an order placed for the base run is
+        still this week's order after an edit on another day."""
+        chain = [rid]
+        while (edit := self.edit_meta(chain[-1])) and edit.get("base_run") is not None:
+            base = int(edit["base_run"])
+            if base in chain:
+                break
+            chain.append(base)
+        return chain
 
     def _source_of(self, rid: int, result: WeekResult, meal: Meal) -> int | None:
         """The run that put ``meal`` into My Week: the applied run when its diff added it, else
@@ -794,6 +807,12 @@ class ZnachtService:
         return {d: (await self._day_in_my_week(mine, d))[0] for d in dates}
 
     async def _check_edit_fresh(self, edit: dict[str, Any], week: Week) -> None:
+        # another change confirmed since this preview was priced: its lists and plan are stale
+        applied, _ = self._runs_for_week(week)
+        if (applied[0] if applied else None) != edit.get("base_run"):
+            raise StaleEdit(
+                "another change to this week was confirmed since you opened this; look again"
+            )
         expect: dict[str, str | None] = edit["expect"]
         now = await self._fresh_dinners(week, [date.fromisoformat(d) for d in expect])
         for d, meal in now.items():
