@@ -4,7 +4,7 @@ import pytest
 
 from znacht.domain.diff import ListDiff, ListLineDiff, ShoppingList, ShoppingListLine
 from znacht.domain.product import ProductId, StockStatus
-from znacht.testing.contracts import GroceryStoreContract
+from znacht.testing.contracts import GroceryStoreContract, ReconciliationContract
 from znacht_migros import MigrosGroceryStore
 
 
@@ -23,6 +23,26 @@ class TestMigrosStoreContract(GroceryStoreContract):
 
     @pytest.fixture
     def list_id(self):
+        return "97185194"
+
+
+class TestMigrosReconciliation(ReconciliationContract):
+    """The real Migros adapter, over its mock server's list state, reconciles like the fake."""
+
+    @pytest.fixture
+    def store(self, session):
+        return MigrosGroceryStore(session)
+
+    @pytest.fixture
+    def search_term(self):
+        return "yogurt"
+
+    @pytest.fixture
+    def online_list_id(self):
+        return "97185195"
+
+    @pytest.fixture
+    def in_store_list_id(self):
         return "97185194"
 
 

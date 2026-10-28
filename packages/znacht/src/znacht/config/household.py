@@ -84,6 +84,7 @@ class StorePolicyConfig(_Cfg):
     prefer_store_categories: list[Category] = Field(default_factory=list)
     prefer_store_when_cheaper_by: Decimal | None = None
     freezer_box_deposit: Decimal = Decimal(20)
+    surplus_threshold_packs: Decimal = Field(default=Decimal(1), ge=0)
 
 
 class HouseholdConfig(_Cfg):
@@ -159,6 +160,7 @@ class HouseholdConfig(_Cfg):
                     else None
                 ),
                 freezer_box_deposit=Money.chf(self.store_policy.freezer_box_deposit),
+                surplus_threshold_packs=self.store_policy.surplus_threshold_packs,
             ),
             make_at_home=tuple(
                 MakeAtHome(

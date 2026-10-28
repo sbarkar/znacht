@@ -27,6 +27,15 @@ CREATE TABLE IF NOT EXISTS prices (
 CREATE TABLE IF NOT EXISTS ledger (
   week TEXT PRIMARY KEY, savings TEXT NOT NULL, online_total TEXT NOT NULL, applied_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS overrides (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id INTEGER NOT NULL,
+  finding_id TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  message TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   run_id INTEGER NOT NULL,
@@ -128,6 +137,26 @@ class Repo:
         return [
             dict(r) for r in self._db.execute("SELECT * FROM ledger ORDER BY week DESC").fetchall()
         ]
+
+    # -- reconciliation overrides (ADR-0016): an audit log, never edited ----------------------
+    def log_override(
+        self, run_id: int, finding_id: str, kind: str, message: str, reason: str, at: str
+    ) -> None:
+        self._db.execute(
+            "INSERT INTO overrides (run_id, finding_id, kind, message, reason, at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (run_id, finding_id, kind, message, reason, at),
+        )
+        self._db.commit()
+
+    def overrides_log(self, run_id: int | None = None) -> list[dict[str, Any]]:
+        if run_id is None:
+            rows = self._db.execute("SELECT * FROM overrides ORDER BY id").fetchall()
+        else:
+            rows = self._db.execute(
+                "SELECT * FROM overrides WHERE run_id = ? ORDER BY id", (run_id,)
+            ).fetchall()
+        return [dict(r) for r in rows]
 
     # -- orders (ADR-0014): the household's "I placed the order", later read from the store ---
     def record_order(

@@ -32,6 +32,32 @@ update_pantry:
       required: true
       selector:
         object:
+reconcile:
+  name: Reconcile
+  description: >-
+    Check both lists together against the week's needs: surplus beyond one pack, the same product
+    on both lists, and lines no recipe asked for. Approve waits until each finding is fixed or
+    overridden with a reason. On a sent plan it checks the store's live lists. Returns the findings.
+  fields:
+    run_id:
+      name: Run
+      description: The run to check. Defaults to the latest.
+      selector:
+        number:
+          min: 1
+          mode: box
+    fix:
+      name: Fix
+      description: Finding IDs to fix; their quantities are computed again from the week's need.
+      example: '["surplus:carrots"]'
+      selector:
+        object:
+    overrides:
+      name: Overrides
+      description: Finding ID to the reason you buy it anyway. Logged with the run.
+      example: '{"surplus:carrots": "carrot cake for the school fair"}'
+      selector:
+        object:
 refresh:
   name: Refresh
   description: Re-read the store lists.

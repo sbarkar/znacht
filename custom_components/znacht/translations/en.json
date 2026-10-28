@@ -76,6 +76,9 @@
       "plan_status": {
         "name": "Plan status"
       },
+      "open_findings": {
+        "name": "Open findings"
+      },
       "unplanned_days": {
         "name": "Unplanned days"
       },

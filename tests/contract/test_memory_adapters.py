@@ -13,10 +13,12 @@ from znacht.testing.contracts import (
     NotifierContract,
     PlannerProviderContract,
     RecipeSourceContract,
+    ReconciliationContract,
 )
 from znacht_memory import MemoryMealPlanSink, MemoryNotifier
 from znacht_memory.fixtures import (
     IN_STORE_LIST,
+    ONLINE_LIST,
     POSTCODE,
     grocery_store,
     recipe_source,
@@ -60,6 +62,24 @@ class TestMemoryGroceryStore(GroceryStoreContract):
 
     @pytest.fixture
     def list_id(self):
+        return IN_STORE_LIST
+
+
+class TestMemoryReconciliation(ReconciliationContract):
+    @pytest.fixture
+    def store(self):
+        return grocery_store()
+
+    @pytest.fixture
+    def search_term(self):
+        return "pasta"
+
+    @pytest.fixture
+    def online_list_id(self):
+        return ONLINE_LIST
+
+    @pytest.fixture
+    def in_store_list_id(self):
         return IN_STORE_LIST
 
 

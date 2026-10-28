@@ -7,20 +7,26 @@ is tested against.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
+from decimal import Decimal
 
 import pytest
 
 from znacht.domain.diff import ShoppingList, ShoppingListLine
 from znacht.domain.household import Household
+from znacht.domain.needs import IngredientNeed
 from znacht.domain.plan import Meal, MealPlan, MealSlot, Week
-from znacht.domain.product import ProductId
+from znacht.domain.product import Channel, Product, ProductId
 from znacht.domain.recipe import RecipeId
+from znacht.domain.reconcile import Finding, FindingKind
+from znacht.domain.shopping import ProductChoice, ShoppingPlan
 from znacht.ports.notify import Notifier, PlanEvent
 from znacht.ports.planner import PlannerProvider, PlanningContext
 from znacht.ports.recipes import RecipeQuery, RecipeSource
 from znacht.ports.sinks import MealPlanSink
 from znacht.ports.stores import GroceryStore
+from znacht.services.lists import shopping_list_from
+from znacht.services.reconcile import read_listed_plan, reconcile
 
 FORBIDDEN_METHOD_NAMES = frozenset(
     {
@@ -221,6 +227,137 @@ class GroceryStoreContract:
         assert read == {k: v.quantity for k, v in target.as_dict().items()}
         assert (await store.diff_list(list_id, target)).is_empty
         await store.apply_list(list_id, await store.diff_list(list_id, original))
+
+
+def carrot_incident_plan(product: Product, stray: Product) -> ShoppingPlan:
+    """The incident of ADR-0016, in a store's own products: a quarter pack needed on the delivery
+    day and a quarter pack later, two packs on the online basket, one more in store as a backup,
+    and a product on the in-store list that no need asked for."""
+    monday = date(2026, 10, 26)
+    quarter = product.pack.to_base().scale(Decimal("0.25"))
+    needs = (
+        IngredientNeed(name="carrots", quantity=quarter, needed_on=monday),
+        IngredientNeed(name="carrots", quantity=quarter, needed_on=monday + timedelta(days=3)),
+    )
+
+    def line(p: Product, channel: Channel, packs: int, **extra: object) -> ProductChoice:
+        return ProductChoice(
+            need_name=str(extra.pop("need_name", "carrots")),
+            product=p,
+            packs=packs,
+            needed_on=monday,
+            channel=channel,
+            reason="contract",
+            **extra,
+        )
+
+    return ShoppingPlan(
+        slot=None,
+        online=(line(product, Channel.ONLINE, 2, need_keys=(needs[1].key,)),),
+        in_store=(
+            line(product, Channel.STORE, 1, need_keys=(needs[0].key,), split_reason="backup"),
+            line(stray, Channel.STORE, 1, need_name="stray"),
+        ),
+        needs=needs,
+    )
+
+
+def reconciliation_shape(findings: list[Finding]) -> list[tuple[FindingKind, str, Decimal | None]]:
+    """What every adapter must agree on, whatever its product names and pack sizes."""
+    return [(f.kind, f.need_name, f.excess_packs) for f in findings]
+
+
+EXPECTED_INCIDENT_SHAPE = [
+    (FindingKind.SURPLUS, "carrots", Decimal("2.5")),
+    (FindingKind.CROSS_LIST, "carrots", None),
+    (FindingKind.ORPHAN, "stray", None),
+]
+
+
+class ReconciliationContract:
+    """A store's lists hold what the plan put there, so reconciling the plan and reconciling the
+    lists as read back give the same findings, and every adapter gives the same ones as the
+    in-memory fake (ADR-0016)."""
+
+    @pytest.fixture
+    def store(self) -> GroceryStore:
+        raise NotImplementedError
+
+    @pytest.fixture
+    def search_term(self) -> str:
+        """A search that finds at least two products."""
+        raise NotImplementedError
+
+    @pytest.fixture
+    def online_list_id(self) -> str:
+        raise NotImplementedError
+
+    @pytest.fixture
+    def in_store_list_id(self) -> str:
+        raise NotImplementedError
+
+    @pytest.fixture
+    async def plan(self, store: GroceryStore, search_term: str) -> ShoppingPlan:
+        hits = list(await store.search(search_term, limit=6))
+        assert len(hits) >= 2, "the reconciliation contract needs two products"
+        return carrot_incident_plan(hits[0], hits[1])
+
+    async def test_incident_findings_are_the_same_for_every_adapter(
+        self, plan: ShoppingPlan
+    ) -> None:
+        assert reconciliation_shape(reconcile(plan)) == EXPECTED_INCIDENT_SHAPE
+
+    async def test_lists_read_back_reconcile_like_the_plan(
+        self,
+        store: GroceryStore,
+        plan: ShoppingPlan,
+        online_list_id: str,
+        in_store_list_id: str,
+    ) -> None:
+        originals = [await store.read_list(i) for i in (online_list_id, in_store_list_id)]
+        try:
+            for list_id, lines in (
+                (online_list_id, plan.online),
+                (in_store_list_id, plan.in_store),
+            ):
+                target = shopping_list_from(list_id, lines)
+                assert (await store.apply_list(list_id, await store.diff_list(list_id, target))).ok
+            listed = await read_listed_plan(plan, store, online_list_id, in_store_list_id)
+            assert reconcile(listed) == reconcile(plan)
+        finally:
+            for original in originals:
+                await store.apply_list(original.id, await store.diff_list(original.id, original))
+
+    async def test_a_product_added_by_hand_is_an_orphan(
+        self,
+        store: GroceryStore,
+        plan: ShoppingPlan,
+        online_list_id: str,
+        in_store_list_id: str,
+    ) -> None:
+        originals = [await store.read_list(i) for i in (online_list_id, in_store_list_id)]
+        stray = plan.in_store[1].product
+        try:
+            target = shopping_list_from(online_list_id, plan.online)
+            target = target.model_copy(
+                update={"lines": (*target.lines, ShoppingListLine(product_id=stray.id))}
+            )
+            await store.apply_list(online_list_id, await store.diff_list(online_list_id, target))
+            await store.apply_list(
+                in_store_list_id,
+                await store.diff_list(
+                    in_store_list_id, shopping_list_from(in_store_list_id, plan.in_store)
+                ),
+            )
+            listed = await read_listed_plan(plan, store, online_list_id, in_store_list_id)
+            orphans = [f for f in reconcile(listed) if f.kind == FindingKind.ORPHAN]
+            assert {(f.id.split(":")[1], f.product_id) for f in orphans} == {
+                ("online", stray.id),
+                ("store", stray.id),
+            }
+        finally:
+            for original in originals:
+                await store.apply_list(original.id, await store.diff_list(original.id, original))
 
 
 class PlannerProviderContract:

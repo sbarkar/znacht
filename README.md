@@ -68,6 +68,7 @@ it healthier or cheaper than what we usually buy. Znacht answers them in one pas
 | `todo` Store run | the in-store list; tick or add items |
 | `sensor` Tonight's dinner | the dinner for today |
 | `sensor` Plan status | `idle`, `planning`, `needs_approval`, `applied`, `needs_input`, `reverted`, `error` |
+| `sensor` Open findings | reconciliation findings not yet fixed or overridden: buying more than a pack beyond the week's need across both lists, a product on both lists, a line no recipe asked for. Approve waits until it is 0; the messages are in its attributes |
 | `sensor` Unplanned days | count of empty days ahead; the dates are in its attributes |
 | `sensor` Online basket total, Minimum order | CHF, so you can see how far the basket is from free delivery |
 | `sensor` Next delivery | the planned delivery slot |
@@ -81,6 +82,7 @@ it healthier or cheaper than what we usually buy. Znacht answers them in one pas
 | `znacht.optimize_products` | re-run the grocery split and the product picks |
 | `znacht.apply_plan` | write the approved plan to My Week and the lists (`run_id`, default the latest). The only action that writes to Cookidoo or Migros. |
 | `znacht.update_pantry` | set pantry quantities, e.g. `{"rice": "1 kg", "olive oil": "0"}` (`0` removes) |
+| `znacht.reconcile` | run the reconciliation check (`run_id`); `fix` a list of finding IDs (quantities computed again from the week's need), `overrides` finding ID → reason to buy it anyway (logged). On a sent plan it checks the live Migros lists. Returns the findings |
 | `znacht.refresh` | re-read the Migros lists |
 
 ## What it works with today
@@ -155,7 +157,8 @@ phone's notify service without the `notify.` prefix (`ZNACHT_HA_NOTIFY=mobile_ap
 add-on only needs `ha_notify`; it reaches Home Assistant by itself, and its links open the Znacht panel in
 the Home Assistant app.
 
-You then get "plan ready" (with Approve and Review buttons) and "needs a hand" when a plan could not be
+You then get "plan ready" (with Approve and Review buttons; while a reconciliation finding is open the
+notification lists it first, above the savings, and offers only Review) and "needs a hand" when a plan could not be
 completed. Review opens the Brief. The Approve button fires a `mobile_app_notification_action` event
 with action `ZNACHT_APPROVE` and does nothing by itself; Znacht fires `znacht_plan_ready` and
 `znacht_needs_input` events (with `run_id` and `url`) for your own automations.

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from collections.abc import Iterable, Mapping
+from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
 
 from pydantic import Field
@@ -16,17 +17,26 @@ from znacht.domain.needs import IngredientNeed
 from znacht.domain.plan import Meal, MealPlan, Week
 from znacht.domain.product import Channel, Product, ProductId, StockStatus
 from znacht.domain.recipe import Recipe
+from znacht.domain.reconcile import Finding, Override
 from znacht.domain.shopping import MinimumOrderReport, ProductChoice, ShoppingPlan
 from znacht.domain.violations import Violation
 from znacht.ports.planner import PlannerProvider, PlanningContext
 from znacht.ports.recipes import RecipeQuery, RecipeSource
 from znacht.ports.sinks import MealPlanSink
 from znacht.ports.stores import GroceryStore
+from znacht.services.allocation import allocate
 from znacht.services.checker import check_plan
 from znacht.services.lists import shopping_list_from
 from znacht.services.minimum_order import ensure_minimum_order
 from znacht.services.needs import explode_needs, merge_needs
 from znacht.services.optimiser import choose_product
+from znacht.services.reconcile import (
+    UnreconciledPlan,
+    fix_findings,
+    open_findings,
+    override,
+    reconcile,
+)
 from znacht.services.split import timing_split
 
 SLOT_LEAD_DAYS = 3  # a delivery this many days before the week still feeds it
@@ -77,6 +87,16 @@ class WeekResult(Frozen):
     channel_overrides: dict[str, str] = Field(
         default_factory=dict
     )  # need name -> "online" | "store"
+    overrides: tuple[Override, ...] = ()  # reconciliation findings bought anyway (ADR-0016)
+
+    def findings(self) -> list[Finding]:
+        """The reconciliation check on this run's shopping. Empty until it was priced."""
+        if self.status not in (PlanStatus.NEEDS_APPROVAL, PlanStatus.APPLIED):
+            return []
+        return reconcile(self.shopping)
+
+    def open_findings(self) -> list[Finding]:
+        return open_findings(self.findings(), self.overrides)
 
 
 # What to search for per weekly rule tag. Sources that know tags use them; the others match words.
@@ -607,7 +627,12 @@ async def run_week(
         pantry_check=tuple(pantry_check),
         minimum_order=minimum,
         freezer_box_deposit=policy.freezer_box_deposit,
+        needs=tuple(needs),
+        pantry=household.pantry.items,
+        surplus_threshold_packs=policy.surplus_threshold_packs,
     )
+    # packs once per ingredient across both lists, never per list (ADR-0016)
+    shopping = allocate(shopping)
     shopping, min_report = ensure_minimum_order(shopping)
     if min_report.ask_household is not None:
         notes.append(
@@ -661,6 +686,9 @@ async def apply_week(
         raise PermissionError("apply_week needs approved=True; nothing was written")
     if result.status != PlanStatus.NEEDS_APPROVAL:
         raise ValueError(f"cannot apply a result in status {result.status}")
+    unresolved = result.open_findings()
+    if unresolved:
+        raise UnreconciledPlan(unresolved)
     notes = list(result.notes)
     if result.plan_diff is not None and not result.plan_diff.is_empty:
         applied = await sink.apply(result.plan_diff)
@@ -670,6 +698,56 @@ async def apply_week(
             applied = await store.apply_list(diff.list_id, diff)
             notes.append(f"list {diff.list_id}: {applied.message or applied.applied}")
     return result.model_copy(update={"status": PlanStatus.APPLIED, "notes": tuple(notes)})
+
+
+def resolve_findings(
+    result: WeekResult,
+    *,
+    fix: Iterable[str] = (),
+    overrides: Mapping[str, str] | None = None,
+    at: datetime | None = None,
+) -> WeekResult:
+    """Fix findings (quantities adjusted) and override others with a reason. Pure: the list
+    diffs are not re-computed here (see :func:`rediff`)."""
+    if result.status != PlanStatus.NEEDS_APPROVAL:
+        raise ValueError(f"cannot reconcile a result in status {result.status}")
+    reasons = dict(overrides or {})
+    by_id = {f.id: f for f in result.findings()}
+    unknown = sorted((set(fix) | set(reasons)) - set(by_id))
+    if unknown:
+        raise LookupError(f"no such open finding: {', '.join(unknown)}")
+    both = sorted(set(fix) & set(reasons))
+    if both:
+        raise ValueError(f"fix or override a finding, not both: {', '.join(both)}")
+    shopping = fix_findings(result.shopping, [by_id[i] for i in sorted(set(fix))])
+    notes = list(result.notes)
+    if fix:
+        notes.append(f"reconciliation: fixed {len(set(fix))} finding(s)")
+    kept = [o for o in result.overrides if o.finding_id not in reasons]
+    when = at or datetime.now(tz=UTC)
+    for fid in sorted(reasons):
+        given = override(by_id[fid], reasons[fid], when)
+        kept.append(given)
+        notes.append(f"reconciliation override: {given.message} (reason: {given.reason})")
+    return result.model_copy(
+        update={"shopping": shopping, "overrides": tuple(kept), "notes": tuple(notes)}
+    )
+
+
+async def rediff(result: WeekResult, *, store: GroceryStore) -> WeekResult:
+    """Re-compute the two list diffs after the shopping changed (a fix, a backup)."""
+    s = result.shopping
+    online_diff, in_store_diff = result.online_diff, result.in_store_diff
+    if online_diff is not None:
+        online_diff = await store.diff_list(
+            online_diff.list_id, shopping_list_from(online_diff.list_id, s.online)
+        )
+    if in_store_diff is not None:
+        in_store_diff = await store.diff_list(
+            in_store_diff.list_id,
+            shopping_list_from(in_store_diff.list_id, s.in_store, s.free_text),
+        )
+    return result.model_copy(update={"online_diff": online_diff, "in_store_diff": in_store_diff})
 
 
 async def revert_week(
@@ -704,4 +782,5 @@ def basket_summary(shopping: ShoppingPlan) -> dict[str, Money | int | bool]:
         "switches": len(shopping.switches),
         "flags": len(shopping.flags),
         "savings": shopping.savings,
+        "findings": len(reconcile(shopping)),
     }

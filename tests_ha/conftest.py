@@ -28,6 +28,8 @@ STATUS = {
     "lifetime_savings": "12.30",
     "todays_dinner": "Salmon tray bake",
     "violations": [],
+    "open_findings": 1,
+    "findings": ["carrots: 3 kg bought vs 0.5 kg needed (online 2 kg + in-store 1 kg)"],
     "brief_url": "http://engine.test/brief/7?token=t",
     "summary": {},
 }
@@ -102,6 +104,22 @@ CALENDAR = [
         "proposed": True,
     },
 ]
+RECONCILE = {
+    "run_id": 7,
+    "status": "needs_approval",
+    "open_findings": 0,
+    "findings": [
+        {
+            "id": "surplus:carrots",
+            "kind": "surplus",
+            "need": "carrots",
+            "message": STATUS["findings"][0],
+            "open": False,
+            "override_reason": "carrot cake",
+            "fixable": True,
+        }
+    ],
+}
 TIMELINE = {
     "from": "2026-10-26",
     "horizon": 14,
@@ -142,6 +160,7 @@ def engine(aioclient_mock):
     aioclient_mock.post(f"{base}/api/plan_week", json={"accepted": True})
     aioclient_mock.post(f"{base}/api/apply", json={"run_id": 7, "status": "applied"})
     aioclient_mock.post(f"{base}/api/refresh", json={})
+    aioclient_mock.post(f"{base}/api/reconcile", json=RECONCILE)
     aioclient_mock.post(f"{base}/api/pantry", json={})
     aioclient_mock.post(f"{base}/api/orders", json={"id": 1, "run_id": 7})
     aioclient_mock.post(f"{base}/api/lists/online/done", json={"ok": True})

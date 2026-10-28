@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from enum import StrEnum
 
 from pydantic import Field, field_validator, model_validator
@@ -130,6 +131,8 @@ class StorePolicy(Frozen):
     prefer_store_categories: frozenset[Category] = frozenset()
     prefer_store_when_cheaper_by: Money | None = None
     freezer_box_deposit: Money = Money.chf(20)
+    # reconciliation: more than this many packs beyond the week's need is a surplus (ADR-0016)
+    surplus_threshold_packs: Decimal = Decimal(1)
 
 
 class SlotTemplate(Frozen):

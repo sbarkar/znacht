@@ -62,19 +62,24 @@ PARTS_PER_PIECE: Final[dict[str, int]] = {
 
 
 def shop_quantity(need: IngredientNeed) -> Quantity:
-    if need.quantity.unit != Unit.PIECE:
-        return need.quantity
-    name = f" {need.name.lower()} "
+    return shop_amount(need.name, need.quantity)
+
+
+def shop_amount(name: str, quantity: Quantity) -> Quantity:
+    """``quantity`` of the ingredient ``name`` in what the shop counts (cloves -> bulbs)."""
+    if quantity.unit != Unit.PIECE or quantity.is_zero:
+        return quantity
+    padded = f" {name.lower()} "
     for part, per in PARTS_PER_PIECE.items():
-        if f" {part} " in name or f" {part}s " in name:
+        if f" {part} " in padded or f" {part}s " in padded:
             return Quantity(
                 value=max(
                     Decimal(1),
-                    (need.quantity.value / per).to_integral_value(rounding="ROUND_CEILING"),
+                    (quantity.value / per).to_integral_value(rounding="ROUND_CEILING"),
                 ),
                 unit=Unit.PIECE,
             )
-    return need.quantity
+    return quantity
 
 
 def line_total(product: Product, need: IngredientNeed, channel: Channel) -> Money | None:
@@ -140,6 +145,8 @@ def choose_product(
             channel=channel,
             reason=reason,
             baseline_product_id=baseline.id if baseline else None,
+            need_keys=need.keys,
+            need_quantity=need.quantity,
             **extra,
         )
 

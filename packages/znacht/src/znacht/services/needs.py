@@ -85,7 +85,9 @@ def merge_needs(needs: list[IngredientNeed]) -> list[IngredientNeed]:
         key = (need.name, need.quantity.base_unit)
         current = merged.get(key)
         if current is None:
-            merged[key] = need.model_copy(update={"quantity": need.quantity.to_base()})
+            merged[key] = need.model_copy(
+                update={"quantity": need.quantity.to_base(), "merged_from": need.keys}
+            )
             continue
         merged[key] = current.model_copy(
             update={
@@ -93,6 +95,7 @@ def merge_needs(needs: list[IngredientNeed]) -> list[IngredientNeed]:
                 "needed_on": min(current.needed_on, need.needed_on),
                 "staple": current.staple and need.staple,
                 "recipes": current.recipes + need.recipes,
+                "merged_from": current.keys + tuple(k for k in need.keys if k not in current.keys),
             }
         )
     return sorted(merged.values(), key=lambda n: (n.needed_on, n.name))

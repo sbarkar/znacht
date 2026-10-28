@@ -48,9 +48,22 @@ def _unplanned_attributes(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _findings_attributes(data: dict[str, Any]) -> dict[str, Any]:
+    status = data.get("status", {})
+    return {"findings": list(status.get("findings", [])), "run_id": status.get("run_id")}
+
+
 SENSORS: tuple[ZnachtSensorDescription, ...] = (
     ZnachtSensorDescription(
         key="plan_status", translation_key="plan_status", value=lambda s: s.get("plan_status")
+    ),
+    ZnachtSensorDescription(
+        # reconciliation findings neither fixed nor overridden (ADR-0016); Approve waits on 0
+        key="open_findings",
+        translation_key="open_findings",
+        icon="mdi:scale-unbalanced",
+        value=lambda s: s.get("open_findings"),
+        attributes=_findings_attributes,
     ),
     ZnachtSensorDescription(
         key="unplanned_days",

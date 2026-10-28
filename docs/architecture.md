@@ -153,6 +153,10 @@ class Notifier(Protocol):
 4. **Explode** — recipes × servings → `IngredientNeed[]` with `needed_on`, scaled by recipe servings, minus pantry.
 5. **Split** — given the chosen `DeliverySlot` (end time matters: a 21:00 Monday delivery cannot feed Monday dinner), anything needed on or before delivery day → in-store list; the rest → online candidates; non-deliverable items for the postcode → in-store; free-text items pass through.
 6. **Select & optimise** — per need, pull 3–6 alternatives, apply the health filter (sat-fat for meat/dairy, sugar for yogurt/muesli, salt for tins, wholegrain for grains, no fat-level change for toddler dairy), then unit price, promotions, coupons. Switch if healthier-or-equal and cheaper; flag if healthier but pricier with the CHF delta; otherwise keep. Judge every switch by the change in basket total and revert if worse. Re-check stock after each switch. Persist accepted picks as preferred products.
+6b. **Reconcile** (ADR-0016): packs are computed once per ingredient from the need summed over both
+   lists (in-store first), never per list; every line traces to its needs; the reconciliation check
+   (surplus beyond one pack, cross-list duplicates, orphan lines) must come back clean, fixed or
+   overridden with a logged reason, before the plan can be applied.
 7. **Minimum order** — if online total < minimum: move later-in-week deliverable items from the in-store list, add items the plan genuinely uses, else ask the household. Never pad with pantry staples. Freezer items add the CHF 20 box deposit to the displayed total.
 8. **Diff** — produce a dry-run diff for every sink: meal-plan sink, online list, in-store list. Status → `needs_approval`, notification sent.
 9. **Apply** — only on explicit `apply_plan`. Writes happen through `apply(diff)` methods; nothing else writes.

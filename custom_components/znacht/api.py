@@ -64,6 +64,15 @@ class ZnachtApi:
             body["dates"] = dates
         return await self._call("POST", "/api/orders", json=body)
 
+    async def reconcile(
+        self,
+        run_id: int | None = None,
+        fix: list[str] | None = None,
+        overrides: dict[str, str] | None = None,
+    ) -> Any:
+        body: dict[str, Any] = {"run_id": run_id, "fix": fix or [], "overrides": overrides or {}}
+        return await self._call("POST", "/api/reconcile", json=body)
+
     async def refresh(self) -> Any:
         return await self._call("POST", "/api/refresh")
 

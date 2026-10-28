@@ -1,15 +1,24 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 
 from znacht.domain._base import Frozen
 from znacht.domain.delivery import DeliverySlot
+from znacht.domain.household import PantryItem
 from znacht.domain.money import Money, total
+from znacht.domain.needs import IngredientNeed
 from znacht.domain.product import Channel, Product, ProductId
+from znacht.domain.quantity import Quantity
 
 
 class ProductChoice(Frozen):
-    """One line on a list: a product chosen for a need, with the reason."""
+    """One line on a list: a product chosen for a need, with the reason.
+
+    Every line traces back to the ``IngredientNeed`` keys it buys for, or carries a
+    ``manual_reason`` (a household item, not a recipe need). A line with neither is an orphan
+    and blocks approval (ADR-0016). ``split_reason`` says why the same ingredient is on both
+    lists; without one, a product on both lists is a finding."""
 
     need_name: str
     product: Product
@@ -24,6 +33,19 @@ class ProductChoice(Frozen):
     delta_vs_baseline: Money | None = None
     deliverable: bool | None = None
     movable: bool = False
+    need_keys: tuple[str, ...] = ()
+    need_quantity: Quantity | None = None  # the summed need the line buys for, before packs
+    manual_reason: str | None = None
+    split_reason: str | None = None
+
+    @property
+    def traceable(self) -> bool:
+        return bool(self.need_keys) or bool(self.manual_reason)
+
+    @property
+    def bought(self) -> Quantity:
+        """What the line puts in the kitchen: packs times pack size."""
+        return self.product.pack.scale(Decimal(self.packs))
 
     def line_total(self, channel: Channel | None = None) -> Money:
         price = self.product.price(channel or self.channel)
@@ -42,6 +64,15 @@ class ShoppingPlan(Frozen):
     pantry_check: tuple[str, ...] = ()  # staples the recipes assume you have; not bought
     minimum_order: Money = Money.zero()
     freezer_box_deposit: Money = Money.chf(20)
+    # what reconciliation checks the lists against (ADR-0016): the week's needs after the
+    # pantry, the pantry they were reduced by, and how many packs beyond need is a surplus
+    needs: tuple[IngredientNeed, ...] = ()
+    pantry: tuple[PantryItem, ...] = ()
+    surplus_threshold_packs: Decimal = Decimal(1)
+
+    @property
+    def lines(self) -> tuple[ProductChoice, ...]:
+        return (*self.online, *self.in_store)
 
     @property
     def online_subtotal(self) -> Money:

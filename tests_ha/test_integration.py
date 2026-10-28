@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from custom_components.znacht.const import DOMAIN
+from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 ENTRY = {"url": "http://engine.test:8787", "token": "t"}
@@ -106,6 +108,35 @@ async def test_services_forward_to_the_engine(hass, engine):
     assert ("POST", "http://engine.test:8787/api/orders") in calls
     body = next(d for m, u, d, *_ in engine.mock_calls if str(u).endswith("/api/orders"))
     assert body == {"run_id": 7, "dates": ["2026-10-27"]}
+
+
+async def test_open_findings_sensor_and_reconcile_service(hass, engine):
+    await setup(hass, engine)
+    sensor = hass.states.get("sensor.znacht_open_findings")
+    assert sensor.state == "1"
+    assert sensor.attributes["findings"] == [
+        "carrots: 3 kg bought vs 0.5 kg needed (online 2 kg + in-store 1 kg)"
+    ]
+    response = await hass.services.async_call(
+        DOMAIN,
+        "reconcile",
+        {"run_id": 7, "overrides": {"surplus:carrots": "carrot cake"}},
+        blocking=True,
+        return_response=True,
+    )
+    assert response["open_findings"] == 0
+    assert response["findings"][0]["override_reason"] == "carrot cake"
+    body = next(d for m, u, d, *_ in engine.mock_calls if str(u).endswith("/api/reconcile"))
+    assert body == {"run_id": 7, "fix": [], "overrides": {"surplus:carrots": "carrot cake"}}
+
+
+async def test_apply_says_why_while_findings_are_open(hass, engine):
+    await setup(hass, engine)
+    engine.clear_requests()  # the engine now refuses: the reconciliation gate (ADR-0016)
+    detail = "1 open reconciliation finding: carrots: 3 kg bought vs 0.5 kg needed"
+    engine.post("http://engine.test:8787/api/apply", status=409, json={"detail": detail})
+    with pytest.raises(HomeAssistantError, match=r"will not send this plan yet\. 1 open"):
+        await hass.services.async_call(DOMAIN, "apply_plan", {"run_id": 7}, blocking=True)
 
 
 async def test_todo_updates_write_back(hass, engine):
