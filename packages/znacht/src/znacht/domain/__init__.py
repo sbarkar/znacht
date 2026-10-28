@@ -41,6 +41,7 @@ from znacht.domain.product import (
 )
 from znacht.domain.quantity import Quantity, Unit
 from znacht.domain.recipe import Category, Ingredient, Recipe, RecipeId, Spiciness, Tag
+from znacht.domain.reconcile import Finding, FindingKind, Override
 from znacht.domain.shopping import MinimumOrderReport, ProductChoice, ShoppingPlan
 from znacht.domain.violations import Violation
 
@@ -54,6 +55,8 @@ __all__ = [
     "DeliveryPrefs",
     "DeliverySlot",
     "DietaryRule",
+    "Finding",
+    "FindingKind",
     "HealthMarker",
     "HealthProfile",
     "Household",
@@ -69,6 +72,7 @@ __all__ = [
     "MinimumOrderReport",
     "Money",
     "Nutrition",
+    "Override",
     "Pantry",
     "PantryItem",
     "PlanDiff",

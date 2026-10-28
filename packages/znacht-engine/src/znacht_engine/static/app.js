@@ -396,6 +396,35 @@ function Basket({ m }) {
     </div>`;
 }
 
+// Reconciliation (ADR-0016): both lists together against the week's needs. While a finding is
+// open, Approve waits: fix it (quantities computed again) or buy it anyway with a reason.
+function Findings({ view, toast, reload, busy }) {
+  const findings = view.findings || [];
+  if (!findings.length) return null;
+  const open = findings.filter((f) => f.open);
+  const send = async (body, done) => {
+    try { await api("POST", "/api/reconcile", { run_id: view.run_id, ...body }); toast(done); await reload(); }
+    catch (e) { toast(e.message); }
+  };
+  const fix = (f) => send({ fix: [f.id] }, "Fixed: quantities follow the week's need.");
+  const override = (f) => {
+    const reason = prompt(`Buy it anyway?\n\n${f.message}\n\nSay why (kept with the plan):`);
+    if (reason && reason.trim()) send({ overrides: { [f.id]: reason.trim() } }, "Kept, with your reason.");
+  };
+  return html`
+    <div class=${"card span" + (open.length ? " dashed" : "")} role="region" aria-label="Check the lists">
+      <h2>${open.length ? `Check ${plural(open.length, "thing")} before approving` : "Lists checked"}</h2>
+      ${findings.map((f) => html`
+        <div class="swap">
+          <span class=${f.open ? "warn-text" : "muted"}>${f.message}</span>
+          ${f.open ? html`<div class="row">
+            ${f.fixable ? html`<button type="button" class="btn" onClick=${() => fix(f)} disabled=${!!busy}>Fix</button>` : null}
+            <button type="button" class="btn ghost" onClick=${() => override(f)} disabled=${!!busy}>Buy anyway…</button>
+          </div>` : html`<div class="meta">Bought anyway: ${f.override_reason}</div>`}
+        </div>`)}
+    </div>`;
+}
+
 function Review({ runId, tick, reload, busy, toast, runs }) {
   const [view, err] = useRunView(runId, tick);
   const [open, setOpen] = useState(null);
@@ -435,6 +464,7 @@ function Review({ runId, tick, reload, busy, toast, runs }) {
       </div>
       ${newer && proposal ? html`<div class="banner span"><span>There is a newer plan for this week.</span><a class="btn" href=${`#review/${newer.id}`}>Open it</a></div>` : null}
       ${view.chef_note && view.theme !== "rule-based" ? html`<div class="span stack"><b>${view.theme}</b><p class="small">${view.chef_note}</p></div>` : null}
+      <${Findings} view=${view} toast=${toast} reload=${reload} busy=${busy} />
       ${view.violations.length ? html`<div class="card dashed span"><h2>Needs your input</h2>${view.violations.map((v) => html`<div class="warn-text small">${v.replace(/^\[[^\]]+\]\s*/, "")}</div>`)}<p class="muted small">Swap a dinner below, change a rule on Household, or plan again.</p></div>` : null}
       ${view.plan_removes.length && proposal ? html`
         <div class="card dashed span">
@@ -459,7 +489,7 @@ function Review({ runId, tick, reload, busy, toast, runs }) {
       ${view.swaps.length ? html`<div class="card span"><h2>Product swaps and flags</h2>${view.swaps.map((s) => html`<div class=${"swap " + s.kind}><b>${s.need}</b> → ${s.chosen}${Number(s.delta) ? html` <span class=${s.kind === "switch" ? "ok-text" : "warn-text"}>(${Number(s.delta) < 0 ? "−" : "+"}${Math.abs(Number(s.delta)).toFixed(2)})</span>` : null}<div class="meta">${s.reason}</div></div>`)}</div>` : null}
       ${view.pantry_check.length ? html`<div class="card span"><h2>Check the pantry</h2><p class="small">The recipes assume you have these; nothing is bought.</p><div class="chips">${view.pantry_check.map((p) => html`<span class="chip quiet">${p}</span>`)}</div></div>` : null}
       <div class="actionbar">
-        ${view.status === "needs_approval" ? html`<button type="button" class="btn primary" onClick=${approve} disabled=${working || !!busy}>${working ? "Sending…" : "Approve and send"}</button>` : null}
+        ${view.status === "needs_approval" ? html`<button type="button" class="btn primary" onClick=${approve} disabled=${working || !!busy || view.open_findings > 0} title=${view.open_findings > 0 ? "Fix or keep each finding above first" : ""}>${working ? "Sending…" : view.open_findings > 0 ? `Check ${plural(view.open_findings, "thing")} first` : "Approve and send"}</button>` : null}
         ${view.status === "needs_input" ? html`<button type="button" class="btn primary" onClick=${replan} disabled=${working || !!busy}>Plan again</button>` : null}
         ${view.status === "applied" ? html`
           ${view.checkout_url ? html`<a class="btn primary" href=${view.checkout_url} target="_blank" rel="noopener">Finish the order in Migros</a>` : html`<a class="btn primary" href=${`#groceries/${view.run_id}`}>Shopping list</a>`}
@@ -541,6 +571,13 @@ function Groceries({ runId, tick, reload, busy, toast, runs, today }) {
       location.replace(`#groceries/${v.run_id}`); reload();
     } catch (e) { toast(e.message); }
   };
+  const backup = async (need) => {
+    try {
+      await api("POST", `/api/runs/${view.run_id}/backup`, { need, packs: 1 });
+      toast(`One pack of ${need} moved to the store run as a backup; the online basket has one less.`);
+      reload();
+    } catch (e) { toast(e.message); }
+  };
   const tick_ = async (kind, uid, isDone) => {
     try { await api("POST", `/api/lists/${kind}/done?run_id=${view.run_id}`, { uid, done: !isDone }); reload(); } catch (e) { toast(e.message); }
   };
@@ -558,9 +595,10 @@ function Groceries({ runId, tick, reload, busy, toast, runs, today }) {
         ${applied ? html`<button type="button" class=${"check" + (isDone ? " on" : "")} aria-pressed=${isDone} aria-label=${`${it.name}: ${isDone ? "bought" : "not bought"}`} onClick=${() => tick_(kind, uid, isDone)}><${Icon} name="check" /></button>` : null}
         <div class="body">
           <span class="name">${it.packs > 1 ? html`<span class="muted">${it.packs}× </span>` : null}${it.name}</span>
-          <span class=${"note" + (it.deliverable === false || it.flagged ? " flag" : "")}>${it.need} · ${it.pack}${it.deliverable === false ? " · not deliverable" : ""}${it.switched ? " · swapped" : ""}${it.flagged ? " · healthier option costs more" : ""}</span>
+          <span class=${"note" + (it.deliverable === false || it.flagged ? " flag" : "")}>${it.need} · ${it.pack}${it.deliverable === false ? " · not deliverable" : ""}${it.switched ? " · swapped" : ""}${it.flagged ? " · healthier option costs more" : ""}${it.split_reason ? ` · ${it.split_reason}` : ""}</span>
         </div>
         <span class="price">${chf(it.price)}</span>
+        ${kind === "online" && view.status === "needs_approval" && it.packs > 1 ? html`<button type="button" class="mv" aria-label=${`Buy one pack of ${it.need} in store as a backup`} onClick=${() => backup(it.need)} disabled=${!!busy}>backup</button>` : null}
         ${kind === "online" ? html`<button type="button" class="mv" aria-label=${`Move ${it.need} to the store run`} onClick=${() => move(it.need, "store")} disabled=${!!busy}><${Icon} name="move" />store</button>` :
           it.movable ? html`<button type="button" class="mv" aria-label=${`Move ${it.need} online`} onClick=${() => move(it.need, "online")} disabled=${!!busy}><${Icon} name="move" />online</button>` : null}
       </div>`;
@@ -582,6 +620,7 @@ function Groceries({ runId, tick, reload, busy, toast, runs, today }) {
         view.status === "reverted" ? html`<div class="banner span"><span>This plan was undone; nothing of it is on your lists.</span></div>` : html`
         <div class="banner span"><span><b>Proposal, not sent yet.</b><br /><span class="small muted">Nothing is on your Migros lists until you approve.</span></span><a class="btn primary" href=${`#review/${view.run_id}`}>Review</a></div>`}
       ${applied ? html`<${OrderCard} runId=${view.run_id} tick=${tick} toast=${toast} reload=${reload} />` : null}
+      <${Findings} view=${view} toast=${toast} reload=${reload} busy=${busy} />
       <${Basket} m=${view.money} />
       <div class="tabs span" role="tablist">
         <button type="button" role="tab" aria-selected=${tab === "online"} class=${"tab" + (tab === "online" ? " on" : "")} onClick=${() => setTab("online")}>Online · ${applied ? left(view.online, "online") : view.online.length}</button>

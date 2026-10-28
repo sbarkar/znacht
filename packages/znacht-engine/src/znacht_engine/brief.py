@@ -90,6 +90,8 @@ class Brief:
     lifetime_savings: Money
     checkout_url: str | None
     plan_removes: list[str]
+    findings: list[str] = field(default_factory=list)  # open reconciliation findings
+    overrides: list[str] = field(default_factory=list)  # bought anyway, with the reason
 
 
 def _title(recipes: dict[str, Recipe], key: str) -> str:
@@ -197,6 +199,8 @@ def build_brief(
         slot_label=slot_label,
         notes=list(result.notes),
         violations=[str(v) for v in result.violations],
+        findings=[f.message for f in result.open_findings()],
+        overrides=[f"{o.message} (overridden: {o.reason})" for o in result.overrides],
         lifetime_savings=lifetime_savings,
         checkout_url=checkout_url,
         plan_removes=[

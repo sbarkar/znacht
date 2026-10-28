@@ -1,6 +1,7 @@
 """Given the seed rules, a pantry and fixture catalogues, the pipeline must produce a plan
 that satisfies the rules, a correct online/in-store split for a Monday-evening delivery,
-and an online basket at or above the minimum without staple padding."""
+an online basket at or above the minimum without staple padding, and lists that reconcile
+with the week's needs with zero findings (ADR-0016)."""
 
 from __future__ import annotations
 
@@ -12,7 +13,9 @@ from znacht.domain.plan import Week
 from znacht.domain.product import Channel
 from znacht.domain.recipe import Spiciness, Tag
 from znacht.planner import RuleBasedPlanner
+from znacht.services.allocation import need_index, summed
 from znacht.services.pipeline import PlanStatus, apply_week, run_week
+from znacht.services.reconcile import reconcile
 from znacht_memory import MemoryMealPlanSink
 from znacht_memory.fixtures import GOLDEN_WEEK_START, grocery_store, recipe_source, recipes
 
@@ -117,3 +120,24 @@ async def test_switch_is_reverted_when_the_new_product_is_out_of_stock(household
     assert not yogurt.switched
     assert "out of stock" in yogurt.reason
     assert "yogurt" not in result.new_preferred
+
+
+async def test_generated_plan_reconciles_with_zero_findings(result):
+    s = result.shopping
+    assert reconcile(s) == []
+    assert result.open_findings() == [] and result.overrides == ()
+    index = need_index(s)
+    assert {n.key for n in s.needs} == {n.key for n in result.needs}
+    for line in s.lines:  # every line traces to this week's needs
+        assert line.traceable and line.need_keys and all(k in index for k in line.need_keys)
+    for name in {n.name for n in s.needs}:  # and no ingredient is bought twice over
+        lines = [c for c in s.lines if c.need_name == name]
+        if not lines:
+            continue
+        bought, needed = (
+            summed(c.bought for c in lines),
+            summed(n.quantity for n in s.needs if n.name == name),
+        )
+        if all(c.product.pack.compatible(needed) for c in lines):
+            largest = max(c.product.pack.base_value for c in lines)
+            assert bought.base_value - needed.base_value <= largest, name

@@ -16,3 +16,13 @@ class IngredientNeed(Frozen):
     category: Category = Category.OTHER
     staple: bool = False
     recipes: tuple[RecipeId, ...] = ()
+    merged_from: tuple[str, ...] = ()  # keys of the per-day needs a merged need sums
+
+    @property
+    def key(self) -> str:
+        """Identifies one need of one ingredient on one day; shopping lines trace back to it."""
+        return f"{self.name}|{self.needed_on.isoformat()}|{self.quantity.base_unit}"
+
+    @property
+    def keys(self) -> tuple[str, ...]:
+        return self.merged_from or (self.key,)

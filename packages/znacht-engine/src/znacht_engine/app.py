@@ -66,6 +66,17 @@ class MoveRequest(BaseModel):
     to: str  # "online" | "store"
 
 
+class ReconcileRequest(BaseModel):
+    run_id: int | None = None
+    fix: list[str] = []
+    overrides: dict[str, str] = {}  # finding id -> reason
+
+
+class BackupRequest(BaseModel):
+    need: str
+    packs: int | None = None  # default: all of the online line
+
+
 class EditRequest(BaseModel):
     kind: str  # "swap" | "add" | "remove" | "move"
     date: date
@@ -182,6 +193,33 @@ def create_app(settings: EngineSettings, service: ZnachtService | None = None) -
         except (PermissionError, ValueError) as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return {"run_id": rid, "status": str(result.status), "notes": list(result.notes)}
+
+    @app.post("/api/reconcile", dependencies=[Depends(auth)])
+    async def reconcile(
+        body: ReconcileRequest | None = None, s: ZnachtService = Depends(svc)
+    ) -> dict[str, Any]:
+        """The reconciliation check (ADR-0016): with no fixes or overrides, just run it."""
+        _busy_guard(s)
+        body = body or ReconcileRequest()
+        try:
+            return await s.reconcile(body.run_id, fix=body.fix, overrides=body.overrides)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.post("/api/runs/{run_id}/backup", dependencies=[Depends(auth)])
+    async def backup(
+        run_id: int, body: BackupRequest, s: ZnachtService = Depends(svc)
+    ) -> dict[str, Any]:
+        _busy_guard(s)
+        try:
+            await s.backup(run_id, body.need, body.packs)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return s.view(run_id)
 
     @app.get("/api/setup", dependencies=[Depends(auth)])
     async def setup_state(s: ZnachtService = Depends(svc)) -> dict[str, Any]:

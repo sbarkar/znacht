@@ -2,9 +2,18 @@
 
 from __future__ import annotations
 
+import json
+
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HassJob, HomeAssistant, ServiceCall, callback
+from homeassistant.core import (
+    HassJob,
+    HomeAssistant,
+    ServiceCall,
+    ServiceResponse,
+    SupportsResponse,
+    callback,
+)
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -29,6 +38,7 @@ from .const import (
     SERVICE_OPTIMIZE,
     SERVICE_PANTRY,
     SERVICE_PLAN_WEEK,
+    SERVICE_RECONCILE,
     SERVICE_REFRESH,
 )
 from .coordinator import ZnachtCoordinator
@@ -91,6 +101,14 @@ def _register_services(hass: HomeAssistant, coordinator: ZnachtCoordinator) -> N
 
     def _friendly(exc: ZnachtApiError) -> HomeAssistantError:
         text = str(exc)
+        if "reconciliation finding" in text:
+            # the reconciliation gate (ADR-0016): say what to check, not "busy"
+            _, _, body = text.partition(": ")
+            try:
+                detail = str(json.loads(body).get("detail", body))
+            except (ValueError, AttributeError):
+                detail = body
+            return HomeAssistantError(f"Znacht will not send this plan yet. {detail[:400]}")
         if "409" in text:
             return HomeAssistantError(
                 "Znacht is busy with the previous request; try again in a minute."
@@ -148,6 +166,19 @@ def _register_services(hass: HomeAssistant, coordinator: ZnachtCoordinator) -> N
             raise _friendly(exc) from exc
         await coordinator.async_request_refresh()
 
+    async def reconcile(call: ServiceCall) -> ServiceResponse:
+        # runs the check; fixes adjust quantities, overrides need a reason and are logged
+        try:
+            result = await coordinator.api.reconcile(
+                call.data.get("run_id"),
+                list(call.data.get("fix", [])),
+                {str(k): str(v) for k, v in dict(call.data.get("overrides", {})).items()},
+            )
+        except ZnachtApiError as exc:
+            raise _friendly(exc) from exc
+        await coordinator.async_request_refresh()
+        return result if isinstance(result, dict) else None
+
     async def refresh(call: ServiceCall) -> None:
         try:
             await coordinator.api.refresh()
@@ -166,6 +197,19 @@ def _register_services(hass: HomeAssistant, coordinator: ZnachtCoordinator) -> N
         DOMAIN, SERVICE_PANTRY, pantry, schema=vol.Schema({vol.Required("items"): dict})
     )
     hass.services.async_register(DOMAIN, SERVICE_REFRESH, refresh)
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_RECONCILE,
+        reconcile,
+        schema=vol.Schema(
+            {
+                vol.Optional("run_id"): cv.positive_int,
+                vol.Optional("fix"): vol.All(cv.ensure_list, [cv.string]),
+                vol.Optional("overrides"): {cv.string: cv.string},
+            }
+        ),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
     hass.services.async_register(
         DOMAIN,
         SERVICE_MARK_ORDERED,

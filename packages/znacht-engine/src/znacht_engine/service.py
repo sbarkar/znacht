@@ -5,18 +5,21 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from datetime import date, timedelta
+from collections.abc import Iterable, Mapping
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from znacht.config import load_household
-from znacht.domain.diff import PlanDiff, ShoppingList, diff_lists
+from znacht.domain.diff import ListDiff, PlanDiff, ShoppingList, diff_lists
 from znacht.domain.household import Household, Pantry, PantryItem
 from znacht.domain.money import Money
 from znacht.domain.plan import Meal, MealPlan, MealSlot, Week
 from znacht.domain.quantity import Quantity
 from znacht.domain.recipe import Recipe, RecipeId
+from znacht.domain.reconcile import Finding
 from znacht.ports.notify import Notifier, PlanEvent
 from znacht.ports.recipes import RecipeQuery
+from znacht.services.allocation import add_backup
 from znacht.services.checker import check_plan
 from znacht.services.lists import shopping_list_from
 from znacht.services.pipeline import (
@@ -24,9 +27,13 @@ from znacht.services.pipeline import (
     WeekResult,
     apply_week,
     basket_summary,
+    rediff,
+    resolve_findings,
     revert_week,
     run_week,
 )
+from znacht.services.reconcile import open_findings, override, read_listed_plan
+from znacht.services.reconcile import reconcile as reconcile_plan
 from znacht_engine.brief import WALK_ORDER, Brief, build_brief, lifetime, price_rows
 from znacht_engine.config import EngineSettings
 from znacht_engine.edits import (
@@ -464,6 +471,8 @@ class ZnachtService:
             ],
             "plan_removes": b.plan_removes,
             "violations": b.violations,
+            "findings": self.findings_view(rid, result),
+            "open_findings": len(self.open_findings_of(rid, result)),
             "notes": b.notes,
             "todo": lists,
             "checkout_url": b.checkout_url,
@@ -488,6 +497,7 @@ class ZnachtService:
             "deliverable": c.deliverable,
             "flagged": c.flagged,
             "switched": c.switched,
+            "split_reason": c.split_reason,
             "url": c.product.url,
             "aisle": next(
                 (name for name, cats in WALK_ORDER if c.product.category in cats), "Other"
@@ -568,9 +578,12 @@ class ZnachtService:
                 "shopping_run_id": None,
                 "adapters": self.adapter_names(),
                 "lifetime_savings": "0.00",
+                "open_findings": 0,
+                "findings": [],
             }
         rid, result = latest
         s = result.shopping
+        open_ = self.open_findings_of(rid, result)
         todays = [m for m in result.plan.meals if m.date == today]
         return {
             "run_id": rid,
@@ -595,6 +608,8 @@ class ZnachtService:
             "lifetime_savings": str(lifetime(self.repo.ledger()).amount),
             "todays_dinner": self._title(todays[0].recipe_id.key) if todays else None,
             "violations": [str(v) for v in result.violations],
+            "open_findings": len(open_),
+            "findings": [f.message for f in open_],
             "brief_url": self.brief_url(rid),
             "summary": {k: str(v) for k, v in basket_summary(s).items()},
             "adapters": self.adapter_names(),
@@ -1014,40 +1029,7 @@ class ZnachtService:
             channel_overrides=dict(base.channel_overrides) if base else None,
             stop_on_violations=False,
         )
-        online_diff = in_store_diff = None
-        lines: dict[str, list[dict[str, Any]]] = {"online": [], "in_store": []}
-        names = {
-            str(c.product.id): c.product.name
-            for r in (base, result)
-            if r is not None
-            for c in (*r.shopping.online, *r.shopping.in_store)
-        }
-        if household.store_lists is not None:
-            for kind_, list_id in (
-                ("online", household.store_lists.online),
-                ("in_store", household.store_lists.in_store),
-            ):
-                live = await self.adapters.store.read_list(list_id)
-                target = rebase_list(
-                    live, _as_list(base, kind_, list_id), _as_list(result, kind_, list_id)
-                )
-                diff = diff_lists(live, target)
-                if kind_ == "online":
-                    online_diff = diff
-                else:
-                    in_store_diff = diff
-                before = live.as_dict()
-                lines[kind_] = [
-                    {
-                        "name": names.get(str(c.line.product_id), str(c.line.product_id))
-                        if c.line.product_id is not None
-                        else c.line.text,
-                        "op": c.op,
-                        "from": before[c.line.key].quantity if c.line.key in before else 0,
-                        "to": 0 if c.op == "remove" else c.line.quantity,
-                    }
-                    for c in diff.lines
-                ]
+        online_diff, in_store_diff, lines = await self._edit_list_diffs(household, base, result)
         result = result.model_copy(
             update={
                 "status": PlanStatus.NEEDS_APPROVAL,
@@ -1097,7 +1079,179 @@ class ZnachtService:
             "online_total": str(result.shopping.online_total.amount),
             "online_total_before": str(base.shopping.online_total.amount) if base else None,
             "warnings": warnings,
+            "findings": [f.message for f in result.open_findings()],
         }
+
+    async def _edit_list_diffs(
+        self, household: Household, base: WeekResult | None, result: WeekResult
+    ) -> tuple[ListDiff | None, ListDiff | None, dict[str, list[dict[str, Any]]]]:
+        """An edit's list diffs: its lines minus the applied run's, rebased on the live lists."""
+        online_diff = in_store_diff = None
+        lines: dict[str, list[dict[str, Any]]] = {"online": [], "in_store": []}
+        names = {
+            str(c.product.id): c.product.name
+            for r in (base, result)
+            if r is not None
+            for c in (*r.shopping.online, *r.shopping.in_store)
+        }
+        if household.store_lists is None:
+            return None, None, lines
+        for kind_, list_id in (
+            ("online", household.store_lists.online),
+            ("in_store", household.store_lists.in_store),
+        ):
+            live = await self.adapters.store.read_list(list_id)
+            target = rebase_list(
+                live, _as_list(base, kind_, list_id), _as_list(result, kind_, list_id)
+            )
+            diff = diff_lists(live, target)
+            if kind_ == "online":
+                online_diff = diff
+            else:
+                in_store_diff = diff
+            before = live.as_dict()
+            lines[kind_] = [
+                {
+                    "name": names.get(str(c.line.product_id), str(c.line.product_id))
+                    if c.line.product_id is not None
+                    else c.line.text,
+                    "op": c.op,
+                    "from": before[c.line.key].quantity if c.line.key in before else 0,
+                    "to": 0 if c.op == "remove" else c.line.quantity,
+                }
+                for c in diff.lines
+            ]
+        return online_diff, in_store_diff, lines
+
+    # -- reconciliation (ADR-0016) -----------------------------------------------------------
+    def findings_of(self, rid: int, result: WeekResult) -> list[Finding]:
+        """The run's findings: of its plan while it awaits approval; of the live lists once sent,
+        if they were checked since (``reconcile`` on a sent run)."""
+        live = (
+            self.repo.get(f"reconcile.live.{rid}") if result.status == PlanStatus.APPLIED else None
+        )
+        if live is not None:
+            return [Finding.model_validate(f) for f in live]
+        return result.findings()
+
+    def open_findings_of(self, rid: int, result: WeekResult) -> list[Finding]:
+        return open_findings(self.findings_of(rid, result), result.overrides)
+
+    def findings_view(self, rid: int, result: WeekResult) -> list[dict[str, Any]]:
+        given = {(o.finding_id, o.message): o for o in result.overrides}
+        out = []
+        for f in self.findings_of(rid, result):
+            o = given.get((f.id, f.message))
+            out.append(
+                {
+                    "id": f.id,
+                    "kind": str(f.kind),
+                    "need": f.need_name,
+                    "message": f.message,
+                    "open": o is None,
+                    "override_reason": o.reason if o else None,
+                    "fixable": result.status == PlanStatus.NEEDS_APPROVAL,
+                }
+            )
+        return out
+
+    async def reconcile(
+        self,
+        run_id: int | None = None,
+        *,
+        fix: Iterable[str] = (),
+        overrides: Mapping[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """Run the reconciliation check; fix findings or override them with a reason.
+
+        A run awaiting approval is checked on its plan, and a fix adjusts its quantities and
+        re-computes its list diffs. A sent run is checked on the store's live lists (a backup
+        added by hand in the store's app shows up here); it can be overridden but not fixed,
+        since only an approved apply writes to the lists."""
+        fix = sorted(set(fix))
+        reasons = dict(overrides or {})
+        async with self._lock:
+            rid, result = self._run(run_id)
+            now = datetime.now(tz=UTC)
+            if result.status == PlanStatus.NEEDS_APPROVAL:
+                updated = resolve_findings(result, fix=fix, overrides=reasons, at=now)
+                if fix:
+                    updated = await self._rediff(rid, updated)
+            elif result.status == PlanStatus.APPLIED:
+                if fix:
+                    raise ValueError(
+                        "this plan was sent; change the lists in the store or plan again"
+                    )
+                store_lists = self.household().store_lists
+                if store_lists is not None:
+                    listed = await read_listed_plan(
+                        result.shopping,
+                        self.adapters.store,
+                        store_lists.online,
+                        store_lists.in_store,
+                    )
+                    self.repo.set(
+                        f"reconcile.live.{rid}",
+                        [f.model_dump(mode="json") for f in reconcile_plan(listed)],
+                    )
+                    self.forget_live_reads()
+                by_id = {f.id: f for f in self.findings_of(rid, result)}
+                unknown = sorted(set(reasons) - set(by_id))
+                if unknown:
+                    raise LookupError(f"no such open finding: {', '.join(unknown)}")
+                given = [override(by_id[i], reasons[i], now) for i in sorted(reasons)]
+                updated = result.model_copy(
+                    update={
+                        "overrides": tuple(
+                            o for o in result.overrides if o.finding_id not in reasons
+                        )
+                        + tuple(given)
+                    }
+                )
+            else:
+                raise ValueError(f"nothing to reconcile in a run that is {result.status}")
+            for o in updated.overrides:
+                if o.finding_id in reasons:
+                    self.repo.log_override(
+                        rid, o.finding_id, str(o.kind), o.message, o.reason, o.at.isoformat()
+                    )
+            if updated is not result:
+                self.repo.update_run(rid, updated)
+        findings = self.findings_view(rid, updated)
+        return {
+            "run_id": rid,
+            "status": str(updated.status),
+            "findings": findings,
+            "open_findings": sum(1 for f in findings if f["open"]),
+        }
+
+    async def backup(self, run_id: int, need_name: str, packs: int | None = None) -> WeekResult:
+        """Put packs of an online line on the in-store list as a backup in case the delivery is
+        late; the online basket loses exactly what the store run gains (ADR-0016)."""
+        async with self._lock:
+            rid, result = self._run(run_id)
+            if result.status != PlanStatus.NEEDS_APPROVAL:
+                raise ValueError("a backup changes a proposal; this run was already decided")
+            updated = result.model_copy(
+                update={
+                    "shopping": add_backup(result.shopping, need_name, packs),
+                    "notes": (*result.notes, f"{need_name}: backup moved to the store run"),
+                }
+            )
+            updated = await self._rediff(rid, updated)
+            self.repo.update_run(rid, updated)
+            return updated
+
+    async def _rediff(self, rid: int, result: WeekResult) -> WeekResult:
+        edit = self.edit_meta(rid)
+        if edit is None:
+            return await rediff(result, store=self.adapters.store)
+        base_id = edit.get("base_run")
+        base = self.repo.get_run(int(base_id)) if base_id is not None else None
+        online_diff, in_store_diff, _ = await self._edit_list_diffs(self.household(), base, result)
+        return result.model_copy(
+            update={"online_diff": online_diff, "in_store_diff": in_store_diff}
+        )
 
     def _edit_title(
         self, kind: str, day: date, to: date | None, add: list[Meal], remove: list[Meal]
@@ -1456,17 +1610,31 @@ class ZnachtService:
             )
             flags = f", {len(s.flags)} to look at" if s.flags else ""
             minimum = "" if s.meets_minimum else f" Basket is {s.shortfall} short of the minimum."
+            # findings come first, above the savings, and hold back Approve (ADR-0016)
+            findings = self.open_findings_of(run_id, result)
+            check = (
+                f"Check {len(findings)} before approving: "
+                + "; ".join(f.message for f in findings[:3])
+                + ("; …" if len(findings) > 3 else "")
+                + ". "
+                if findings
+                else ""
+            )
             message = (
-                f"{theme}. Online {s.online_total}, store run {len(s.in_store)} items. "
+                f"{check}{theme}. Online {s.online_total}, store run {len(s.in_store)} items. "
                 f"{saved}{flags}.{minimum}"
             )
             await self.notifier.notify(
                 PlanEvent(
                     kind="plan_ready",
-                    title="Znacht: plan ready",
+                    title="Znacht: check the lists" if findings else "Znacht: plan ready",
                     message=message,
-                    actions=("approve", "review"),
-                    data={"url": self.notify_url(run_id), "run_id": str(run_id)},
+                    actions=("review",) if findings else ("approve", "review"),
+                    data={
+                        "url": self.notify_url(run_id),
+                        "run_id": str(run_id),
+                        "open_findings": str(len(findings)),
+                    },
                 )
             )
         else:

@@ -48,6 +48,15 @@
   <p class="note">{{ b.chef_note }}</p>
   {% if b.slot_label %}<p class="muted">Delivery {{ b.slot_label }}. Anything before that is on the in-store list, marked <span class="pill store">store run</span>.</p>{% endif %}
 
+  {% if b.findings %}
+  <h2>Check the lists before approving</h2>
+  <p class="muted">Both lists together buy more than the week needs, or a line traces to no recipe. Fix or override each one in the app; Approve waits until then.</p>
+  <ul class="clean">{% for f in b.findings %}<li class="warn">{{ f }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if b.overrides %}
+  <ul class="clean">{% for o in b.overrides %}<li class="muted">{{ o }}</li>{% endfor %}</ul>
+  {% endif %}
+
   {% if b.violations %}
   <h2>Needs your input</h2>
   <ul class="clean">{% for v in b.violations %}<li class="warn">{{ v }}</li>{% endfor %}</ul>

@@ -48,6 +48,7 @@ store_policy:
   prefer_store_categories: [bakery]
   prefer_store_when_cheaper_by: 0.50   # CHF; such lines stay movable for the minimum order
   freezer_box_deposit: 20
+  surplus_threshold_packs: 1          # more than this many packs beyond the week's need is a finding
 
 make_at_home:                # bought dish -> components to buy instead
   hummus:
