@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from collections.abc import Callable
 from datetime import date, timedelta
 from typing import Any
 
@@ -85,6 +86,8 @@ class ZnachtService:
         self._recipes: dict[str, Recipe] = {}
         self._my_week_cache: dict[date, tuple[float, MealPlan]] = {}
         self._lists_cache: tuple[float, dict[str, frozenset[str]]] | None = None
+        # what the timeline and the calendar take as "today"; tests pin it to stay off the real date
+        self.today: Callable[[], date] = date.today
 
     # -- household with the engine's overlays ------------------------------------------------
     def household(self) -> Household:
@@ -671,7 +674,7 @@ class ZnachtService:
         """Dinners for the HA calendar: what is in My Week (source run or manual) over the
         timeline horizon, plus proposals on days that have nothing yet, flagged as such. The
         latest run's week is always included so a proposal for a far week shows up."""
-        today = date.today()
+        today = self.today()
         start, end = today, today + timedelta(days=DEFAULT_DAYS - 1)
         latest = self._latest()
         if latest is not None:
@@ -1242,7 +1245,7 @@ class ZnachtService:
     async def timeline(self, from_: date | None = None, days: int = DEFAULT_DAYS) -> dict[str, Any]:
         """One record per day from ``from_`` (today) for ``days``: what My Week says, what a
         run proposes, and whether the food is arriving, listed or missing (ADR-0011)."""
-        today = date.today()
+        today = self.today()
         start = from_ or today
         days = max(1, min(days, MAX_DAYS))
         dates = [start + timedelta(days=i) for i in range(days)]

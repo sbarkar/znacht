@@ -183,7 +183,7 @@ async def test_edits_on_hand_made_days_add_move_remove(
         {"kind": "move", "date": wed.isoformat(), "to": (mon + timedelta(days=8)).isoformat()},
         {
             "kind": "swap",
-            "date": (mon - timedelta(days=7)).isoformat(),
+            "date": (mon - timedelta(days=8)).isoformat(),  # past even when today is Monday
             "recipe_id": "memory:omelette",
         },
         {"kind": "explode", "date": wed.isoformat()},
