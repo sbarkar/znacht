@@ -294,6 +294,7 @@ def test_timeline_helpers_span_and_summary():
 async def test_timeline_states_sources_and_coverage(
     client: httpx.AsyncClient, service: ZnachtService
 ):
+    service.today = lambda: GOLDEN_WEEK_START  # off the real date: no day reads as past
     mon = GOLDEN_WEEK_START
     # a dinner the household put into My Week by hand, before Znacht ran
     await _put_in_my_week(service, _meal(mon + timedelta(days=2), "omelette"))
@@ -421,6 +422,7 @@ def test_breakfasts_are_told_apart_by_tag_or_title():
 async def test_timeline_skips_breakfasts_and_lists_the_rest_of_the_day(
     client: httpx.AsyncClient, service: ZnachtService
 ):
+    service.today = lambda: GOLDEN_WEEK_START  # off the real date: no day reads as past
     from znacht.domain.recipe import Recipe, Tag
 
     mon = GOLDEN_WEEK_START
@@ -489,6 +491,7 @@ async def test_timeline_my_week_cache_and_bounds(client: httpx.AsyncClient, serv
 async def test_plan_the_gaps_locks_my_week_dinners(
     client: httpx.AsyncClient, service: ZnachtService
 ):
+    service.today = lambda: GOLDEN_WEEK_START  # off the real date: no day reads as past
     mon = GOLDEN_WEEK_START
     mine = (_meal(mon + timedelta(days=1), "omelette"), _meal(mon + timedelta(days=4), "veg-pasta"))
     await _put_in_my_week(service, *mine)
