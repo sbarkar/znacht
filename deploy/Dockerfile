@@ -7,7 +7,7 @@ COPY pyproject.toml uv.lock README.md ./
 COPY packages ./packages
 RUN uv sync --all-packages --no-dev --no-editable --frozen
 
-FROM python:3.12-slim-bookworm
+FROM python:3.15-slim-bookworm
 RUN useradd --system --create-home --uid 10001 znacht \
  && mkdir -p /data && chown znacht:znacht /data
 COPY --from=build --chown=znacht:znacht /app/.venv /app/.venv
